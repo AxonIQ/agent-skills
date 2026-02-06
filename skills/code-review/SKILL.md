@@ -415,7 +415,7 @@ For a thorough review:
 4. ✅ Review method visibility
 
 ### Breaking Change
-1. ✅ Verify marked with `!` in commit/PR title
+1. ✅ Verify marked with ! in commit/PR title
 2. ✅ Check migration documentation exists
 3. ✅ Confirm justification provided
 4. ✅ Review storage implications
