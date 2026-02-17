@@ -622,6 +622,194 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 ```
 
+---
+
+## Test Object Creation Strategy
+
+### Prefer Real Objects Over Mocks
+
+**Hierarchy of test object creation:**
+
+1. **Real objects** - When simple to create
+2. **Stub implementations** - When behavior is simple but construction is complex
+3. **Mocks** - Only when necessary for verification
+
+### Real Objects (PREFERRED)
+
+Use real framework objects when they're straightforward to create:
+
+```java
+// ✅ PREFERRED: Real message objects
+private static QueryMessage queryMessage(QualifiedName name) {
+    return new GenericQueryMessage(new MessageType(name), "test-payload");
+}
+
+private static CommandMessage commandMessage(Object payload) {
+    return new GenericCommandMessage(MessageType.fromPayload(payload), payload);
+}
+
+private static EventMessage eventMessage(Object payload) {
+    return new GenericEventMessage(MessageType.fromPayload(payload), payload);
+}
+
+// Usage in tests
+@Test
+void componentProcessesQuery() {
+    QueryMessage query = queryMessage(new QualifiedName("TestQuery"));
+    component.handle(query);
+    // assertions
+}
+```
+
+**Benefits:**
+- Tests use actual framework objects
+- More realistic test scenarios
+- Less brittle than mocks
+- Easier to maintain
+
+### Stub Implementations (GOOD)
+
+Create stub implementations for tracking behavior:
+
+```java
+// ✅ GOOD: Stub for tracking invocations
+private static class StubConnector implements BusConnector {
+    final Set<QualifiedName> subscriptions = new HashSet<>();
+    final AtomicInteger callCount = new AtomicInteger(0);
+    final List<Message> receivedMessages = new ArrayList<>();
+
+    @Override
+    public void subscribe(QualifiedName name) {
+        subscriptions.add(name);
+        callCount.incrementAndGet();
+    }
+
+    @Override
+    public void send(Message message) {
+        receivedMessages.add(message);
+        callCount.incrementAndGet();
+    }
+
+    // Other interface methods with sensible defaults
+    @Override
+    public void describeTo(ComponentDescriptor descriptor) {
+        descriptor.describeProperty("name", "StubConnector");
+    }
+}
+```
+
+**When to use stubs:**
+- Tracking method invocations
+- Testing integration between components
+- Need default behavior for multiple methods
+- Want to verify call counts or arguments
+
+### Mocks (USE SPARINGLY)
+
+Reserve mocks for cases where stubs aren't practical:
+
+```java
+// ⚠️ Only when necessary
+Connector connector = mock(Connector.class);
+when(connector.connect()).thenReturn(connection);
+
+component.process(query);
+
+verify(connector).connect();
+verify(connector).send(any());
+```
+
+**When mocks are acceptable:**
+- Complex external dependencies
+- Need to verify specific interactions
+- Behavior is difficult to stub
+- Testing error conditions
+
+---
+
+## Resource Cleanup in Tests
+
+### Always Clean Up Resources
+
+Components that create resources must be cleaned up in tests:
+
+**Resources requiring cleanup:**
+- ExecutorServices and thread pools
+- Temporary files and directories
+- Database connections
+- Network connections
+- File handles
+
+### Single-Use Resource Pattern
+
+```java
+@Test
+void componentCreatesWorkingExecutor() {
+    ExecutorService executor = component.createExecutor();
+
+    try {
+        // Test assertions
+        assertNotNull(executor);
+        assertInstanceOf(ThreadPoolExecutor.class, executor);
+
+        // Test functionality
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(
+            () -> "result",
+            executor
+        );
+        assertEquals("result", future.join());
+    } finally {
+        executor.shutdown(); // Always cleanup
+    }
+}
+```
+
+### Shared Resource Pattern
+
+```java
+private ExecutorService executorService;
+private TempDirectory tempDir;
+private DatabaseConnection connection;
+
+@BeforeEach
+void setUp() {
+    executorService = component.createExecutor();
+    tempDir = TempDirectory.create();
+    connection = database.connect();
+}
+
+@AfterEach
+void cleanup() {
+    if (executorService != null) {
+        executorService.shutdown();
+    }
+    if (tempDir != null) {
+        tempDir.delete();
+    }
+    if (connection != null) {
+        connection.close();
+    }
+}
+```
+
+### Why Resource Cleanup Matters
+
+1. **Thread leaks** - Unshutdown ExecutorServices leak threads
+2. **File descriptor exhaustion** - Too many open files causes failures
+3. **CI reliability** - Tests must not leave resources hanging
+4. **Test independence** - Resources from one test shouldn't affect others
+
+**Common mistake:**
+```java
+// ❌ BAD: Executor never shutdown
+@Test
+void testExecutor() {
+    ExecutorService executor = component.createExecutor();
+    // assertions...
+    // Missing: executor.shutdown()
+}
+```
+
 ### Real-World Examples
 
 AF5 codebase examples:
@@ -632,7 +820,222 @@ AF5 codebase examples:
 
 ---
 
-## 4. Component Lifecycle Patterns
+## 4. Configuration Class Design
+
+### Immutable Configuration Pattern
+
+Configuration classes should be immutable, with modification methods returning new instances:
+
+**Structure:**
+```java
+public final class ComponentConfiguration {
+
+    private static final int DEFAULT_THREADS = 10;
+    private static final int DEFAULT_CAPACITY = 1000;
+
+    @Nonnull
+    private final ExecutorServiceFactory executorServiceFactory;
+    private final Supplier<BlockingQueue<Runnable>> queueSupplier;
+    private final boolean autoRetry;
+
+    // Private constructor with all parameters
+    private ComponentConfiguration(
+            @Nonnull ExecutorServiceFactory executorServiceFactory,
+            @Nonnull Supplier<BlockingQueue<Runnable>> queueSupplier,
+            boolean autoRetry) {
+        this.executorServiceFactory = executorServiceFactory;
+        this.queueSupplier = queueSupplier;
+        this.autoRetry = autoRetry;
+    }
+
+    /**
+     * Constructs a default {@code ComponentConfiguration} with the following settings:
+     * <ul>
+     *     <li>Thread count: 10</li>
+     *     <li>Queue capacity: 1000</li>
+     *     <li>Auto-retry: enabled</li>
+     * </ul>
+     */
+    public ComponentConfiguration() {
+        this(DEFAULT_EXECUTOR_FACTORY.apply(DEFAULT_THREADS),
+             () -> new LinkedBlockingQueue<>(DEFAULT_CAPACITY),
+             true);
+    }
+
+    // Modification methods return NEW instance
+    public ComponentConfiguration threadCount(int threads) {
+        return new ComponentConfiguration(
+                DEFAULT_EXECUTOR_FACTORY.apply(threads), // Modified
+                queueSupplier,                            // Preserved
+                autoRetry                                 // Preserved
+        );
+    }
+
+    public ComponentConfiguration queueCapacity(int capacity) {
+        return new ComponentConfiguration(
+                executorServiceFactory,                      // Preserved
+                () -> new LinkedBlockingQueue<>(capacity),   // Modified
+                autoRetry                                    // Preserved
+        );
+    }
+
+    public ComponentConfiguration autoRetry(boolean enabled) {
+        return new ComponentConfiguration(
+                executorServiceFactory,  // Preserved
+                queueSupplier,           // Preserved
+                enabled                  // Modified
+        );
+    }
+
+    // Accessors
+    public ExecutorServiceFactory executorServiceFactory() {
+        return executorServiceFactory;
+    }
+
+    public boolean autoRetry() {
+        return autoRetry;
+    }
+
+    // Factory method for component creation
+    public ExecutorService createExecutor() {
+        return executorServiceFactory.create(this, queueSupplier.get());
+    }
+}
+```
+
+### Configuration Design Principles
+
+1. **Use `final` class** - Prevent inheritance
+2. **All fields `final`** - Enforce immutability
+3. **Private constructor** - Takes all parameters
+4. **Public default constructor** - Sets sensible defaults with javadoc
+5. **Modification methods** - Return new instances
+6. **Preserve unmodified fields** - When creating new instances
+7. **Fluent naming** - Use `withX()`, `threadCount()`, `enabled()` style
+8. **Document defaults** - Constructor javadoc lists all defaults
+
+### Testing Requirements for Configuration Classes
+
+Every configuration class must have tests verifying:
+
+**1. Default Values**
+```java
+@Test
+void defaultConfigurationHasExpectedValues() {
+    ComponentConfiguration config = new ComponentConfiguration();
+
+    assertTrue(config.autoRetry());
+    ExecutorService executor = config.createExecutor();
+    assertInstanceOf(ThreadPoolExecutor.class, executor);
+
+    ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executor;
+    assertEquals(10, threadPool.getCorePoolSize());
+
+    executor.shutdown();
+}
+```
+
+**2. Modification Methods**
+```java
+@Test
+void threadCountCreatesExecutorWithCorrectSize() {
+    ComponentConfiguration config = new ComponentConfiguration()
+            .threadCount(20);
+
+    ExecutorService executor = config.createExecutor();
+    ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executor;
+    assertEquals(20, threadPool.getCorePoolSize());
+
+    executor.shutdown();
+}
+```
+
+**3. Immutability**
+```java
+@Test
+void configurationIsImmutable() {
+    ComponentConfiguration original = new ComponentConfiguration();
+    ComponentConfiguration modified = original.threadCount(5);
+
+    assertNotSame(original, modified);
+
+    // Verify original unchanged
+    ExecutorService originalExec = original.createExecutor();
+    assertEquals(10, ((ThreadPoolExecutor) originalExec).getCorePoolSize());
+
+    originalExec.shutdown();
+    modified.createExecutor().shutdown();
+}
+```
+
+**4. Fluent Chaining**
+```java
+@Test
+void fluentChainingPreservesAllSettings() {
+    ComponentConfiguration config = new ComponentConfiguration()
+            .threadCount(20)
+            .autoRetry(false)
+            .queueCapacity(2000);
+
+    assertFalse(config.autoRetry());
+
+    ExecutorService executor = config.createExecutor();
+    assertEquals(20, ((ThreadPoolExecutor) executor).getCorePoolSize());
+
+    executor.shutdown();
+}
+```
+
+**5. Null Safety**
+```java
+@Test
+void rejectsNullExecutorService() {
+    ComponentConfiguration config = new ComponentConfiguration();
+
+    //noinspection DataFlowIssue
+    assertThrows(NullPointerException.class,
+                () -> config.customExecutor(null));
+}
+```
+
+**6. Component Creation**
+```java
+@Test
+void createExecutorProducesWorkingInstance() {
+    ComponentConfiguration config = new ComponentConfiguration();
+    ExecutorService executor = config.createExecutor();
+
+    try {
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(
+            () -> "result",
+            executor
+        );
+        assertEquals("result", future.join());
+    } finally {
+        executor.shutdown();
+    }
+}
+```
+
+**7. Multiple Calls Create Different Instances**
+```java
+@Test
+void multipleCallsCreateDifferentInstances() {
+    ComponentConfiguration config = new ComponentConfiguration();
+
+    ExecutorService executor1 = config.createExecutor();
+    ExecutorService executor2 = config.createExecutor();
+
+    assertNotSame(executor1, executor2);
+
+    executor1.shutdown();
+    executor2.shutdown();
+}
+```
+
+---
+
+## 5. Component Lifecycle Patterns
 
 ### Registration Pattern
 

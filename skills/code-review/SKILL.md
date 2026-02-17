@@ -137,13 +137,25 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
    - Verify `@author` tags when refactoring code
    - Confirm `@Nullable`/`@Nonnull` annotations on parameters
    - Look for class-level JavaDoc with examples
+   - Verify constructor javadoc documents defaults (especially for configuration classes)
+   - Check for ambiguous terminology that users might misinterpret
+   - Ensure parameter/return descriptions use lowercase (not sentence-style caps)
 
 3. **Test Coverage**
    - Check if new/modified classes have corresponding test files
    - Look for test methods covering new public methods
    - Flag if tests appear insufficient for 80% coverage
+   - Verify configuration classes have comprehensive tests
 
-4. **Breaking Changes**
+4. **Configuration Class Testing** (if configuration classes modified)
+   - Default values documented and tested
+   - Immutability verified (methods return new instances)
+   - Fluent chaining tested (multiple modifications preserve all settings)
+   - Null rejection tested where applicable
+   - Factory methods produce working components
+   - Resource cleanup in tests (ExecutorServices, connections, etc.)
+
+5. **Breaking Changes**
    - Search for API signature changes
    - Check if deprecation markers exist
    - Verify migration documentation if breaking
@@ -228,7 +240,7 @@ Create a structured report with **concrete fix suggestions** for each issue:
 ## SUGGESTED FIXES
 
 ### FIX #1 (BLOCKING): Add missing @since tag
-**File:** `EventStore.java:456`
+**File:** `ComponentClass.java:456`
 **Severity:** BLOCKING ❌
 **Issue:** New public method without @since tag
 **Why:** All public/protected methods must have @since tags per AF5 standards
@@ -236,21 +248,21 @@ Create a structured report with **concrete fix suggestions** for each issue:
 **Current code:**
 ```java
 /**
- * Reads events from the store.
+ * Processes items from the specified source.
  */
-public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
+public Stream<ResultMessage> process(String identifier) {
 ```
 
 **Suggested fix:**
 ```java
 /**
- * Reads events from the store.
+ * Processes items from the specified source.
  *
- * @param aggregateId the identifier of the aggregate
- * @return stream of domain events for the aggregate
+ * @param identifier the source identifier
+ * @return stream of result messages
  * @since 5.1.0
  */
-public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
+public Stream<ResultMessage> process(String identifier) {
 ```
 
 **To apply:** Say "Apply fix #1" or "Apply all fixes"
@@ -258,19 +270,19 @@ public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
 ---
 
 ### FIX #2 (WARNING): Use AxonConfigurationException
-**File:** `EventStoreConfig.java:123`
+**File:** `ComponentConfig.java:123`
 **Severity:** WARNING ⚠️
 **Issue:** Using generic exception for configuration error
 **Why:** Configuration errors should use AxonConfigurationException for consistency
 
 **Current code:**
 ```java
-throw new IllegalStateException("EventStore not configured");
+throw new IllegalStateException("Component not configured");
 ```
 
 **Suggested fix:**
 ```java
-throw new AxonConfigurationException("EventStore not configured");
+throw new AxonConfigurationException("Component not configured");
 ```
 
 **Impact:** Need to import `org.axonframework.common.AxonConfigurationException`
@@ -279,19 +291,19 @@ throw new AxonConfigurationException("EventStore not configured");
 ---
 
 ### FIX #3 (SUGGESTION): Reduce method visibility
-**File:** `EventStoreImpl.java:789`
+**File:** `ComponentImpl.java:789`
 **Severity:** SUGGESTION 💡
 **Issue:** Public method only used internally
 **Why:** Minimizing public API surface improves maintainability
 
 **Current code:**
 ```java
-public void validateEventSequence(List<DomainEventMessage<?>> events) {
+public void validateInternalState(List<Message> items) {
 ```
 
 **Suggested fix:**
 ```java
-protected void validateEventSequence(List<DomainEventMessage<?>> events) {
+protected void validateInternalState(List<Message> items) {
 ```
 
 **To apply:** Say "Apply fix #3"
@@ -300,20 +312,22 @@ protected void validateEventSequence(List<DomainEventMessage<?>> events) {
 
 ### DOC #1 (BLOCKING): Add Antora documentation
 **Issue:** New feature added without user-facing documentation
-**Required:** Add documentation in `docs/reference-guide/modules/events/pages/`
+**Required:** Add documentation in appropriate `docs/reference-guide/modules/[module]/pages/`
 **Should cover:**
 - Overview of the new feature
 - Usage examples
+- Configuration options
 - Migration notes (if applicable)
 
 I can help create a documentation template. Say "Generate doc template for DOC #1"
 
 ## POSITIVE FINDINGS ✅
 
-- ✅ Excellent test coverage in EventStoreTest.java (all new methods tested)
+- ✅ Excellent test coverage (all new methods tested)
 - ✅ Clear JavaDoc examples provided for complex APIs
 - ✅ Proper null safety with @Nullable/@Nonnull annotations
 - ✅ Good use of AF5 fluent API patterns
+- ✅ Configuration class has comprehensive tests
 
 ## SUMMARY BY SEVERITY
 
@@ -464,24 +478,58 @@ For each issue, provide:
 - Add missing `@author` tags
 - Add missing `@param` or `@return` docs
 - Fix sentence-style capitalization in parameter docs
+- Add constructor javadoc with defaults
+- Clarify ambiguous terminology
 
-**Example:**
+**Example - Method JavaDoc:**
 ```java
 // Before
 /**
- * Reads events.
+ * Processes items.
  */
-public Stream<DomainEventMessage<?>> readEvents(String id) {
+public Stream<ResultMessage> process(String identifier) {
 
 // After
 /**
- * Reads events from the event store.
+ * Processes items from the specified source.
  *
- * @param id the aggregate identifier
- * @return stream of domain events
+ * @param identifier the source identifier
+ * @return stream of result messages
  * @since 5.1.0
  */
-public Stream<DomainEventMessage<?>> readEvents(String id) {
+public Stream<ResultMessage> process(String identifier) {
+```
+
+**Example - Constructor JavaDoc:**
+```java
+// Before
+public ComponentConfiguration() {
+
+// After
+/**
+ * Constructs a default {@code ComponentConfiguration} with the following settings:
+ * <ul>
+ *     <li>Thread count: 10</li>
+ *     <li>Queue capacity: 1000</li>
+ *     <li>Auto-retry: enabled</li>
+ * </ul>
+ */
+public ComponentConfiguration() {
+```
+
+**Example - Terminology Clarity:**
+```java
+// Before (ambiguous - "prefer" could mean priority)
+/**
+ * Indicates whether local handlers are preferred over remote ones.
+ */
+
+// After (clear - explains fallback behavior)
+/**
+ * Indicates whether local handlers are used directly when available, bypassing
+ * remote dispatch. When no local handler is available, the request is dispatched
+ * remotely through the connector.
+ */
 ```
 
 #### 2. Annotation Fixes
@@ -640,6 +688,80 @@ Support these batch commands:
 - "Apply all JavaDoc fixes" - All documentation fixes
 - "Apply fixes #1, #3, #5" - Specific set
 - "Skip fix #2" - Exclude specific fix
+
+## Test Quality Patterns
+
+### Test Object Creation Strategy
+
+When reviewing tests, assess the quality of test object creation:
+
+**Prefer this hierarchy:**
+1. **Real objects** - When straightforward to create
+2. **Stub implementations** - When behavior is simple but construction is complex
+3. **Mocks** - Only when necessary for verification
+
+**Example - Real objects (PREFERRED):**
+```java
+// ✅ Use real message objects with factory methods
+private static QueryMessage queryMessage(QualifiedName name) {
+    return new GenericQueryMessage(new MessageType(name), "test-payload");
+}
+
+// In test:
+QueryMessage query = queryMessage(new QualifiedName("TestQuery"));
+```
+
+**Example - Stub implementations (GOOD):**
+```java
+// ✅ Stub for tracking behavior
+private static class StubConnector implements BusConnector {
+    final Set<QualifiedName> subscriptions = new HashSet<>();
+    final AtomicInteger callCount = new AtomicInteger(0);
+
+    @Override
+    public void subscribe(QualifiedName name) {
+        subscriptions.add(name);
+        callCount.incrementAndGet();
+    }
+}
+```
+
+**Example - Mocks (USE SPARINGLY):**
+```java
+// ⚠️ Only when necessary for complex verification
+BusConnector connector = mock(BusConnector.class);
+verify(connector).subscribe(eq(queryName));
+```
+
+### Resource Cleanup in Tests
+
+**Check that tests clean up resources:**
+- ExecutorServices must be shutdown
+- Temporary files/directories must be deleted
+- Database connections must be closed
+- Network connections must be closed
+
+**Pattern verification:**
+```java
+// ✅ Good - cleanup in finally block
+@Test
+void testExecutorCreation() {
+    ExecutorService executor = component.createExecutor();
+    try {
+        // test assertions
+    } finally {
+        executor.shutdown();
+    }
+}
+
+// ✅ Good - cleanup in @AfterEach
+@AfterEach
+void cleanup() {
+    if (executorService != null) {
+        executorService.shutdown();
+    }
+}
+```
 
 ## Integration with Other Skills
 

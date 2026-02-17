@@ -60,6 +60,24 @@ git diff --name-only | grep -i "migration"
 # Breaking changes without docs → BLOCKING
 ```
 
+### 5. Configuration Class Check (2 minutes)
+```bash
+# Find configuration classes
+git diff --name-only | grep "Configuration\.java$"
+
+# Check for tests
+git diff --name-only | grep "ConfigurationTest\.java$"
+
+# If configuration without tests → WARNING
+```
+
+**If configuration class found, verify:**
+- [ ] Default constructor has javadoc with defaults
+- [ ] Test file exists
+- [ ] Tests verify defaults, immutability, fluent chaining
+- [ ] No ambiguous terminology in javadoc ("prefer", "default", etc.)
+- [ ] Reference guide updated if user-facing
+
 ## Critical Requirements Matrix
 
 | Requirement | Check | Blocking? | Fix Time |
@@ -144,6 +162,39 @@ if (token instanceof MultiSourceToken mst) {
 
 **Check:** Look for cast on next line after instanceof → SUGGESTION
 
+### Test Quality Patterns
+```java
+// ❌ AVOID - Mocking simple objects
+QueryMessage query = mock(QueryMessage.class);
+when(query.type()).thenReturn(mock(MessageType.class));
+
+// ✅ PREFER - Real objects with factory methods
+private static QueryMessage queryMessage(QualifiedName name) {
+    return new GenericQueryMessage(new MessageType(name), "payload");
+}
+
+// ❌ AVOID - Not cleaning up resources
+@Test
+void testExecutor() {
+    ExecutorService executor = component.createExecutor();
+    // Missing: executor.shutdown()
+}
+
+// ✅ PREFER - Proper cleanup
+@Test
+void testExecutor() {
+    ExecutorService executor = component.createExecutor();
+    try {
+        // test
+    } finally {
+        executor.shutdown();
+    }
+}
+```
+
+**Check:** Look for mocked message objects → SUGGESTION
+**Check:** Look for ExecutorService without shutdown → WARNING
+
 ## JavaDoc Quick Patterns
 
 ### Class-Level
@@ -209,6 +260,9 @@ if (token instanceof MultiSourceToken mst) {
 - [ ] Descriptive test method names
 - [ ] Clear assertion messages
 - [ ] `@Nested` classes for organization
+- [ ] Prefer real objects over mocks (use factory methods)
+- [ ] Use stubs for tracking behavior
+- [ ] Resource cleanup (ExecutorServices shutdown)
 
 ### For Documentation Files (.adoc)
 - [ ] Sentence-case headings
