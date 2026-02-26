@@ -33,14 +33,15 @@ This skill is designed to be **helpful and actionable**:
 The skill performs a systematic review in the following order:
 
 1. **Detect Changed Files** - Identifies what has been modified
-2. **Critical Requirements Check** - Verifies must-have items
-3. **API Design Review** - Checks fluent APIs, naming, null safety
-4. **Code Quality Review** - Examines error handling, performance, type safety
-5. **Architecture Review** - Validates patterns and modularity
-6. **Documentation Review** - Verifies Antora docs and JavaDoc
-7. **Test Coverage Review** - Checks tests and quality gates
-8. **Generate Review Report with Fix Suggestions** - Actionable improvements
-9. **Offer to Apply Fixes** - Can apply suggested changes immediately
+2. **Identify Review Hotspots** - Flags areas needing extra human attention
+3. **Critical Requirements Check** - Verifies must-have items
+4. **API Design Review** - Checks fluent APIs, naming, null safety
+5. **Code Quality Review** - Examines error handling, performance, type safety
+6. **Architecture Review** - Validates patterns and modularity
+7. **Documentation Review** - Verifies Antora docs and JavaDoc
+8. **Test Coverage Review** - Checks tests and quality gates
+9. **Generate Review Report with Fix Suggestions** - Actionable improvements
+10. **Offer to Apply Fixes** - Can apply suggested changes immediately
 
 ## Interactive Fix Workflow
 
@@ -99,7 +100,40 @@ git diff --stat
 git diff main...HEAD --name-only
 ```
 
-### Step 2: Read Changed Files
+### Step 2: Identify Review Hotspots
+
+Before diving into detailed review, identify areas requiring extra scrutiny:
+
+```bash
+# Find files with significant changes (>50 lines)
+git diff --stat | awk '$2 > 50 { print $1 " (" $2 " lines)" }'
+
+# Find files with method signature changes
+git diff | grep -B2 -A2 "^[+-].*public.*\(" | grep "^[+-]"
+
+# Find new public classes/interfaces
+git diff | grep "^+public class\|^+public interface"
+
+# Check for files touching multiple concerns
+git diff --name-only | while read f; do
+  echo "$f: $(git diff $f | grep -c '^@@')"
+done | awk '$2 > 5'
+```
+
+**Categorize hotspots by type:**
+1. **Core Logic Changes** - Files central to the PR's purpose
+2. **Structural Changes** - Classes with refactored methods, new fields, inheritance changes
+3. **API Changes** - New public methods, changed signatures, deprecated APIs
+4. **Complex Logic** - Dense conditionals, nested loops, error handling changes
+5. **Cross-cutting Concerns** - Security, threading, transactions, resource management
+
+**For each hotspot, note:**
+- File path and change magnitude
+- Why it's a hotspot (core logic, complexity, API change)
+- Specific areas to focus on
+- Review questions for human attention
+
+### Step 3: Read Changed Files
 
 Read all modified files to understand the changes:
 - Java source files (.java)
@@ -107,7 +141,7 @@ Read all modified files to understand the changes:
 - Documentation files in /docs
 - Configuration files
 
-### Step 3: Apply Review Checklist
+### Step 4: Apply Review Checklist
 
 Use the comprehensive checklist from `../../code-review-checklist.md` to systematically review:
 
@@ -225,7 +259,79 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
     - Check for circular dependencies
     - Verify minimal coupling
 
-### Step 4: Generate Review Report with Actionable Fixes
+15. **Review Hotspots** (Areas requiring extra human attention)
+    Identify classes/areas where code smells are most likely. Flag these for focused review:
+
+    **Hotspot Indicators:**
+    - Classes with significant structural changes (>50 lines modified, method refactoring, field additions)
+    - Core classes essential to the PR's purpose (the "why" of the change)
+    - New public APIs or significant API changes
+    - Complex logic changes (nested conditions, loops, error handling)
+    - Classes handling cross-cutting concerns (security, transactions, threading)
+    - Files with multiple unrelated changes (scope creep indicator)
+    - Large files (>500 lines) with modifications
+
+    **When to Flag as Hotspot:**
+    ```bash
+    # Check for large structural changes
+    git diff --stat | awk '$2 > 50 { print $1 }'
+
+    # Classes with method signature changes
+    git diff | grep -E "^[+-].*public.*\(" | sort | uniq -c
+    ```
+
+    **Report Format:**
+    Each hotspot should include:
+    - File path and reason for flagging
+    - Type of change (structural, core logic, API change)
+    - Specific areas to focus human review on
+    - Why this area is sensitive/risky
+
+16. **Message Handler Wrapper Patterns** (CRITICAL for handler enhancers)
+    - ❌ NEVER use `instanceof` to check handler types → Use `canHandleMessageType()`
+    - ❌ NEVER unwrap handlers unnecessarily → Preserve the wrapper chain
+    - ✅ Use `canHandleMessageType(MessageClass.class)` to check compatibility
+    - ✅ Use `unwrap(SpecificType.class)` only when accessing specific wrapper functionality
+    - ✅ Handler wrappers should NOT implement specific handler interfaces (e.g., `EventHandlingMember`)
+    - ✅ Use `@HasHandlerAttributes` on annotations and check attributes (not annotations directly)
+    - ✅ Accept `MessageHandlingMember` in method signatures, not specific handler types
+
+    **Common Issues to Flag:**
+    ```java
+    // ❌ WRONG - instanceof breaks with generic wrappers
+    if (handler instanceof EventHandlingMember) { ... }
+
+    // ❌ WRONG - unwrapping loses wrapper chain behavior
+    EventHandlingMember unwrapped = handler.unwrap(EventHandlingMember.class).orElseThrow();
+    registerHandler(unwrapped);  // Lost all wrapper behavior!
+
+    // ❌ WRONG - wrapper implements specific handler interface
+    class MyWrapper<T> extends WrappedMessageHandlingMember<T>
+            implements EventHandlingMember<T> { ... }
+
+    // ✅ CORRECT - canHandleMessageType works through wrappers
+    if (!handler.canHandleMessageType(EventMessage.class)) { ... }
+
+    // ✅ CORRECT - preserve wrapper chain
+    registerHandler(handler);  // Pass full chain, unwrap only when needed
+
+    // ✅ CORRECT - wrapper doesn't implement specific interfaces
+    class MyWrapper<T> extends WrappedMessageHandlingMember<T> { ... }
+    ```
+
+    **Search patterns to detect issues:**
+    ```bash
+    # Find instanceof checks on handlers (likely wrong)
+    grep -r "instanceof.*HandlingMember" --include="*.java"
+
+    # Find handler unwrapping (review if wrapper chain is preserved)
+    grep -r "\.unwrap(.*HandlingMember\.class)" --include="*.java"
+
+    # Find wrappers that implement specific handler interfaces (likely wrong)
+    grep -A2 "extends WrappedMessageHandlingMember" --include="*.java" | grep "implements.*HandlingMember"
+    ```
+
+### Step 5: Generate Review Report with Actionable Fixes
 
 Create a structured report with **concrete fix suggestions** for each issue:
 
@@ -235,6 +341,7 @@ Create a structured report with **concrete fix suggestions** for each issue:
 ## Summary
 - Files Changed: X
 - Issues Found: Y total (Z blocking, W warnings, V suggestions)
+- Review Hotspots: N (areas needing extra human attention)
 - Fixes Available: [Number of automated fixes ready]
 
 ## SUGGESTED FIXES
@@ -321,6 +428,39 @@ protected void validateInternalState(List<Message> items) {
 
 I can help create a documentation template. Say "Generate doc template for DOC #1"
 
+## REVIEW HOTSPOTS 🔥
+
+Areas where code smells or design issues are most likely. Human reviewers should focus extra attention here:
+
+### HOTSPOT #1: Core Business Logic Change
+**File:** `AnnotatedEventHandlingComponent.java` (124 lines changed)
+**Type:** Structural + Core Logic
+**Why flagged:** Central to this PR's handler wrapper chain preservation fix
+**Focus areas:**
+- Method `initializeHandlersBasedOnModel()` - Changed from unwrapping to preserving wrapper chain
+- Method `registerHandler()` - Signature changed from `EventHandlingMember` to `MessageHandlingMember`
+- Verify wrapper chain is actually preserved through the call stack
+- Check if downstream code expects `EventHandlingMember` specifically
+
+**Review questions:**
+- Are there other callers that might be affected by the signature change?
+- Does the new approach handle edge cases (empty handlers, null wrappers)?
+- Is error handling appropriate for the new flow?
+
+### HOTSPOT #2: New Public API Surface
+**File:** `HandlerAttributes.java` (2 constants added)
+**Type:** API Addition
+**Why flagged:** New public constants affect handler attribute contracts
+**Focus areas:**
+- Are constant names following existing conventions?
+- Should these be documented in migration guide?
+- Are tests covering attribute usage through the wrapper chain?
+
+**Review questions:**
+- Could these attributes conflict with existing ones?
+- Is the naming consistent with other `HandlerAttributes` constants?
+- Are there other places that should use these attributes?
+
 ## POSITIVE FINDINGS ✅
 
 - ✅ Excellent test coverage (all new methods tested)
@@ -341,6 +481,12 @@ I can help create a documentation template. Say "Generate doc template for DOC #
 **SUGGESTIONS (nice to have):** 1
 - FIX #3: Reduce method visibility
 
+**REVIEW HOTSPOTS (human attention needed):** 2
+- HOTSPOT #1: AnnotatedEventHandlingComponent.java - Core logic change
+- HOTSPOT #2: HandlerAttributes.java - API surface expansion
+
+> 🔥 **Hotspots** flag areas where code smells are most likely. These aren't necessarily bugs, but deserve extra scrutiny from human reviewers due to complexity, structural changes, or being core to the PR's purpose.
+
 ## QUICK ACTIONS
 
 To fix all issues quickly:
@@ -348,6 +494,7 @@ To fix all issues quickly:
 - "Apply blocking fixes only" - Applies FIX #1
 - "Generate doc template for DOC #1" - Creates documentation outline
 - "Show me FIX #2 in detail" - Explains specific fix
+- "Explain HOTSPOT #1" - Provides more context on a hotspot
 
 ## FILES REVIEWED
 [List with assessment]
@@ -612,7 +759,88 @@ if (token instanceof MultiSourceToken mst) {
 }
 ```
 
-#### 7. Fluent API Pattern Fixes
+#### 7. Handler Wrapper Pattern Fixes
+**Easy to automate:** YES (Common in HandlerEnhancerDefinition implementations)
+- Replace `instanceof` checks with `canHandleMessageType()`
+- Remove unnecessary unwrapping that loses wrapper chain
+- Remove specific handler interface implementations from wrappers
+
+**Example 1 - Type Check:**
+```java
+// Before
+@Override
+public <T> MessageHandlingMember<T> wrapHandler(@Nonnull MessageHandlingMember<T> original) {
+    if (original instanceof EventHandlingMember) {
+        return new MyWrapper<>(original);
+    }
+    return original;
+}
+
+// After
+@Override
+public <T> MessageHandlingMember<T> wrapHandler(@Nonnull MessageHandlingMember<T> original) {
+    if (!original.canHandleMessageType(EventMessage.class)) {
+        return original;
+    }
+    return new MyWrapper<>(original);
+}
+```
+
+**Example 2 - Preserve Wrapper Chain:**
+```java
+// Before
+private void initializeHandlers() {
+    model.getUniqueHandlers(targetClass, EventMessage.class)
+         .forEach(handler -> {
+             // Loses wrapper chain!
+             EventHandlingMember<T> eventHandler = handler.unwrap(EventHandlingMember.class)
+                     .orElseThrow(...);
+             registerHandler(eventHandler);
+         });
+}
+
+// After
+private void initializeHandlers() {
+    model.getUniqueHandlers(targetClass, EventMessage.class)
+         .forEach(handler -> {
+             // Preserves wrapper chain
+             if (!handler.canHandleMessageType(EventMessage.class)) {
+                 throw new IllegalStateException(...);
+             }
+             registerHandler(handler);  // Pass full chain
+         });
+}
+
+// Update method signature
+private void registerHandler(MessageHandlingMember<? super T> handler) {  // Not EventHandlingMember
+    // Can unwrap to specific types when needed
+    Optional<SequencingPolicy> policy = handler.unwrap(SequencingPolicyMember.class)
+                                               .map(SequencingPolicyMember::sequencingPolicy);
+    // ...
+}
+```
+
+**Example 3 - Wrapper Class Definition:**
+```java
+// Before
+private static class MyWrapper<T> extends WrappedMessageHandlingMember<T>
+        implements EventHandlingMember<T> {  // Don't implement specific interfaces
+    // ...
+}
+
+// After
+private static class MyWrapper<T> extends WrappedMessageHandlingMember<T> {
+    // No need to implement EventHandlingMember - unwrap() handles it
+    // ...
+}
+```
+
+**Impact:**
+- May need to update method signatures from `EventHandlingMember` to `MessageHandlingMember`
+- May need to add `import org.axonframework.messaging.eventhandling.EventMessage;`
+- Tests using `instanceof` checks should be updated to use `unwrap()` pattern
+
+#### 8. Fluent API Pattern Fixes
 **Complex:** Requires significant refactoring
 - Don't auto-fix, but provide detailed guidance
 
