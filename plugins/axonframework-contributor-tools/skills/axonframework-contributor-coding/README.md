@@ -1,10 +1,15 @@
-# Axon Framework Core Coding Skill
+# Axon Framework Contributor Coding Skill
 
-Comprehensive guide for developing Axon Framework core infrastructure components, focusing on API design patterns, component lifecycle, and framework-specific conventions.
+Comprehensive guide for developing Axon Framework and Axoniq Framework core infrastructure components, focusing on API design patterns, component lifecycle, and framework-specific conventions.
 
 ## Purpose
 
-This skill is for **developing Axon Framework itself**, not for using it in applications. It documents the design patterns, principles, and conventions used when building infrastructure components like buses, stores, handlers, and other framework internals.
+This skill is for **contributing to the Axon/Axoniq frameworks themselves**, not for using them in applications. It covers both:
+
+- **Axon Framework** (`org.axonframework`) — Apache 2.0 open source, foundational building blocks
+- **Axoniq Framework** (`io.axoniq.framework`) — Commercial (free for development), adds DLQ, PostgreSQL, distributed messaging, Spring Boot auto-configuration
+
+Both frameworks share identical coding conventions. Axoniq Framework builds on top of Axon Framework.
 
 ## What's Covered
 
@@ -41,7 +46,7 @@ This skill is for **developing Axon Framework itself**, not for using it in appl
 ## Usage
 
 ```bash
-/axonframework-core-coding
+/axonframework-contributor-coding
 ```
 
 This will load the skill and make it available during your coding session. Use it when:

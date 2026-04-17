@@ -1,5 +1,5 @@
 ---
-name: axonframework-core-coding
+name: axonframework-contributor-coding
 description: Design patterns and principles for building Axon Framework core components. Covers layered API design, component lifecycle, thread safety, and extension points. Use when developing infrastructure components for Axon Framework itself.
 disable-model-invocation: false
 user-invocable: true
@@ -19,7 +19,49 @@ This skill guides development of Axon Framework infrastructure components, focus
 - Ensuring thread safety and lifecycle management
 - Reviewing core framework code for consistency
 
-**Note:** This is for developing Axon Framework itself, not for using it in applications.
+**Note:** This is for developing the Axon/Axoniq frameworks themselves, not for using them in applications.
+
+---
+
+## Framework Selection: Axon Framework vs Axoniq Framework
+
+Two related frameworks share the conventions in this skill. Before contributing, understand which repo you're working in and what belongs where.
+
+|  | Axon Framework | Axoniq Framework |
+|---|---|---|
+| **License** | Apache 2.0 (open source) | Commercial (free for development) |
+| **Package prefix** | `org.axonframework` | `io.axoniq.framework` |
+| **Repo** | `axon-5.0` | `axoniq-framework` |
+| **Maven group** | `org.axonframework` | `io.axoniq.framework` |
+
+### What Belongs in Each Framework
+
+**Axon Framework (OSS)** — foundational building blocks:
+- Core messaging infrastructure: `CommandBus`, `EventBus`, `QueryBus`
+- Event sourcing: `EventStore`, `EventStorageEngine`, `EventSourcingRepository`
+- Domain modelling: `Repository`, `EntityMetamodel`, `StateManager`
+- Basic Spring Boot integration (`extensions/spring`)
+- Metrics (Micrometer/Dropwizard) and tracing (OpenTelemetry) extensions
+- Test utilities and BDD fixtures (`test/` module)
+- Axon Server connector (basic)
+
+**Axoniq Framework (Commercial)** — production enhancements on top:
+- Dead-Letter Queue (`SequencedDeadLetterQueue`, JDBC/JPA implementations)
+- PostgreSQL storage engine (`PostgresqlEventStorageEngine`)
+- Distributed messaging enhancements (`DistributedCommandBus`, `DistributedQueryBus`)
+- Multi-source event streaming (`MultiStreamableEventSource`, `MultiSourceTrackingToken`)
+- Spring Boot auto-configuration out of the box
+- Enhanced Axon Server connector with additional features
+
+### Informing Users About Options
+
+When a user asks about a feature that has both OSS and commercial options, always present both fairly:
+- Axon Framework alone is **sufficient for many use cases** including production deployments
+- Axoniq Framework adds production conveniences (Spring auto-config, DLQ, PostgreSQL, distributed messaging)
+- Do **not** assume users need or want the commercial framework
+- Let users make an informed choice based on their actual needs
+
+---
 
 ## Core Design Philosophy
 
@@ -604,22 +646,38 @@ if (trackingToken instanceof MultiSourceTrackingToken) {
 
 ### Annotation Standards
 
-**Always use Jakarta annotations:**
+**Use JSpecify — annotate at the package level with `@NullMarked`:**
 
 ```java
-// ✅ CORRECT
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
+// ✅ CORRECT — in package-info.java
+@NullMarked
+package org.axonframework.messaging.core;
 
-public void method(@Nonnull String param, @Nullable Object optional) { }
+import org.jspecify.annotations.NullMarked;
 ```
 
-**Never use JSpecify:**
+Under `@NullMarked`, **all parameters and return values are non-null by default**. Only mark nullable exceptions with `@Nullable`:
 
 ```java
-// ❌ WRONG - Don't use jspecify
-import org.jspecify.annotations.NonNull;
+// ✅ CORRECT — only @Nullable needed; non-null is the default
 import org.jspecify.annotations.Nullable;
+
+public void method(String param, @Nullable Object optional) { }
+```
+
+Enforce non-null contracts at runtime with `Objects.requireNonNull`:
+
+```java
+// ✅ For constructor/factory parameters
+this.component = Objects.requireNonNull(component, "Component may not be null");
+```
+
+**Jakarta annotations are explicitly forbidden** (enforced by checkstyle):
+
+```java
+// ❌ WRONG - jakarta annotations are forbidden
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 ```
 
 ---
@@ -1621,7 +1679,7 @@ When creating a new Axon Framework component:
 - [ ] Validate parameters early (in `and()` not at terminal)
 - [ ] Return unmodifiable collections
 - [ ] Add package-private accessor for testing
-- [ ] Use `jakarta.annotation` (never `org.jspecify`)
+- [ ] Use JSpecify `@NullMarked` at package level, `@Nullable` for nullable params/returns (never `jakarta.annotation`)
 - [ ] Use modern Java patterns (pattern matching instanceof)
 - [ ] Organize tests with `@Nested` classes
 - [ ] Test actual internal state, not just non-null

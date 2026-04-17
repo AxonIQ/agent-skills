@@ -1,6 +1,8 @@
-# Code Review Skill
+# Axon Framework Contributor Review Skill
 
-Comprehensive code review skill for Axon Framework that systematically checks pull requests and code changes against AF5 standards.
+Comprehensive code review skill for Axon Framework and Axoniq Framework contributors. Systematically checks pull requests against AF5 standards and is aware of the feature split between the two frameworks.
+
+Both frameworks share identical coding conventions. The skill identifies which framework is being reviewed and checks that features are placed in the appropriate repo.
 
 ## Files in This Skill
 
@@ -62,7 +64,7 @@ This will:
 
 ### API Design
 - ✅ Fluent API patterns (AF5 style, not AF4 builders)
-- ✅ Null safety annotations (`@Nullable`, `@Nonnull`)
+- ✅ JSpecify `@Nullable` on nullable params/returns; `@NullMarked` on packages (Jakarta annotations forbidden)
 - ✅ Method visibility minimized
 - ✅ Naming conventions followed
 
@@ -108,7 +110,7 @@ Based on analysis of 20+ PRs, the skill specifically looks for:
 2. Missing Antora documentation updates
 3. Missing `@author` credits when refactoring
 4. Insufficient test coverage
-5. Missing `@Nullable`/`@Nonnull` annotations
+5. Jakarta `@Nonnull`/`@Nullable` instead of JSpecify (jakarta is forbidden)
 6. Use of generic exceptions instead of `AxonConfigurationException`
 7. Methods that could have more restrictive visibility
 8. `LinkedList` usage where `LinkedHashMap` would be better

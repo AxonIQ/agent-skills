@@ -1,0 +1,19 @@
+{
+  "name": "axonframework-contributor-tools",
+  "description": "Tools for contributors to the Axon Framework project: comprehensive code reviews against AF5 standards, core coding patterns, and framework infrastructure design guidelines. Not intended for application developers using Axon Framework.",
+  "version": "1.2.0",
+  "author": {
+    "name": "Axon Framework Team"
+  },
+  "keywords": [
+    "axon",
+    "framework",
+    "contributor",
+    "framework-development",
+    "code-review",
+    "event-sourcing",
+    "cqrs",
+    "ddd"
+  ],
+  "license": "Apache-2.0"
+}

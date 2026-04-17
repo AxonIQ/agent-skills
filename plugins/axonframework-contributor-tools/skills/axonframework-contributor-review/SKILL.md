@@ -1,6 +1,6 @@
 ---
-name: code-review
-description: Performs comprehensive code reviews using Axon Framework standards. Analyzes changed files, checks documentation, verifies test coverage, and ensures compliance with AF5 patterns. Provides actionable fix suggestions that can be applied immediately.
+name: axonframework-contributor-review
+description: For Axon Framework contributors. Performs comprehensive code reviews against AF5 contributor standards: analyzes changed files, checks Antora documentation, verifies test coverage, and ensures compliance with AF5 patterns. Provides actionable fix suggestions that can be applied immediately.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Bash, Task, Edit, Write
@@ -84,6 +84,26 @@ Skill: ✅ Applied fixes #2 and #3
 ```
 
 ## Review Process
+
+### Step 0: Identify Framework Context
+
+Before anything else, determine which framework is being reviewed:
+
+```bash
+# Check package names to identify the framework
+grep -r "^package " --include="*.java" | head -5
+```
+
+| Package prefix | Framework | License |
+|---|---|---|
+| `org.axonframework` | Axon Framework | Apache 2.0 (OSS) |
+| `io.axoniq.framework` | Axoniq Framework | Commercial |
+
+**Feature boundary check** — flag if a change seems misplaced:
+- Core messaging, event sourcing, modelling, basic Spring, test utilities → Axon Framework (OSS)
+- DLQ (JDBC/JPA), PostgreSQL storage, distributed messaging, Spring Boot auto-config → Axoniq Framework
+
+Both frameworks share the same coding conventions. The review checklist applies equally to both.
 
 ### Step 1: Identify Changed Files
 
@@ -169,11 +189,12 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
 2. **JavaDoc Completeness**
    - Check for missing `@since` tags on new public/protected methods
    - Verify `@author` tags when refactoring code
-   - Confirm `@Nullable`/`@Nonnull` annotations on parameters
+   - Confirm `@Nullable` annotations on nullable parameters/returns (under `@NullMarked`, non-null is the default)
+   - Flag any use of Jakarta `@Nonnull`/`@Nullable` — these are **forbidden** by checkstyle
    - Look for class-level JavaDoc with examples
    - Verify constructor javadoc documents defaults (especially for configuration classes)
    - Check for ambiguous terminology that users might misinterpret
-   - Ensure parameter/return descriptions use lowercase (not sentence-style caps)
+   - Ensure `@param`/`@return`/`@throws` tags use **fragment style** (lowercase, no trailing period)
 
 3. **Test Coverage**
    - Check if new/modified classes have corresponding test files
@@ -203,8 +224,9 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
    - Reference: `../axon-framework-5-patterns/SKILL.md`
 
 6. **Null Safety**
-   - Check for null checks before dereferencing
-   - Verify `@Nullable`/`@Nonnull` annotations present
+   - Check for null checks before dereferencing (use `Objects.requireNonNull` at method/constructor entry)
+   - Verify `@Nullable` on nullable parameters/return types (JSpecify; non-null is the default under `@NullMarked`)
+   - Flag any Jakarta `@Nonnull`/`@Nullable` — use JSpecify instead
    - Look for potential NPE vulnerabilities
 
 7. **Method Visibility**
@@ -681,19 +703,31 @@ public ComponentConfiguration() {
 
 #### 2. Annotation Fixes
 **Easy to automate:** YES
-- Add `@Nullable`/`@Nonnull` annotations
-- Fix wrong annotation library (jspecify → jakarta)
+- Add `@Nullable` for parameters/return values that may be null
+- Verify `package-info.java` has `@NullMarked` (non-null is the default under it)
+- Fix wrong annotation library (jakarta → jspecify — jakarta is **forbidden** by checkstyle)
 
-**Example:**
+**Example — missing @Nullable:**
 ```java
-// Before
+// Before (nullable parameter not marked)
 public void process(String id, Object payload) {
 
-// After
-public void process(@Nonnull String id, @Nullable Object payload) {
+// After (JSpecify — only @Nullable needed, non-null is default under @NullMarked)
+public void process(String id, @Nullable Object payload) {
 ```
 
-**Impact:** May need to add `import jakarta.annotation.Nonnull;`
+**Impact:** May need to add `import org.jspecify.annotations.Nullable;` and ensure `package-info.java` has `@NullMarked`.
+
+**Example — wrong annotation library:**
+```java
+// ❌ WRONG — jakarta annotations are forbidden
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+// ✅ CORRECT — use JSpecify
+import org.jspecify.annotations.Nullable;
+// (non-null is default under @NullMarked — no @Nonnull needed)
+```
 
 #### 3. Exception Type Fixes
 **Easy to automate:** YES
@@ -1208,7 +1242,7 @@ Based on analysis of 20+ PRs, these are checked most frequently:
 2. ✅ `@author` tags when refactoring (COMMON)
 3. ✅ Antora documentation in `/docs` (CRITICAL)
 4. ✅ Test coverage ≥ 80% (ENFORCED)
-5. ✅ `@Nullable`/`@Nonnull` annotations (COMMON)
+5. ✅ JSpecify `@Nullable` on nullable params/returns; `@NullMarked` on packages (Jakarta forbidden)
 6. ✅ Use `AxonConfigurationException` not generic exceptions
 7. ✅ Method visibility minimized
 8. ✅ No `LinkedList` for lookup-heavy operations
