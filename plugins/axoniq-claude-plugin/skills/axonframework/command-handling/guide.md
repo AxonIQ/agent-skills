@@ -67,7 +67,7 @@ events.append(List.of(new CourseCreated(id, name, capacity)), Metadata.with("sou
 
 ### Naming and routing
 
-By default the command name is derived from the payload type's fully qualified class name. Override it with the `commandName` attribute:
+By default the command name is derived from the payload type's fully qualified class name. Override it with the `commandName` attribute on `@CommandHandler`:
 
 ```java
 @CommandHandler(commandName = "faculty.CreateCourse")
@@ -75,6 +75,17 @@ void handle(CreateCourse command, EventAppender events) { ... }
 ```
 
 Commands are routed to the handler whose registered name matches the command message's `QualifiedName`. Within a single command bus there can be exactly one handler per command name.
+
+For distributed routing and for `@InjectEntity` to resolve entity IDs, annotate the command payload class with `@Command(routingKey = "fieldName")`:
+
+```java
+import org.axonframework.messaging.commandhandling.annotation.Command;
+
+@Command(routingKey = "courseId")
+public record EnrollStudent(String courseId, String studentId) {}
+```
+
+The `routingKey` specifies which field the command bus uses to route the command to the correct node in a distributed setup, and which field `@InjectEntity` uses by default to identify the entity to load.
 
 ---
 
@@ -134,14 +145,13 @@ String enrollmentId = commands.sendAndWait(cmd, String.class);
 Use `CommandHandlingModule` to register a class whose methods carry `@CommandHandler`:
 
 ```java
-MessagingConfigurer.create()
-    .commands(cmd -> cmd
-        .module(CommandHandlingModule
-            .named("CourseCommands")
-            .commandHandlers()
-            .autodetectedCommandHandlingComponent(c -> new CourseCommandHandler()))
-    )
-    .build();
+var configurer = MessagingConfigurer.create();
+configurer.registerCommandHandlingModule(
+    CommandHandlingModule
+        .named("CourseCommands")
+        .commandHandlers()
+        .autodetectedCommandHandlingComponent(c -> new CourseCommandHandler())
+);
 ```
 
 `autodetectedCommandHandlingComponent` wraps the object in `AnnotatedCommandHandlingComponent`, which scans for `@CommandHandler` methods and registers each one.

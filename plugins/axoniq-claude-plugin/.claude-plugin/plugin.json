@@ -1,7 +1,7 @@
 {
   "name": "axoniq-claude-plugin",
   "description": "Skills for developers building applications with Axon Framework 5: command handling, DCB-style decision models, event store primitives, testing, and configuration.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Axon Framework Team"
   },

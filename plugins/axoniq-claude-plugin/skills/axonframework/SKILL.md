@@ -65,12 +65,15 @@ When working on a topic, read the corresponding guide file. The guides contain f
 
 | Topic | Guide file | Framework |
 |---|---|---|
+| Maven dependencies | `dependencies/guide.md` | AF5 + AxonIQ Framework |
 | Stateless command handling | `command-handling/guide.md` | AF5 (open source) |
 | Stateful command handling (DCB) | `command-decision-models/guide.md` | AF5 (open source) |
+| Message annotations reference | `message-annotations/guide.md` | AF5 (open source) |
 | Event store API reference | `event-store-primitives/guide.md` | AF5 (open source) |
 | Event handling and projections | `event-handling/guide.md` | AF5 (open source) |
 | Query handling | `query-handling/guide.md` | AF5 (open source) |
-| Application configuration | `configuration/guide.md` | AF5 + AxonIQ Framework options |
+| Application configuration (plain Java) | `configuration/guide.md` | AF5 + AxonIQ Framework options |
+| Spring Boot configuration | `spring-configuration/guide.md` | AF5 Spring extension |
 | Interceptors | `interceptors/guide.md` | AF5 (open source) |
 | Testing | `testing/guide.md` | AF5 (open source) |
 | Distributed messaging | `distributed-messaging/guide.md` | AxonIQ Framework (commercial) |
@@ -86,12 +89,15 @@ Read: skills/axonframework/command-decision-models/guide.md
 
 ## Quick orientation
 
+- Start with **`dependencies/guide.md`** when setting up a new project or adding a module — it covers all Maven/Gradle coordinates and versions.
 - Start with **`command-handling/guide.md`** for any command handler that does not need to read past state.
 - Start with **`command-decision-models/guide.md`** for any command handler that must validate against prior events. This is the more common case.
+- Use **`message-annotations/guide.md`** as a complete reference for any annotation's attributes (`@Command`, `@Event`, `@Query`, `@CommandHandler`, `@EventHandler`, `@QueryHandler`, `@InjectEntity`, `@EventSourcedEntity`, `@EventTag`, etc.).
 - Use **`event-store-primitives/guide.md`** alongside the DCB guide when you need exact API details for sourcing or append conditions.
 - Use **`event-handling/guide.md`** when building projections, reactions, or configuring event processors.
 - Use **`query-handling/guide.md`** when serving read requests or pushing live updates via subscription queries.
-- Use **`configuration/guide.md`** when wiring up a new application or adding components to an existing one. Includes event store options (in-memory, PostgreSQL) and dead letter queue configuration.
+- Use **`configuration/guide.md`** when wiring up a plain Java application or adding components to an existing one. Includes event store options (in-memory, PostgreSQL) and dead letter queue configuration.
+- Use **`spring-configuration/guide.md`** when working on a Spring Boot application. Covers what is auto-detected, `@EventSourced`, `@Namespace`, `EventProcessorDefinition`, and `application.yml` processor properties.
 - Use **`interceptors/guide.md`** when adding cross-cutting behaviour (validation, logging, retry, correlation propagation).
 - Use **`testing/guide.md`** when writing or debugging tests for any of the above.
 - Use **`distributed-messaging/guide.md`** when distributing command or query load across multiple application nodes (requires AxonIQ Framework).

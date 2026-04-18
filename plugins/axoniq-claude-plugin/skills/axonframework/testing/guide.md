@@ -12,23 +12,22 @@ Test class conventions (from CLAUDE.md):
 
 ## Setup
 
+### Stateless command handlers
+
 ```java
-class EnrolmentCommandHandlerTest {
+class CourseCommandHandlerTest {
 
     AxonTestFixture fixture;
 
     @BeforeEach
     void setUp() {
         var configurer = MessagingConfigurer.create();
-        // Register your command handlers, event handlers, etc.
-        configurer.commands(cmd -> cmd.module(
-            CommandHandlingModule.named("enrolment")
+        configurer.registerCommandHandlingModule(
+            CommandHandlingModule.named("course")
                 .commandHandlers()
-                .autodetectedCommandHandlingComponent(c -> new EnrolmentCommandHandler(
-                    c.getComponent(EventStore.class)
-                ))
-        ));
-        fixture = AxonTestFixture.with(configurer);
+                .autodetectedCommandHandlingComponent(c -> new CourseCommandHandler())
+        );
+        fixture = AxonTestFixture.with(configurer, c -> c.disableAxonServer());
     }
 
     @AfterEach
@@ -37,6 +36,56 @@ class EnrolmentCommandHandlerTest {
     }
 }
 ```
+
+### Command-centric stateful handlers (DCB with `@EventSourcedEntity`)
+
+When the command handler uses `@InjectEntity` to receive event-sourced models, register each entity type explicitly via the component registry **before** registering the command handler:
+
+```java
+class EnrolmentCommandHandlerTest {
+
+    AxonTestFixture fixture;
+
+    @BeforeEach
+    void setUp() {
+        var configurer = MessagingConfigurer.create();
+
+        // Register event-sourced entity models with the StateManager
+        configurer.componentRegistry(cr -> cr.registerModule(
+            EventSourcedEntityModule.autodetected(String.class, CourseState.class)
+        ));
+
+        // Register the command handler (no EventStore injection needed)
+        configurer.registerCommandHandlingModule(
+            CommandHandlingModule.named("enrolment")
+                .commandHandlers()
+                .autodetectedCommandHandlingComponent(c -> new EnrolmentCommandHandler())
+        );
+
+        fixture = AxonTestFixture.with(configurer, c -> c.disableAxonServer());
+    }
+
+    @AfterEach
+    void tearDown() {
+        fixture.stop();
+    }
+}
+```
+
+For cross-boundary handlers that inject multiple entity types, register each:
+
+```java
+configurer.componentRegistry(cr -> cr.registerModule(
+    EventSourcedEntityModule.autodetected(UUID.class, AuctionState.class)
+));
+configurer.componentRegistry(cr -> cr.registerModule(
+    EventSourcedEntityModule.autodetected(String.class, WalletState.class)
+));
+```
+
+`EventSourcedEntityModule.autodetected(IdType.class, EntityType.class)` reads the `@EventSourcedEntity` annotation to configure sourcing criteria, entity factory, and ID resolver automatically. The `IdType` must match the Java type of the routing-key field on commands targeting that entity.
+
+Always call `.disableAxonServer()` in the `AxonTestFixture.with(configurer, customization)` customizer to prevent the test from trying to connect to an Axon Server instance.
 
 ---
 
@@ -61,27 +110,33 @@ fixture.given()
        .noPriorActivity()
 ```
 
-### Seeding tagged events (DCB tests)
+### Seeding tagged events (DCB / `@InjectEntity` tests)
 
-Command handlers that use `EventStoreTransaction` source events by tag. Seed tagged events so the handler finds the right state:
+Pass **plain event payloads** to `fixture.given().event(...)`. The fixture's internal `StorageEngineBackedEventStore` runs each payload through `AnnotationBasedTagResolver`, which reads `@EventTag` annotations on the payload class and attaches the correct tags automatically — exactly as a real append would.
 
 ```java
-import org.axonframework.messaging.eventstreaming.Tag;
-import org.axonframework.eventsourcing.eventstore.GenericTaggedEventMessage;
-
-var courseCreated = new CourseCreated("course-1", "DDD", 30);
-var tagged = new GenericTaggedEventMessage<>(
-        GenericEventMessage.asEventMessage(courseCreated),
-        Set.of(new Tag("course", "course-1")));
-
 fixture.given()
-       .event(tagged)
+       .event(new CourseCreated("course-1", "DDD", 30))
        .when()
        .command(new EnrollStudent("course-1", "student-A"))
        ...
 ```
 
-The tags must match what `@EventTag` on your event payload would have produced at real append time.
+As long as `CourseCreated` carries `@EventTag`-annotated fields, the tags are resolved and stored. When `@InjectEntity` sources events by tag (e.g. `Tag.of("course", "course-1")`), the events are found and the entity state is built correctly.
+
+Events tagged with multiple keys (e.g., a `BidPlaced` tagged with both `auction` and `user`) need no special treatment — all `@EventTag` fields are resolved in one pass.
+
+#### Pitfall: do not pass `GenericTaggedEventMessage` to `fixture.given().event(...)`
+
+```java
+// WRONG — tags are silently lost; entity sourcing finds nothing
+fixture.given()
+       .event(tagged(new CourseCreated("course-1", "DDD", 30), "course", "course-1"))
+```
+
+`TaggedEventMessage<E>` does **not** extend `EventMessage`. When the fixture receives a `GenericTaggedEventMessage` as the payload argument, its `payload instanceof EventMessage` check is `false`, so the entire tagged message object is treated as an opaque payload and wrapped in a new `GenericEventMessage` with `GenericTaggedEventMessage.class` as its type. The event is stored with no meaningful tags. When `@InjectEntity` later sources events by tag, it finds nothing, the entity stays in its initial state, and the command handler behaves as if no prior events existed.
+
+**Always pass plain event payload objects.** Manual tag construction is neither needed nor correct.
 
 ---
 
@@ -274,7 +329,7 @@ class EnrolmentCommandHandlerTest {
         void publishesStudentEnrolledEvent() {
             // given
             fixture.given()
-                   .event(tagged(new CourseCreated("c1", "DDD", 30), "course", "c1"));
+                   .event(new CourseCreated("c1", "DDD", 30));
             // when / then
             fixture.when()
                    .command(new EnrollStudent("c1", "s1"))
@@ -286,8 +341,8 @@ class EnrolmentCommandHandlerTest {
         void rejectsWhenCourseFull() {
             // given
             fixture.given()
-                   .event(tagged(new CourseCreated("c1", "DDD", 1), "course", "c1"))
-                   .event(tagged(new StudentEnrolled("c1", "s-existing"), "course", "c1"));
+                   .event(new CourseCreated("c1", "DDD", 1))
+                   .event(new StudentEnrolled("c1", "s-existing"));
             // when / then
             fixture.when()
                    .command(new EnrollStudent("c1", "s-new"))
