@@ -100,28 +100,30 @@ public class CourseState { ... }
 
 ---
 
-## `@Namespace` — routing event handlers to processors
+## Processor assignment — default naming and custom selectors
 
-`@Namespace` marks a class (or its package) so that `EventHandlerSelector.matchesNamespaceOnType()` can assign it to the matching processor.
+By default, `DefaultProcessorModuleFactory` assigns each event handler to a processor named after the **Java package** of the handler class. For example, a `@Component` in package `com.example.orders.projection` is assigned to a processor named `com.example.orders.projection`.
+
+To override, declare an `EventProcessorDefinition` bean with a custom selector based on package name or bean name:
 
 ```java
-import org.axonframework.messaging.core.annotation.Namespace;
+@Configuration
+class ProcessorConfig {
 
-@Namespace("courses")
-@Component
-class CourseProjection {
-
-    @EventHandler
-    void on(CourseCreated event) { ... }
+    @Bean
+    EventProcessorDefinition ordersProcessor() {
+        return EventProcessorDefinition.pooledStreaming("orders-processor")
+                .assigningHandlers(descriptor ->
+                        descriptor.beanType() != null
+                        && descriptor.beanType().getPackageName().startsWith("com.example.orders"))
+                .notCustomized();
+    }
 }
 ```
 
-Place on:
-- A class → applies to that class
-- `package-info.java` → applies to all classes in the package
-- A module descriptor → applies to all classes in the module
+> **Note**: `@Namespace` is **not available in AF5.0**. Do not attempt to import `org.axonframework.messaging.core.annotation.Namespace` — that package does not exist. Use the package-based selector approach above, or configure processor assignment via `application.yml` (see below).
 
-The namespace value is matched against processor definitions that use `pooledStreamingMatching(name)` or `subscribingMatching(name)` (see below).
+The `pooledStreamingMatching(name)` / `subscribingMatching(name)` factory methods use `EventHandlerSelector.matchesNamespaceOnType(name)` internally — these require `@Namespace` to work and are therefore only useful when a future AF version adds that annotation. Use the manual selector approach for now.
 
 ---
 
@@ -262,6 +264,17 @@ axon:
 
 Valid values for `mode`: `POOLED`, `SUBSCRIBING`.
 
+> **`POOLED` is the default**. If the only thing you would configure for a processor is `mode: POOLED`, you can omit the entry entirely — no YAML is needed.
+
+> **Processor names with hyphens** must be quoted in YAML:
+> ```yaml
+> axon:
+>   eventhandling:
+>     processors:
+>       "auction-projection":
+>         mode: POOLED
+> ```
+
 ---
 
 ## Correlation data providers
@@ -280,6 +293,18 @@ CorrelationDataProvider traceIdProvider() {
     };
 }
 ```
+
+---
+
+## `@EntityScan` and Axon's JPA entities
+
+If your application uses `@EntityScan` to control which packages Hibernate scans for `@Entity` classes, always include `"org.axonframework"` in the base packages:
+
+```java
+@EntityScan(basePackages = {"com.example.myapp", "org.axonframework"})
+```
+
+`@EntityScan` overrides Spring Boot's default scanning entirely. Without `"org.axonframework"`, Axon's own JPA entities — such as `TokenEntry` (used by `JpaTokenStore`) — are no longer found, causing a `"Could not resolve root entity 'TokenEntry'"` error at startup.
 
 ---
 

@@ -83,6 +83,8 @@ public record FindCourse(String courseId) {}
 public record FindCourseQuery(String courseId) {}
 ```
 
+> **`@Query(namespace=...)` vs processor assignment**: the `namespace` attribute controls the query message's `QualifiedName` for routing only — it is not used for event processor assignment. Do not confuse it with `@Namespace`, which does not exist in AF5.0.
+
 ---
 
 ## Handler Method Annotations

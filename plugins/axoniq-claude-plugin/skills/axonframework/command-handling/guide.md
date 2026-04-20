@@ -91,9 +91,12 @@ The `routingKey` specifies which field the command bus uses to route the command
 
 ## Dispatching Commands
 
-Use `CommandGateway` to dispatch commands. Obtain it from the framework configuration — do not construct it manually in application code.
+Use `CommandGateway` to dispatch commands. Obtain it from the framework configuration — do not construct it manually in application code. In Spring Boot, inject it directly — it is auto-configured as a bean.
 
 ```java
+import org.axonframework.messaging.commandhandling.gateway.CommandGateway;
+import org.axonframework.messaging.commandhandling.CommandExecutionException;
+
 public class EnrollmentService {
 
     private final CommandGateway commands;
@@ -177,7 +180,7 @@ CommandHandlingModule
 
 ## Exception handling
 
-Exceptions thrown from `@CommandHandler` methods surface to the caller as `CommandExecutionException`. Use `@ExceptionHandler` in the same class to intercept and translate them:
+Exceptions thrown from `@CommandHandler` methods surface to the caller wrapped in `CommandExecutionException` (`org.axonframework.messaging.commandhandling.CommandExecutionException`). The original exception is available via `getCause()`. Use `@ExceptionHandler` in the same class to intercept and translate them:
 
 ```java
 class CourseCommandHandler {

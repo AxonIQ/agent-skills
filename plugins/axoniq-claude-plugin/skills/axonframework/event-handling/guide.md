@@ -39,6 +39,15 @@ class CoursesProjection {
 | `Metadata` | The full metadata map |
 | `ProcessingContext` | The active processing context |
 | `QueryUpdateEmitter` | Push updates to subscription query subscribers |
+| `@Timestamp Instant` | The event's stored timestamp |
+
+> **Event timestamp**: to inject the event's stored timestamp, annotate the `Instant` parameter with `@Timestamp` (`org.axonframework.messaging.eventhandling.annotation.Timestamp`). A plain `Instant` parameter without the annotation will fail to resolve at runtime.
+> ```java
+> @EventHandler
+> void on(BidPlaced event, @Timestamp Instant timestamp) {
+>     entity.lastBidPlacedAt = timestamp;
+> }
+> ```
 
 ```java
 @EventHandler
@@ -141,6 +150,8 @@ class NotificationHandler {
 Called before replay begins. Use it to clear the projection so it can be rebuilt cleanly:
 
 ```java
+import org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler;
+
 class CoursesProjection {
 
     @ResetHandler

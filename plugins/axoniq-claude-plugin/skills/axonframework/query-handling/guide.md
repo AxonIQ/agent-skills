@@ -69,9 +69,17 @@ CourseView view = queryGateway.query(new GetCourseById(courseId), CourseView.cla
 
 ### Scatter-gather — all handlers, collected results
 
+Use `queryMany` when the query handler returns `List<T>`. The gateway collects results from all matching handlers into one list. This is the correct method for `@QueryHandler` methods that return `List<T>`:
+
 ```java
+// Handler returns List<CourseView> — use queryMany on the caller side:
 CompletableFuture<List<CourseView>> all = queryGateway.queryMany(
         new FindAllCourses(), CourseView.class);
+
+// Block with timeout:
+List<CourseView> views = queryGateway.queryMany(new FindAllCourses(), CourseView.class)
+        .orTimeout(10, TimeUnit.SECONDS)
+        .join();
 ```
 
 ### Streaming query — large result sets
