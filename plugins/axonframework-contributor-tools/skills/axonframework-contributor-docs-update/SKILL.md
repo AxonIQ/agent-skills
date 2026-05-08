@@ -183,8 +183,9 @@ Optional note for important nuances.
 **Acronyms** — always uppercase: API, HTTP, HTTPS, JPA, JSON, JVM, gRPC, AMQP, DSL, URI, URL, YAML
 
 **Product names** — exact casing required:
-- Axon Framework, Axon Server, AxonIQ Console, AxonIQ Cloud
+- Axon Framework, Axon Server, Axoniq Platform
 - Spring, Spring Boot, GitHub, Gradle, PostgreSQL, Kafka, Testcontainers
+- Do not use AxonIQ Console or AxonIQ Cloud — these products are retired
 
 **Code examples:**
 - Always show **both** Spring Boot and plain Java styles (use `[tabs]` blocks with Spring first)
