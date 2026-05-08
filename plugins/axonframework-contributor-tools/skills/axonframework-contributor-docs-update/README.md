@@ -26,7 +26,7 @@ This skill is for **contributing documentation to the Axon Framework 5 reference
 ### 3. AsciiDoc Conventions
 - File template with tabs, callouts, and admonitions
 - Heading casing rules (Title Case H1, Sentence case H2+)
-- ASCII-only requirement (no smart quotes, no em-dashes)
+- ASCII-only requirement: no smart quotes, no em-dashes in any form (neither `---` nor the Unicode `—` character)
 - Product name and acronym casing
 - User-centric tone over internal mechanics
 
@@ -36,7 +36,13 @@ This skill is for **contributing documentation to the Axon Framework 5 reference
 - When to update the ROOT nav aggregator
 
 ### 5. Migration Tracking
-- How to update `docs/changes-to-process.md` when finishing tracked pages
+- Always check `docs/changes-to-process.md` after writing or updating any page
+- Update the status to COMPLETED with a bullet list of applied changes when the work is done
+
+### 6. Document Current Branch / PR Changes
+- Invoke with "document my current branch" or "write docs for this PR"
+- Skill runs `git diff main...HEAD` to discover what changed, reads the source, then proceeds through all phases
+- Requires Bash access; if unavailable the skill will ask you to describe the changes instead
 
 ## Usage
 
@@ -50,6 +56,7 @@ Or with a target:
 /axonframework-contributor-docs-update event processors overview
 /axonframework-contributor-docs-update commands/command-dispatching.adoc
 /axonframework-contributor-docs-update GH-1234
+/axonframework-contributor-docs-update current branch
 ```
 
 ## Key Conventions at a Glance
@@ -58,19 +65,23 @@ Or with a target:
 |---|---|---|
 | H1 heading | Title Case | sentence case |
 | H2+ headings | Sentence case | Title Case |
-| Em-dash | use comma/colon/parens | `---` |
+| Em-dash | use comma/colon/parens | `---` or `—` |
 | Quotes | `"straight"` | `"curly"` |
+| Non-ASCII | (none) | any Unicode > 127 |
 | AF5 term | ProcessingContext | UnitOfWork |
 | AF5 term | EventSink | EventBus (publishing) |
 | AF5 term | entity | aggregate |
 | Code examples | both Spring Boot + plain Java | Spring Boot only |
+| changes-to-process.md | always check and update | skip |
 
 ## File Structure
 
 ```
 skills/axonframework-contributor-docs-update/
 ├── SKILL.md     # Complete skill with all phases and conventions
-└── README.md    # This file
+├── README.md    # This file
+└── evals/
+    └── evals.json   # Test cases for skill evaluation
 ```
 
 ## Related Skills

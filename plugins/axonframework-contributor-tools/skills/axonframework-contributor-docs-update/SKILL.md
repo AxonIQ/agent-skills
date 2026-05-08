@@ -26,6 +26,23 @@ Determine the **intent** from $ARGUMENTS:
 - **New page** — user wants to add documentation that doesn't exist yet.
 - **Update existing page** — user wants to change or extend content in an existing `.adoc` file.
 - **Rename/restructure** — user wants to rename a file or move content between sections.
+- **Document current changes** — user wants to write or update documentation for the changes in the current branch or PR. In this case, start by analyzing the local changes before proceeding.
+
+### If the intent is "document current changes"
+
+Before doing anything else, analyze what has changed. This flow requires **Bash access** to run git commands — if Bash is unavailable, ask the user to describe what changed or paste the relevant source files.
+
+1. **Check local git diff** to see what files and code changed on the current branch:
+   ```bash
+   git diff main...HEAD --stat
+   git diff main...HEAD -- '*.java' '*.kt'
+   ```
+2. **Read the changed source files** to understand what new APIs, behaviors, or concepts were introduced.
+3. **Check if there is an associated PR** for additional context (description, linked issues):
+   ```bash
+   gh pr view --json title,body,url 2>/dev/null
+   ```
+4. Use what you find as the basis for $ARGUMENTS and continue with Phase 2 onwards.
 
 If the intent is unclear, ask:
 1. Which module does this belong to? (commands / events / queries / messaging-concepts / testing / tuning / monitoring / migration / ROOT)
@@ -206,16 +223,14 @@ For critical information users must not miss.
 - Focus on "how do I accomplish X", not "how does X work internally"
 - Explain internal details only when they affect user decisions
 
-**No em-dashes:**
-- Never use em-dashes (`---`) — they read as machine-generated and make text feel less human
-- Replace with a comma, colon, semicolon, or parentheses depending on context
-- Correct: "The processor starts immediately, consuming from the head of the stream."
-- Avoid: "The processor starts immediately --- consuming from the head of the stream."
-
-**ASCII only:**
-- All `.adoc` files must contain only ASCII characters
-- Never use curly/smart quotes, em-dash, ellipsis, or any other non-ASCII Unicode
+**ASCII only — no em-dashes, no smart quotes, no Unicode:**
+- Every `.adoc` file must contain only plain ASCII characters (code points 0–127)
+- This means: no em-dash in any form — not the Unicode character `—` (U+2014) and not the three-hyphen sequence `---`
+- Also forbidden: curly/smart quotes (`"` `"` `'` `'`), ellipsis (`…`), any other non-ASCII glyph
 - Use straight ASCII equivalents: `"`, `'`, `...`
+- Replace em-dashes with a comma, colon, semicolon, or parentheses depending on context
+- Correct: "The processor starts immediately, consuming from the head of the stream."
+- Avoid: "The processor starts immediately — consuming from the head of the stream."
 - Use LF line endings only, never CR or CRLF
 
 **Terminology (AF5):**
@@ -264,20 +279,24 @@ If a target doesn't exist yet, use the current filename and add a `// TODO` comm
 
 ---
 
-## Phase 7: Update changes-to-process.md (if applicable)
+## Phase 7: Update changes-to-process.md
 
-If the page being updated appears in `docs/changes-to-process.md` (AF4->AF5 migration tracking):
+Always check `docs/changes-to-process.md` after writing or updating a page — even if you didn't notice the file being tracked earlier.
 
-1. Find the section for this file.
-2. If the work is now complete, change the status:
+1. Search for the filename you just touched:
+   ```bash
+   grep -n "<filename>.adoc" docs/changes-to-process.md
+   ```
+2. If it appears and the work is now complete, update the status:
    ```
    **Status:** COMPLETED
    **Changes applied:**
    - <bullet list of what was done>
    ```
-3. If partially done, update with current progress.
+3. If it appears and the work is only partially done, update with current progress and what remains.
+4. If the file is not listed, no action needed.
 
-This step is **mandatory** when working on tracked migration files. Never skip it.
+Skipping this step leaves stale tracking data. It takes ten seconds and is always worth doing.
 
 ---
 
