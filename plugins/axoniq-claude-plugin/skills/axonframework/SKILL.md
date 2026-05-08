@@ -1,6 +1,7 @@
 ---
 name: axonframework
-description: Building applications with Axon Framework 5 (AF5) and AxonIQ Framework. Covers all aspects of AF5 application development: writing command handlers (stateless and DCB/stateful), event handling and projections, query handling and subscription queries, event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), application configuration (plain Java and Spring Boot), message interceptors and cross-cutting concerns, testing with AxonTestFixture, dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or AxonIQ Framework application.
+description: >
+  Building applications with Axon Framework 5 (AF5) and AxonIQ Framework. Covers all aspects of AF5 application development: writing command handlers (stateless and DCB/stateful), event handling and projections, query handling and subscription queries, event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), application configuration (plain Java and Spring Boot), message interceptors and cross-cutting concerns, testing with AxonTestFixture, dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or AxonIQ Framework application.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Edit, Write
@@ -43,7 +44,7 @@ When no build file is visible and the question is ambiguous, default to AF5 open
 
 ## DCB Philosophy — the primary stateful pattern
 
-The primary model for stateful command handling in AF5 is **DCB (Decision Consistent Boundary)**, not aggregates. Aggregates are a specialization of DCB, not the default.
+The primary model for stateful command handling in AF5 is **DCB (Dynamic Consistency Boundaries)**, not aggregates. Aggregates are a specialization of DCB, not the default.
 
 **Core idea**: for each command, identify the minimum state needed to make the decision, source only the events relevant to that decision using tag-based criteria, then append the resulting events with a condition that detects concurrent conflicts on that same boundary.
 
