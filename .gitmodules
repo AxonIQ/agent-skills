@@ -14,3 +14,7 @@
 	path = .knowledge/repositories/axonframework/extension-workflow
 	url = https://github.com/AxonIQ/extension-workflow.git
 	branch = axoniq-workflow-0.1.x
+[submodule ".knowledge/repositories/axonframework/claude-plugin"]
+	path = .knowledge/repositories/axonframework/claude-plugin
+	url = https://github.com/AxonIQ/claude-plugin.git
+	branch = main

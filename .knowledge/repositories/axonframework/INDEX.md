@@ -21,3 +21,8 @@ Commercial companion to Axon Framework 5 — provides DLQ, snapshots, AxonServer
 [Details](axonframework_extension-workflow.md) — branch `axoniq-workflow-0.1.x`.
 **Keywords:** workflow, durable execution, saga replacement, axon 5 extension, workflow dsl, process management, axoniq workflow
 AxonIQ Workflow extension for Axon Framework 5 — durable-execution engine and DSL that replaces the Saga pattern removed from core Framework 5; the migration **target** for Axon 4 saga → Framework 5 workflow migrations.
+
+## claude-plugin
+[Details](axonframework_claude-plugin.md) — branch `main`.
+**Keywords:** claude plugin, axon 5 skills, migration skill patterns, agent skill authoring, axoniq claude plugin
+AxonIQ's Claude Code plugin — bundled Axon Framework 5 skills that serve as the authoring reference for how migration/authoring skills in this repo should be shaped.
