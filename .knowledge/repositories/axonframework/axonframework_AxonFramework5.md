@@ -48,7 +48,9 @@ that replace Axon 4 aggregates, and the reactive return-type contract.
 
 ## Highlights
 
-- Official docs: <https://docs.axoniq.io/axon-framework-reference/5.0/>
+- Reference docs (in-repo): `docs/` — start with `docs/README.md` and
+  `docs/getting-started/`. Prefer these over the public site; this tree
+  is the source of truth for the branch checked out here.
 - Start with `modelling/` when reasoning about state — DCB is the new
   mental model and most migration confusion lives there.
 - Reactive return types are illustrated end-to-end in the Spring Boot

@@ -52,7 +52,10 @@ Spring Boot 3 autoconfigure stack all live here.
 
 ## Highlights
 
-- Official docs: <https://docs.axoniq.io/axon-framework-reference/4.13/>
+- Reference docs (in-repo): `docs/` — start with `docs/README.md` and
+  `docs/_reference/` / `docs/old-reference-guide/`. Prefer these over
+  the public site; this tree is the source of truth for the
+  `axon-4.13.x` branch.
 - Use this as the migration **source** when reading Axon 4 code that
   needs to be ported; the target is [[axonframework_AxonFramework5]].
 - Sagas under `modelling/` rarely have a 1:1 mapping in Axon 5 — read
