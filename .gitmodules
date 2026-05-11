@@ -10,3 +10,7 @@
 	path = .knowledge/repositories/axonframework/AxoniqFramework
 	url = https://github.com/AxonIQ/axoniq-framework.git
 	branch = main
+[submodule ".knowledge/repositories/axonframework/extension-workflow"]
+	path = .knowledge/repositories/axonframework/extension-workflow
+	url = https://github.com/AxonIQ/extension-workflow.git
+	branch = axoniq-workflow-0.1.x
