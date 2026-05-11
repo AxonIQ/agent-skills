@@ -1,0 +1,12 @@
+[submodule ".knowledge/repositories/axonframework/AxonFramework5"]
+	path = .knowledge/repositories/axonframework/AxonFramework5
+	url = https://github.com/AxonIQ/AxonFramework.git
+	branch = feat/migration-skills
+[submodule ".knowledge/repositories/axonframework/AxonFramework4"]
+	path = .knowledge/repositories/axonframework/AxonFramework4
+	url = https://github.com/AxonIQ/AxonFramework.git
+	branch = axon-4.13.x
+[submodule ".knowledge/repositories/axonframework/AxoniqFramework"]
+	path = .knowledge/repositories/axonframework/AxoniqFramework
+	url = https://github.com/AxonIQ/axoniq-framework.git
+	branch = main
