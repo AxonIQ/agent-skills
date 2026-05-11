@@ -48,7 +48,7 @@ that replace Axon 4 aggregates, and the reactive return-type contract.
 
 ## Highlights
 
-- Reference docs (in-repo): `docs/` — start with `docs/README.md` and
+- Reference docs (in-repo): `docs/` — start with `docs/README.md` `docs/reference_guide` and
   `docs/getting-started/`. Prefer these over the public site; this tree
   is the source of truth for the branch checked out here.
 - Start with `modelling/` when reasoning about state — DCB is the new

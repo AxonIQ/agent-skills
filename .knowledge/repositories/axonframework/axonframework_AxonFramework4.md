@@ -52,8 +52,7 @@ Spring Boot 3 autoconfigure stack all live here.
 
 ## Highlights
 
-- Reference docs (in-repo): `docs/` — start with `docs/README.md` and
-  `docs/_reference/` / `docs/old-reference-guide/`. Prefer these over
+- Reference docs (in-repo): `docs/` — start with `docs/README.md` and / `docs/old-reference-guide/`. Prefer these over
   the public site; this tree is the source of truth for the
   `axon-4.13.x` branch.
 - Use this as the migration **source** when reading Axon 4 code that
