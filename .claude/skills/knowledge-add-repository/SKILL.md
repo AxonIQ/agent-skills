@@ -111,7 +111,22 @@ would become unreadable.
    Use `-b <branch>` only when a branch was specified. Without it git tracks
    the default branch — still fine when pinning to a commit.
 
-3. **Pin to commit if requested.**
+3. **Lock the submodule as fetch-only.** `.knowledge/repositories/` is
+   read-only by policy (see `.knowledge/README.md`). Disable the `origin`
+   push URL so any accidental `git push` from inside the submodule fails
+   loudly. Run this on every fresh add, before any other work on the
+   submodule:
+   ```bash
+   git -C <submodule_path> remote set-url --push origin DISABLED
+   ```
+   Verify with `git -C <submodule_path> remote -v` — the `(push)` line
+   must read `DISABLED`. The matching pre-push hook (Option 2) lives
+   outside version control and is reinstalled by `bash
+   .knowledge/scripts/lock-submodules.sh`; mention that script to the
+   user if they ask about re-locking after a fresh clone, but the skill
+   itself only needs the push-URL change to satisfy the policy.
+
+4. **Pin to commit if requested.**
    ```bash
    git -C <submodule_path> checkout <commit>
    ```
@@ -121,7 +136,7 @@ would become unreadable.
    this skill; the same rule applies to fetch/checkout in the retarget
    sub-workflow below.
 
-4. **Write the per-repo detail file.** Read the template for this repo type:
+5. **Write the per-repo detail file.** Read the template for this repo type:
    - `axonframework` → `references/templates-axonframework.md`
    - `axon-examples` → `references/templates-axon-examples.md`
    - `ai-bestpractices` → `references/templates-ai-bestpractices.md`
@@ -130,13 +145,13 @@ would become unreadable.
    a `## Highlights` section (use `- _none_` only if the user explicitly
    declines to add one).
 
-5. **Update the type-level `INDEX.md`.** Read
+6. **Update the type-level `INDEX.md`.** Read
    `references/index-entry-templates.md` for the per-type entry shape. Read
    the existing `INDEX.md` first to preserve order and the established
    pattern. If the file is missing or empty, write the standard AI-agent
    header (see the templates file) and append the new entry below it.
 
-6. **(axon-examples only) Pair with the counterpart if it exists.**
+7. **(axon-examples only) Pair with the counterpart if it exists.**
    - If the counterpart variant's detail file is already present, update the
      counterpart's frontmatter to reflect the new pairing:
      - On the axon4 source: append the new axon5 filename to `migrated_to`
@@ -151,12 +166,12 @@ would become unreadable.
      write it using the branches/commits the user provided. **If the user
      hasn't provided them, ask before writing the callout.**
 
-7. **Commit.** Selective `git add` — never `git add .` or `-A`. Stage:
+8. **Commit.** Selective `git add` — never `git add .` or `-A`. Stage:
    `.gitmodules`, the submodule path, the new/updated detail file(s), the
    updated `INDEX.md`. Commit message focused on what was added and why,
    without any Claude Code attribution (user's standing rule).
 
-8. **Report.** Tell the user:
+9. **Report.** Tell the user:
    - Submodule path and tracked ref (branch/commit).
    - Detail file path created.
    - INDEX.md section updated.
@@ -184,7 +199,7 @@ workflow — make a focused four-touch update:
    git -C <submodule_path> fetch origin <new-branch>
    git -C <submodule_path> checkout <new-branch>
    ```
-   Use `git -C` — see step 3 above.
+   Use `git -C` — see step 4 above.
 3. **Update the detail file's frontmatter.** Change `branch:` to the new
    branch. Keywords usually don't need to change; revisit Highlights only
    if the new branch implies a different audience.
@@ -210,12 +225,15 @@ Procedure:
 1. **Confirm** the submodule's path appears in `.gitmodules` and the
    directory exists. If either is missing, fall back to the main
    workflow (full add) instead.
-2. **Skip workflow steps 2–3** (no `git submodule add`, no checkout).
-3. **Resume at step 4** — write the detail file from the template,
+2. **Skip the add and the pin** (no `git submodule add`, no checkout).
+   **Still run step 3 (lock the push URL)** — idempotent, and important
+   for legacy submodules that were added manually outside this skill and
+   may still have a live push URL.
+3. **Resume at step 5** — write the detail file from the template,
    filling `branch:` from `.gitmodules` and reading the working tree for
    `key paths`.
-4. **Step 5** — add the INDEX entry as normal.
-5. **Step 7** — commit only the new detail file and the INDEX update.
+4. **Step 6** — add the INDEX entry as normal.
+5. **Step 8** — commit only the new detail file and the INDEX update.
    `.gitmodules` and the gitlink are untouched.
 6. **Report** that this was a back-fill (not an add) so the user knows
    no submodule operation occurred.
@@ -232,6 +250,9 @@ Procedure:
 - Ask for branches/commits before writing the Migration Diff callout.
 - Ask for `keywords` if the user hasn't volunteered any.
 - Ask for at least one `## Highlights` bullet on every new detail file.
+- Lock the submodule push URL (`git -C <path> remote set-url --push origin
+  DISABLED`) immediately after `git submodule add`. Also run this in the
+  back-fill sub-workflow — it's idempotent and protects legacy submodules.
 
 ## MUST NOT do
 
@@ -295,6 +316,8 @@ Procedure:
 
 - The submodule exists at the requested ref under
   `.knowledge/repositories/<type>/...`.
+- The submodule's `origin` push URL is `DISABLED` (verify with
+  `git -C <submodule_path> remote -v`).
 - `.gitmodules` contains the new entry (with `branch =` if applicable).
 - The per-repo detail file exists with full frontmatter and the type's
   required body sections, including `## Highlights`.

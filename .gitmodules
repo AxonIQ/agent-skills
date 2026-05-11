@@ -18,3 +18,46 @@
 	path = .knowledge/repositories/axonframework/claude-plugin
 	url = https://github.com/AxonIQ/claude-plugin.git
 	branch = main
+[submodule ".knowledge/repositories/axonframework/extension-data-protection"]
+	path = .knowledge/repositories/axonframework/extension-data-protection
+	url = https://github.com/AxonIQ/extension-data-protection.git
+[submodule ".knowledge/repositories/axon-examples/axon4/gamerental"]
+	path = .knowledge/repositories/axon-examples/axon4/gamerental
+	url = https://github.com/smcvb/gamerental.git
+	branch = main
+[submodule ".knowledge/repositories/axon-examples/axon5/gamerental"]
+	path = .knowledge/repositories/axon-examples/axon5/gamerental
+	url = https://github.com/smcvb/gamerental.git
+	branch = af5/5.1.0-demo-day
+[submodule ".knowledge/repositories/axon-examples/axon4/bike-rental-extended"]
+	path = .knowledge/repositories/axon-examples/axon4/bike-rental-extended
+	url = https://github.com/MateuszNaKodach/bike-rental-extended.git
+	branch = af4
+[submodule ".knowledge/repositories/axon-examples/axon5/bike-rental-extended"]
+	path = .knowledge/repositories/axon-examples/axon5/bike-rental-extended
+	url = https://github.com/MateuszNaKodach/bike-rental-extended.git
+	branch = af5
+[submodule ".knowledge/repositories/ai-bestpractices/anthropics-claude-cookbooks"]
+	path = .knowledge/repositories/ai-bestpractices/anthropics-claude-cookbooks
+	url = https://github.com/anthropics/claude-cookbooks.git
+	branch = main
+[submodule ".knowledge/repositories/ai-bestpractices/anthropics-skills"]
+	path = .knowledge/repositories/ai-bestpractices/anthropics-skills
+	url = https://github.com/anthropics/skills.git
+	branch = main
+[submodule ".knowledge/repositories/ai-bestpractices/obra-superpowers"]
+	path = .knowledge/repositories/ai-bestpractices/obra-superpowers
+	url = https://github.com/obra/superpowers.git
+	branch = main
+[submodule ".knowledge/repositories/ai-bestpractices/simonw-claude-skills"]
+	path = .knowledge/repositories/ai-bestpractices/simonw-claude-skills
+	url = https://github.com/simonw/claude-skills.git
+	branch = main
+[submodule ".knowledge/repositories/ai-bestpractices/supabase-agent-skills"]
+	path = .knowledge/repositories/ai-bestpractices/supabase-agent-skills
+	url = https://github.com/supabase/agent-skills.git
+	branch = main
+[submodule ".knowledge/repositories/ai-bestpractices/vercel-labs-agent-skills"]
+	path = .knowledge/repositories/ai-bestpractices/vercel-labs-agent-skills
+	url = https://github.com/vercel-labs/agent-skills.git
+	branch = main

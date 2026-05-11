@@ -81,3 +81,6 @@ fabric.properties
 # skill-creator workspaces
 *-workspace/
 
+# local
+/.knowledge/docs/guidelines.md
+/.knowledge/docs/checkpoint-protocol.md

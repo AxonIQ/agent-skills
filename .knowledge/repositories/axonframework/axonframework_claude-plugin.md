@@ -51,14 +51,8 @@ in this repo.
 
 ## Highlights
 
-- **Workflow for authoring migration skills:** first consult
-  `AxonFramework5` (see `axonframework_AxonFramework5.md` — branch
-  `feat/5.1-openrewrite`) for the canonical API surface, **then** open
-  the matching skill folder here to see how AxonIQ explains that API to
-  Claude. The framework repo is the source of truth; this plugin is the
-  pedagogical layer.
 - Use `plugins/axoniq-claude-plugin/skills/axonframework/` as the
-  authoring template — directory naming, SKILL.md style, and topic
-  granularity in this tree are the published AxonIQ conventions.
+  inspiration — directory naming, SKILL.md style, and topic
+  granularity in this tree are good conventions.
 - Tracks `main` — expect rapid churn; re-pull before deriving patterns
   from a specific skill.

@@ -22,6 +22,11 @@ Commercial companion to Axon Framework 5 — provides DLQ, snapshots, AxonServer
 **Keywords:** workflow, durable execution, saga replacement, axon 5 extension, workflow dsl, process management, axoniq workflow
 AxonIQ Workflow extension for Axon Framework 5 — durable-execution engine and DSL that replaces the Saga pattern removed from core Framework 5; the migration **target** for Axon 4 saga → Framework 5 workflow migrations.
 
+## extension-data-protection
+[Details](axonframework_extension-data-protection.md) — branch `main`.
+**Keywords:** data protection, gdpr, field-level encryption, cryptographic erasure, right to be forgotten, axon 5 extension, axoniq commercial
+AxonIQ Data Protection extension for Axoniq Framework 5 — field-level encryption with cryptographic erasure for GDPR "Right to be Forgotten" on event-sourced apps; commercial module requiring an `axoniq.license`.
+
 ## claude-plugin
 [Details](axonframework_claude-plugin.md) — branch `main`.
 **Keywords:** claude plugin, axon 5 skills, migration skill patterns, agent skill authoring, axoniq claude plugin
