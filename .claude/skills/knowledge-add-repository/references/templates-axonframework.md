@@ -54,7 +54,9 @@ DCB, and the reactive primitives that replace Axon 4 sagas.
 
 ## Highlights
 
-- Official docs: <https://docs.axoniq.io/axon-framework-reference/5.0/>
+- Reference docs (in-repo): `docs/` — start with `docs/README.md` and
+  `docs/getting-started/`. Prefer these over the public site; this tree
+  is the source of truth for the branch checked out here.
 - Start with the `axon-modelling` module when reasoning about state — DCB is
   the new mental model and most migration confusion lives there.
 - Skip the deprecated `axon-saga/` package under `axon-modelling/legacy/` —
@@ -112,3 +114,10 @@ keywords:
   future Claude session would actually search.
 - `## Highlights` is mandatory as a section heading. It may contain `- _none_`
   only when the curator explicitly has nothing to flag.
+- **Docs pointer rule.** If the submodule contains a `docs/` tree (Axon
+  Framework repos do), the first Highlight bullet MUST point at the
+  in-repo path — not the public docs site. Rationale: we typically
+  track WIP branches whose `docs/` tree IS the source of truth, while
+  the public site is version-pinned and may diverge. Use a public URL
+  only when the submodule has no in-repo documentation, and call out
+  that the URL is version-pinned.

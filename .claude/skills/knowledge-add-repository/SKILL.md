@@ -113,10 +113,13 @@ would become unreadable.
 
 3. **Pin to commit if requested.**
    ```bash
-   cd <submodule_path> && git checkout <commit> && cd -
+   git -C <submodule_path> checkout <commit>
    ```
-   After `cd` into the submodule, always return to repo root before any
-   further git commands. The detached-HEAD warning is normal — ignore it.
+   Prefer `git -C <path>` over `cd <path> && … && cd -` — it can't leak
+   `cwd` state into your next Bash call. The detached-HEAD warning is
+   normal — ignore it. **Never use bare `cd <submodule_path>`** inside
+   this skill; the same rule applies to fetch/checkout in the retarget
+   sub-workflow below.
 
 4. **Write the per-repo detail file.** Read the template for this repo type:
    - `axonframework` → `references/templates-axonframework.md`
@@ -159,6 +162,63 @@ would become unreadable.
    - INDEX.md section updated.
    - For axon-examples: which counterpart side links were updated, if any.
    - Commit hash.
+   - **If `git submodule add` or any submodule fetch reported a `forced
+     update` on the tracked branch**, surface it here so the user knows
+     future `git submodule update --remote` calls may rewind history.
+
+## Sub-workflow: Retarget a submodule's tracked branch
+
+The user asks to change the `branch` an existing submodule tracks
+("retarget AxonFramework5 to feat/5.1-openrewrite", "switch this
+submodule to branch X", "follow main now"). Don't re-run the full add
+workflow — make a focused four-touch update:
+
+1. **Update `.gitmodules`.** Always go through `git config` — never edit
+   `.gitmodules` by hand for this field, the section name has dots that
+   are easy to mis-quote:
+   ```bash
+   git config -f .gitmodules submodule.<submodule_path>.branch <new-branch>
+   ```
+2. **Move the submodule's HEAD to the new branch.**
+   ```bash
+   git -C <submodule_path> fetch origin <new-branch>
+   git -C <submodule_path> checkout <new-branch>
+   ```
+   Use `git -C` — see step 3 above.
+3. **Update the detail file's frontmatter.** Change `branch:` to the new
+   branch. Keywords usually don't need to change; revisit Highlights only
+   if the new branch implies a different audience.
+4. **Update the INDEX entry's branch label.** The `branch \`…\`` segment
+   in the `[Details](...)` line must match the new frontmatter.
+
+Commit all four together (`.gitmodules`, the submodule gitlink, the
+detail file, `INDEX.md`) with a message like
+`knowledge: retarget <RepoName> to <new-branch>`. Selective `git add` as
+in step 7. Report the new tracked branch, the recorded commit hash, and
+any `forced update` notice from the fetch.
+
+## Sub-workflow: Back-fill detail file for an already-tracked submodule
+
+A submodule exists at the right path under `.knowledge/repositories/`
+but has no per-repo detail file (legacy state, or a submodule was added
+manually outside this skill). The main "Submodule already present at
+path → fail loudly" rule does NOT apply to this recovery case — only to
+fresh adds that would overwrite.
+
+Procedure:
+
+1. **Confirm** the submodule's path appears in `.gitmodules` and the
+   directory exists. If either is missing, fall back to the main
+   workflow (full add) instead.
+2. **Skip workflow steps 2–3** (no `git submodule add`, no checkout).
+3. **Resume at step 4** — write the detail file from the template,
+   filling `branch:` from `.gitmodules` and reading the working tree for
+   `key paths`.
+4. **Step 5** — add the INDEX entry as normal.
+5. **Step 7** — commit only the new detail file and the INDEX update.
+   `.gitmodules` and the gitlink are untouched.
+6. **Report** that this was a back-fill (not an add) so the user knows
+   no submodule operation occurred.
 
 ## MUST do
 
@@ -182,7 +242,18 @@ would become unreadable.
 - Do NOT name the detail file `CLAUDE.md` or `SKILL.md` — blocked by hook.
 - Do NOT skip the `INDEX.md` update; a submodule without an index entry is
   incomplete work.
-- Do NOT bundle unrelated changes into the commit.
+- Do NOT bundle unrelated changes into the commit. **Exception:** on the
+  very first use of this skill in a repo, the skill's own scaffolding
+  (`SKILL.md`, hooks, `.knowledge/README.md`, empty type-level
+  `INDEX.md` files, and any submodules added during the same bootstrap
+  pass) may legitimately be uncommitted. Bundling them into a single
+  "init knowledge repositories" commit is acceptable — selective `git
+  add` still applies (no `.`/`-A`), but the staged set will be larger
+  than a steady-state add. From the second invocation onward, the rule
+  is strict: only files this skill touched belong in the commit.
+- Do NOT `cd <submodule_path>` inside the skill — use `git -C <path>`.
+  The `cd` form leaks `cwd` across subsequent Bash calls in the same
+  session.
 
 ## Edge cases
 
@@ -205,6 +276,20 @@ would become unreadable.
   the present side, mark the counterpart as `_migration pending_` in the
   INDEX entry, and leave the cross-link frontmatter absent (or as an empty
   list) until the counterpart is added.
+- **Submodule tracked but no detail file** — recovery, not an error. Use
+  the "Back-fill detail file for an already-tracked submodule"
+  sub-workflow above. Do not re-run `git submodule add`.
+- **User asks to change a submodule's tracked branch** — use the
+  "Retarget a submodule's tracked branch" sub-workflow above. Do not
+  remove and re-add the submodule.
+- **Bootstrap commit (first use in repo)** — see the MUST NOT
+  "exception" note. Bundling skill scaffolding + first submodule into
+  one init commit is the only sanctioned exception to the
+  no-unrelated-changes rule.
+- **Tracked branch is force-pushed upstream** — `git submodule add` /
+  `fetch` will print `forced update`. This is benign for an in-flight
+  feature branch, but the report to the user MUST mention it so they
+  know future `--remote` updates may rewind history.
 
 ## Done when
 
