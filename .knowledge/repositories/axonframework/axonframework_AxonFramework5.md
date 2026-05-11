@@ -3,7 +3,7 @@ repo_type: axonframework
 repo_name: AxonFramework5
 submodule_path: .knowledge/repositories/axonframework/AxonFramework5
 url: https://github.com/AxonIQ/AxonFramework.git
-branch: feat/migration-skills
+branch: feat/5.1-openrewrite
 keywords:
   - axon 5
   - dynamic consistency boundary

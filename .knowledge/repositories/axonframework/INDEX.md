@@ -8,7 +8,7 @@
 Canonical source tree for the Axon Framework 4 maintenance line; the migration **source** that Axon 4 → 5 skills read from.
 
 ## AxonFramework5
-[Details](axonframework_AxonFramework5.md) — branch `feat/migration-skills`.
+[Details](axonframework_AxonFramework5.md) — branch `feat/5.1-openrewrite`.
 **Keywords:** axon 5, dynamic consistency boundary, event sourced entity, reactive, migration target, axon test fixture
 Canonical source tree for Axon Framework 5; the migration **target** for all Axon 4 → 5 skills.
 
