@@ -84,3 +84,15 @@ fabric.properties
 # local
 /.knowledge/docs/guidelines.md
 /.knowledge/docs/checkpoint-protocol.md
+
+# compile-test-subset skill outputs and eval build artifacts
+.subset-build/
+/skills/compile-test-subset/examples/*/target/
+/skills/compile-test-subset/examples/*/build/
+/skills/compile-test-subset/examples/*/.gradle/
+
+
+iteration-*/
+feedback.json
+*.skill
+.eval-cache/

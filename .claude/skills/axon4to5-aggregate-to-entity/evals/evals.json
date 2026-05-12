@@ -1,0 +1,80 @@
+{
+  "skill_name": "axon4to5-aggregate-to-entity",
+  "description": "Evals exercise the skill against (a) REAL AF4 aggregates from .knowledge/repositories/axon-examples/axon4 with their AF5 counterparts under axon5/, and (b) SYNTHETIC fixtures under evals/fixtures/ for migration variants the real examples do not cover (multi-entity, polymorphic, state-stored).",
+  "evals": [
+    {
+      "id": 1,
+      "name": "real-bike-spring-boot-snapshotting-and-always-creation-policy",
+      "source": "real",
+      "prompt": "Migrate the AF4 @Aggregate at .knowledge/repositories/axon-examples/axon4/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/command/Bike.java to AF5. Use --configuration-mode=spring-boot. Save the migrated file as outputs/Bike.java and write outputs/SUMMARY.md listing: imports added/removed, AF4 attributes dropped (snapshotTriggerDefinition, @CreationPolicy(ALWAYS)), how the bikeSnapshotDefinition bean must be re-wired in AF5 (SnapshotPolicy on the EventSourcedEntityModule, not on the class), and which migration topics applied.",
+      "input_files": [
+        ".knowledge/repositories/axon-examples/axon4/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/command/Bike.java",
+        ".knowledge/repositories/axon-examples/axon4/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/command/BikeSnapshotDefinition.java"
+      ],
+      "expected_reference": ".knowledge/repositories/axon-examples/axon5/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/command/Bike.java",
+      "expected_output": "Bike.java uses @EventSourced (Spring stereotype), @EntityCreator, EventAppender on command handlers (no AggregateLifecycle.apply), AF5 handler imports. @AggregateIdentifier, snapshotTriggerDefinition attribute, and @CreationPolicy(ALWAYS) must NOT survive on the class — surfaced in SUMMARY.md as 'moved to module configuration / dropped'."
+    },
+    {
+      "id": 2,
+      "name": "real-payment-spring-boot-command-handling-constructor",
+      "source": "real",
+      "prompt": "Migrate the AF4 @Aggregate at .knowledge/repositories/axon-examples/axon4/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/Payment.java to AF5. Use --configuration-mode=spring-boot. Save the migrated file as outputs/Payment.java and write outputs/SUMMARY.md.",
+      "input_files": [
+        ".knowledge/repositories/axon-examples/axon4/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/Payment.java"
+      ],
+      "expected_reference": ".knowledge/repositories/axon-examples/axon5/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/Payment.java",
+      "expected_output": "Payment.java uses @EventSourced, @EntityCreator (AF4 command-handling constructor converted to static factory or non-creating @EntityCreator constructor), EventAppender, AF5 handler imports. @AggregateIdentifier and AF4 @Aggregate stereotype removed."
+    },
+    {
+      "id": 3,
+      "name": "real-game-spring-boot-with-profile-and-exception-handler",
+      "source": "real",
+      "prompt": "Migrate the AF4 @Aggregate at .knowledge/repositories/axon-examples/axon4/gamerental/src/main/java/io/axoniq/demo/gamerental/command/Game.java to AF5. Use --configuration-mode=spring-boot. Save the migrated file as outputs/Game.java and write outputs/SUMMARY.md.",
+      "input_files": [
+        ".knowledge/repositories/axon-examples/axon4/gamerental/src/main/java/io/axoniq/demo/gamerental/command/Game.java"
+      ],
+      "expected_reference": ".knowledge/repositories/axon-examples/axon5/gamerental/src/main/java/io/axoniq/demo/gamerental/command/Game.java",
+      "expected_output": "Game.java uses @EventSourced, @EntityCreator, EventAppender, AF5 handler imports. @AggregateIdentifier removed. @Profile(\"command\") preserved (Spring concern, not Axon). @ExceptionHandler on IllegalStateException remains functional."
+    },
+    {
+      "id": 4,
+      "name": "synthetic-multi-entity-aggregate-member",
+      "source": "synthetic",
+      "fixture_rationale": "No multi-entity @AggregateMember aggregate exists in axon-examples; synthetic fixture mirrors the canonical GiftCard-with-Transaction shape from references/examples/02-multi-entity.md.",
+      "prompt": "Migrate the AF4 multi-entity @Aggregate at .claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/multi-entity/GiftCard.java to AF5. The class contains a child Transaction entity referenced via @AggregateMember (List<Transaction>). Use --configuration-mode=spring-boot. Save the migrated file as outputs/GiftCard.java and write outputs/SUMMARY.md.",
+      "input_files": [
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/multi-entity/GiftCard.java"
+      ],
+      "expected_reference": null,
+      "expected_output": "GiftCard.java: @EventSourced on root; @AggregateMember replaced by @EntityMember(routingKey = \"transactionId\"); @EntityId removed from Transaction; Transaction has NO class-level @EventSourced/@EventSourcedEntity (it's a child, not a root); static or non-creating @EntityCreator on root; root command handlers use EventAppender; Transaction's @CommandHandler/@EventSourcingHandler use AF5 handler imports and EventAppender."
+    },
+    {
+      "id": 5,
+      "name": "synthetic-polymorphic-hierarchy-axon-configuration",
+      "source": "synthetic",
+      "fixture_rationale": "No polymorphic aggregate hierarchy exists in axon-examples; synthetic fixture mirrors the abstract-Card + subtypes + AggregateConfigurer.withSubtypes(...) shape from references/examples/03-polymorphic.md.",
+      "prompt": "Migrate the AF4 polymorphic aggregate hierarchy under .claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/ to AF5 using --configuration-mode=axon-configuration. The hierarchy is: abstract @AggregateRoot Card → abstract GiftCard → concrete OpenLoopGiftCard and RechargeableGiftCard. AxonConfig registers GiftCard with AggregateConfigurer.defaultConfiguration(...).withSubtypes(...). Save the migrated files as outputs/Card.java, outputs/GiftCard.java, outputs/OpenLoopGiftCard.java, outputs/RechargeableGiftCard.java, outputs/AxonConfig.java. Also write outputs/SUMMARY.md.",
+      "input_files": [
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/Card.java",
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/GiftCard.java",
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/OpenLoopGiftCard.java",
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/RechargeableGiftCard.java",
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/polymorphic/AxonConfig.java"
+      ],
+      "expected_reference": null,
+      "expected_output": "Card.java uses @EventSourcedEntity; @AggregateRoot removed; subtypes remain unannotated at class level. AxonConfig.java replaces AggregateConfigurer.defaultConfiguration(GiftCard.class).withSubtypes(...) with EventSourcedEntityModule.declarative(String.class, GiftCard.class).messagingModel((cfg, b) -> PolymorphicEntityMetamodel.forSuperType(GiftCard.class).addConcreteType(AnnotatedEntityMetamodel.forConcreteType(OpenLoopGiftCard.class, ...)).addConcreteType(AnnotatedEntityMetamodel.forConcreteType(RechargeableGiftCard.class, ...)).build()), registered via configurer.modelling().registerEventSourcedEntity(...). The old AggregateConfigurer registration must NOT remain (duplicate registration would fail at startup)."
+    },
+    {
+      "id": 6,
+      "name": "synthetic-state-stored-must-stop",
+      "source": "synthetic",
+      "fixture_rationale": "No state-stored (JPA-backed) aggregate exists in axon-examples; synthetic fixture mirrors a typical AF4 state-stored Customer (JPA @Entity + @Id + no @EventSourcingHandler) so the skill's stop-condition can be exercised.",
+      "prompt": "Migrate the AF4 @Aggregate at .claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/state-stored/Customer.java to AF5. Use --configuration-mode=spring-boot. If the skill determines this candidate is out of scope, leave the file UNCHANGED and write outputs/SKIP_REASON.md explaining why.",
+      "input_files": [
+        ".claude/skills/axon4to5-aggregate-to-entity/evals/fixtures/state-stored/Customer.java"
+      ],
+      "expected_reference": null,
+      "expected_output": "Skill detects the state-stored shape (JPA @Entity + @Id + zero @EventSourcingHandler methods + direct field mutation in command handlers) and STOPS without editing. outputs/SKIP_REASON.md must mention 'state-stored' and 'not supported' (or equivalent), naming the diagnostic signals it relied on. If outputs/Customer.java is produced, it MUST be byte-identical to the input."
+    }
+  ]
+}
