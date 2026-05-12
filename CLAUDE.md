@@ -3,6 +3,9 @@
 Skills follow the [agentskills.io](https://agentskills.io/) format.
 Be explicit about tools names. Use Claude Code tools names by default like (`Skill`, `Read`, `Grep` etc)
 
+ALWAYS CREATE NEW SKILLS IN DIRECTORY: [skills](skills) and while developing execute other Skills (expecially
+`/skill-creator`) using rules from: [using-superpowers](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/using-superpowers)
+
 ## Skill authoring practices
 
 Use [guidelines.md](.knowledge/docs/guidelines.md).
@@ -19,6 +22,7 @@ Use [guidelines.md](.knowledge/docs/guidelines.md).
   in SKILL.md.
 
 ### Style
+
 Use caveman 60% style for the skill content. Very concise, good for LLM.
 But the skill output to the user must be clear and concise, do not be talkative, just good structure with the summary
 what was done/ what failed.
@@ -30,9 +34,11 @@ Skill content is just for LLM (optimize for this). No human notes.
 Each skill must define expected input, expected output (structured markdown) and can use agent delegation patterns like.
 
 #### Goal
+
 Skills have a clear goal so must have its defined and defined check when the skill job is done.
 
 #### Must and must not
+
 Skills must define what must be done and what must NOT be done.
 
 #### Routing tables
@@ -43,12 +49,14 @@ in [SKILL.md](.knowledge/repositories/axonframework/claude-plugin/plugins/axoniq
 State-Based Aggregate" to X etc. )
 
 Use additional reference files, but avoid deeply nested references.
+
 - The "one level deep" rule from is about the **reference chain**, not directory nesting:
   every reference file must be reachable in a single hop from `SKILL.md`. Directory nesting is irrelevant.
 - All routing/dispatch logic MUST live in `SKILL.md`. Topic files MUST NOT link to other topic files — no
   `event-handling.md → command-handling.md` chains.
 
 #### Visualization
+
 Use graphiz diagrams for flow charts following conventions:
 [graphviz-conventions.dot](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/writing-skills/graphviz-conventions.dot)
 
