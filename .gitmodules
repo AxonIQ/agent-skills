@@ -65,3 +65,6 @@
 	path = .knowledge/repositories/axon-examples/axon4/auction-house
 	url = https://github.com/AxonIQ/auction-house-axon-observability-demo.git
 	branch = migration-ready/af5
+[submodule ".knowledge/repositories/axon-examples/axon4/cinema"]
+	path = .knowledge/repositories/axon-examples/axon4/cinema
+	url = https://github.com/MateuszNaKodach/Cinema.EventSourcing.VerticalSlice.Kotlin.Axon4.Spring.git

@@ -42,3 +42,10 @@ git -C .knowledge/repositories/axon-examples/axon4/bike-rental-extended log -1 -
 git -C .knowledge/repositories/axon-examples/axon5/bike-rental-extended log -1 --oneline
 git diff eaa9ebe 15af118
 ```
+
+## cinema
+**Exotic** Kotlin/Gradle Axon 4 vertical-slice cinema demo — does NOT use aggregates; sources/appends events directly through the `EventStore` interface via a custom SDK. Likely out of scope for aggregate-centric migration skills; Gradle build means OpenRewrite (Maven) parity must be verified.
+**Keywords:** cinema, axon 4, kotlin, gradle, vertical slice, event sourcing, event store api, no aggregates, event modeling, ddd
+
+- **axon4:** [details](axon-examples_axon4_cinema.md) — branch `main` · Kotlin · Gradle
+- **axon5:** _migration pending_
