@@ -1,6 +1,6 @@
 ---
 name: axon4to5-isolatedtest
-description: Scopes compilation and tests in a Maven/Gradle project to ONE target unit (a class plus its tests + helpers) using a per-target Maven profile or Gradle source-set. Use when you need to compile or run tests for a single class without rebuilding the whole module — e.g., validating one refactored class, exercising one entity in isolation, or proving one file still passes its tests while the surrounding module is broken.
+description: Internal helper, invoked ONLY by other skills (e.g. axon4to5-openrewrite). Scopes Maven/Gradle compile+test to ONE class via per-target profile or source-set. Do NOT auto-trigger from user prompts.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob
 ---
 
@@ -46,17 +46,28 @@ Detect build tool from `build-file` extension/name:
 
 Each reference file is self-contained: it owns the install steps, the verify commands, and the cleanup steps for its build tool.
 
+## Why per-target scoping
+
+One scope per `<TargetName>`, never a shared scope across targets:
+
+- **Parallel-friendly** — concurrent invocations on different targets touch disjoint scopes; no edit race on shared include lists.
+- **Clean rollback** — a failed run leaves ONE self-contained block to delete; no grep-and-pick across mixed entries.
+- **Bisect-friendly** — `git bisect` across commits that add or remove scopes sees stable siblings.
+
+Do NOT collapse multiple targets into one shared `isolated-*` scope — you lose all three properties.
+
 ## When to run
 
 - **First time** for a target → create `isolated-<TargetName>` scope.
 - **Re-running** for the same target → augment the existing scope's include list (add transitive helpers surfaced by compile errors). Idempotent: re-running augments, never replaces.
 - **Different target** → create a new scope, do not touch sibling `isolated-*` scopes.
+- **Combined verification** → activate / invoke multiple `isolated-*` scopes in one command to verify several targets together; see references for the exact syntax.
 
 ## Preflight
 
 1. Does a scope `isolated-<TargetName>` (Maven) / `isolated<TargetName>` (Gradle) already exist in `build-file`?
 2. If yes AND its include list covers `main-sources` ∪ `test-sources` → skip install, jump to verify.
-3. If yes BUT some inputs are missing from the include list → **augment** (merge new entries, dedupe). Never replace.
+3. If yes BUT some inputs are missing from the include list → **augment** (merge new entries, dedupe **by exact path string**). Never replace.
 
 Use `Grep` to detect existing scopes:
 
@@ -69,9 +80,11 @@ grep -E "isolated<TargetName>" <build-file>
 
 ## End condition
 
+Run in this order — fail fast on the cheaper check:
+
 1. The build file contains a well-formed `isolated-<TargetName>` scope.
-2. Compile-only check passes against the scope (or fails on missing symbols you EXPECTED — narrow scope is the point).
-3. Scoped test run is green (or fails on legitimate work that's the caller's job to fix — never on missing symbols from files OUTSIDE the include list).
+2. **Compile-only check first** — passes against the scope (or fails on missing symbols you EXPECTED, signalling the include list is too narrow). Do NOT proceed to step 3 until compile is green.
+3. **Scoped test run** — green (or fails on legitimate work that's the caller's job to fix — never on missing symbols from files OUTSIDE the include list).
 
 ## NEVER
 
@@ -79,6 +92,7 @@ grep -E "isolated<TargetName>" <build-file>
 - Mutate a sibling `isolated-*` scope to "borrow" its files. Each target owns exactly one scope.
 - Activate `isolated-*` scopes in CI by default — these are working scaffolds, not production scope.
 - Leave `isolated-*` scopes in the build file once the surrounding module compiles and tests pass cleanly without them — see the **Cleanup** section in [maven.md](references/maven.md#cleanup) / [gradle.md](references/gradle.md#cleanup).
+- Pass `-Dmaven.compiler.includes=…` or `-Dmaven.compiler.testIncludes=…` from the command line — those properties are silently ignored by `maven-compiler-plugin`. The scope MUST live in the POM (inside the profile).
 
 ## Output (what to report back)
 
