@@ -1,0 +1,20 @@
+{
+  "name": "axoniq-agent-skills",
+  "owner": {
+    "name": "AxonIQ",
+    "email": "contact@axoniq.io"
+  },
+  "metadata": {
+    "description": "Official Axoniq agent skills for Claude Code",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "axon4to5-migration",
+      "description": "Migrate applications from Axon Framework 4 to Axon Framework 5 / AxonIQ Framework 5. Includes the OpenRewrite bulk-migration recipe runner for Maven and Gradle projects.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/axon4to5-openrewrite"]
+    }
+  ]
+}
