@@ -49,3 +49,20 @@ git diff eaa9ebe 15af118
 
 - **axon4:** [details](axon-examples_axon4_cinema.md) — branch `main` · Kotlin · Gradle
 - **axon5:** _migration pending_
+
+## heroes
+Educational DDD / Event Modeling reference on the Heroes of Might & Magic III domain — Java 23 + Spring Boot + Axon, organised as vertical-slice bounded contexts; the `af5-migrated` branch is a per-BC AF4 → AF5 migration of the same codebase.
+**Keywords:** heroes of ddd, homm3, axon 4, axon 4.13, axon 5, event sourcing, event modeling, ddd, vertical slice, bounded contexts, spring boot, mcp server, migration
+
+- **axon4:** [details](axon-examples_axon4_heroes.md) — branch `master` · Java · Maven
+- **axon5:** [details](axon-examples_axon5_heroes.md) — branch `af5-migrated` · Java · Maven
+
+### Migration Diff (heroes)
+
+**The difference between `axon4/heroes@master` and `axon5/heroes@af5-migrated` IS the migration itself.**
+
+```bash
+git -C .knowledge/repositories/axon-examples/axon4/heroes log -1 --oneline
+git -C .knowledge/repositories/axon-examples/axon5/heroes log -1 --oneline
+git diff fbae554 d86f99c
+```

@@ -68,3 +68,11 @@
 [submodule ".knowledge/repositories/axon-examples/axon4/cinema"]
 	path = .knowledge/repositories/axon-examples/axon4/cinema
 	url = https://github.com/MateuszNaKodach/Cinema.EventSourcing.VerticalSlice.Kotlin.Axon4.Spring.git
+[submodule ".knowledge/repositories/axon-examples/axon4/heroes"]
+	path = .knowledge/repositories/axon-examples/axon4/heroes
+	url = https://github.com/MateuszNaKodach/HeroesOfDomainDrivenDesign.EventSourcing.Java.Axon.Spring.git
+	branch = master
+[submodule ".knowledge/repositories/axon-examples/axon5/heroes"]
+	path = .knowledge/repositories/axon-examples/axon5/heroes
+	url = https://github.com/MateuszNaKodach/HeroesOfDomainDrivenDesign.EventSourcing.Java.Axon.Spring.git
+	branch = af5-migrated
