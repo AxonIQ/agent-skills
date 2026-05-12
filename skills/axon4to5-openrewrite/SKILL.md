@@ -14,7 +14,7 @@ Run the Axon 4→5 OpenRewrite recipe in the user's project. Nothing else. Repor
 
 # Inputs
 
-- `framework` ∈ {`axon`, `axoniq`} — extract from `--framework <value>` in user's message. Default = `axon` if absent.
+- `framework` ∈ {`axon`, `axoniq`} — extract from `--framework <value>` in user's message. Default = `axoniq` if absent.
 - `commit` ∈ {`true`, `false`, _absent_} — extract from `--commit <value>` in user's message. Controls post-run commit behaviour (see **Commit** below). Absent = ask interactively.
 - CWD = user's target project root (where `pom.xml` or `build.gradle[.kts]` lives).
 - Recipe artifact version is pinned in `references/recipe-version` (single source — edit there to bump).

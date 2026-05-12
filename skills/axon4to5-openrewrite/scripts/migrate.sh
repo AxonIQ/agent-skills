@@ -4,13 +4,13 @@
 # build.gradle[.kts] lives). Self-locates so it can be invoked by absolute path.
 #
 # Usage:  migrate.sh [axon|axoniq]
-# Default framework: axon
+# Default framework: axoniq
 #
 # Recipe artifact version is read from ../references/recipe-version.
 
 set -euo pipefail
 
-framework="${1:-axon}"
+framework="${1:-axoniq}"
 case "$framework" in
   axon)
     recipe="org.axonframework.migration.UpgradeAxon4ToAxon5"
