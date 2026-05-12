@@ -2,6 +2,9 @@
 name: axon4to5-openrewrite
 description: Apply the Axon Framework 4 → 5 OpenRewrite bulk-migration recipe (maven or gradle, free or commercial variant). Use when the user says "run openrewrite", "apply axon migration recipe", "axon4to5-openrewrite", "migrate to axon 5", or "migrate to axoniq 5". Detects build tool, picks the recipe by --framework, runs, offers to commit. Idempotent — safe to re-run.
 argument-hint: --framework {axon|axoniq} [--commit {true|false}]
+user-invocable: true
+effort: medium
+model: sonnet
 ---
 
 # Goal

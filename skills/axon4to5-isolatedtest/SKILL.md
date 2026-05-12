@@ -2,6 +2,10 @@
 name: axon4to5-isolatedtest
 description: Internal helper, invoked ONLY by other skills (e.g. axon4to5-openrewrite). Scopes Maven/Gradle compile+test to ONE class via per-target profile or source-set. Do NOT auto-trigger from user prompts.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob
+argument-hint: <TargetName> [build-file=<path>] [cleanup=true|false]
+user-invocable: false
+effort: medium
+model: haiku
 ---
 
 # axon4to5-isolatedtest
