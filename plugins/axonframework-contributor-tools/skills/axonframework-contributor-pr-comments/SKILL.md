@@ -384,7 +384,12 @@ Display the complete thread — root comment and all replies in chronological or
 
 ### Step 2: Read the current code
 
-Use the `Read` tool on `comment.path`, from line `max(1, comment.line - 30)` to `comment.line + 30`. This gives ±30 lines of context around the exact location the reviewer was looking at.
+If this comment has status `⚠️ path not found`, stop here and tell the user:
+> "Comment #N was flagged — `<path>` could not be found in the working tree. This may mean the file was deleted, renamed, or a different branch is checked out. Should I skip this comment or search for the file under a different path?"
+
+Wait for the user to decide before proceeding.
+
+Otherwise, use the `Read` tool on `comment.path`, from line `max(1, comment.line - 30)` to `comment.line + 30`. This gives ±30 lines of context around the exact location the reviewer was looking at.
 
 Compare the current code to the `diff_hunk` from the comment. If the code has visibly changed, note it explicitly — this is the primary signal that the thread may be stale.
 
@@ -516,6 +521,14 @@ Use the suggestion as a starting point. Before applying:
 ### Linked comments
 
 When two or more comments are dependency-linked, process them together in one step: implement all changes, run tests once, mark all linked items done together.
+
+### `show thread #N`
+
+Display the full thread for comment N (root comment and all replies in chronological order, plus `diff_hunk`) without entering the processing loop. Do not read files, assess, or implement anything. This is for inspection only.
+
+### `run tests for #N`
+
+Re-run the tests that were associated with comment N's change. Identify the changed file from the todo item description, re-derive the module and fully qualified class names using Step 6 logic, and run the Gradle command. Report pass/fail.
 
 ---
 
