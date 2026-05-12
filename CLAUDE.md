@@ -4,9 +4,17 @@ Skills follow the [agentskills.io](https://agentskills.io/) format.
 Be explicit about tools names. Use Claude Code tools names by default like (`Skill`, `Read`, `Grep` etc)
 
 ALWAYS CREATE NEW SKILLS IN DIRECTORY: [skills](skills) and while developing execute other Skills (expecially
-`/skill-creator`) using rules from: [using-superpowers](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/using-superpowers)
+`/skill-creator`) using rules
+from: [using-superpowers](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/using-superpowers)
 
 ## Skill authoring practices
+
+Concise skill descriptions, max 200 characters.
+
+Simplicity and minimalism is crucial - do not add something I didn't ask you about. But be proactive - propose new
+solutions etc. with AskUserQuestion tool.
+Do not write how to do things that the LLM model should already know, or do not explain well-known concepts, focus on
+Axon Framework specific stuff.
 
 Use [guidelines.md](.knowledge/docs/guidelines.md).
 
