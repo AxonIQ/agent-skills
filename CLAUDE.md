@@ -6,6 +6,7 @@ Be explicit about tools names. Use Claude Code tools names by default like (`Ski
 ALWAYS CREATE NEW SKILLS IN DIRECTORY: [skills](skills) and while developing execute other Skills (expecially
 `/skill-creator`) using rules
 from: [using-superpowers](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/using-superpowers)
+Follow `/grill-me` SKILL instructions as well to build shared understanding before implementation.
 
 ## Skill authoring practices
 
