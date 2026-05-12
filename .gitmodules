@@ -61,3 +61,7 @@
 	path = .knowledge/repositories/ai-bestpractices/vercel-labs-agent-skills
 	url = https://github.com/vercel-labs/agent-skills.git
 	branch = main
+[submodule ".knowledge/repositories/axon-examples/axon4/auction-house"]
+	path = .knowledge/repositories/axon-examples/axon4/auction-house
+	url = https://github.com/AxonIQ/auction-house-axon-observability-demo.git
+	branch = migration-ready/af5

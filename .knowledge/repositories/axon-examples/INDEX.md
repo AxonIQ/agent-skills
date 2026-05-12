@@ -19,6 +19,13 @@ git -C .knowledge/repositories/axon-examples/axon5/gamerental log -1 --oneline
 git diff afdb1c7 dbb571f
 ```
 
+## auction-house
+Multi-module Axon 4 microservices demo (Kotlin + Maven) with full OpenTelemetry / Prometheus / Grafana / Inspector Axon observability, staged on the `migration-ready/af5` branch as the pre-migration source for an upcoming AF4 → AF5 migration.
+**Keywords:** auction house, axon 4, observability, opentelemetry, prometheus, grafana, inspector axon, microservices, multi-module, kotlin, maven, migration-ready
+
+- **axon4:** [details](axon-examples_axon4_auction-house.md) — branch `migration-ready/af5` · Kotlin · Maven
+- **axon5:** _migration pending_
+
 ## bike-rental-extended
 Multi-module bike-rental demo whose Axon 5 side migrates the legacy `@Saga` PaymentSaga using a **repository-based state pattern** instead of the Workflow extension — concrete reference for "migration without Workflow".
 **Keywords:** bike rental, axon 4, axon 5, saga, payment saga, repository-based state, no workflow extension, deadline limitation, migration
