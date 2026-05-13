@@ -39,17 +39,20 @@ flowchart TD
 |---|---|---|---|
 | 1 | openrewrite | Axon 4 dependency, no AF5 BOM | Run `axon4to5-openrewrite --framework axon|axoniq --commit false`. Do not compile. |
 | 2 | aggregate | `@Aggregate`, `@AggregateRoot` | `@EventSourced` entity, `EventAppender`, entity creator, member/subtype mapping, `AxonTestFixture`. |
-| 3 | event-processor | `@EventHandler`, `@ProcessingGroup` | `@Namespace`, AF5 handler imports, dispatcher parameter, sequencing, processor config. |
-| 4 | command-gateway | AF4 `CommandGateway` / `ReactorCommandGateway` in non-handler caller | AF5 command dispatch preserving blocking/async/reactive/callback shape. |
-| 5 | query-gateway | AF4 `QueryGateway` / `ReactorQueryGateway` in non-handler caller | AF5 query dispatch preserving names, response types, subscription/scatter behavior. |
-| 6 | query-handler | `@QueryHandler` | AF5 query annotations/imports; preserve names and return contracts. |
-| 7 | interceptors | `MessageDispatchInterceptor`, `MessageHandlerInterceptor` | AF5 `interceptOnDispatch` / `interceptOnHandle`, `ProcessingContext`, registration/order. |
-| 8 | event-storage-engine | AF4 event store/configurer wiring or direct `EventStore` reads | Explicit aggregate-based AF5 engine; route generic config reads/writes here. |
-| 9 | final-build | all rows done | Cleanup isolated scopes, promote deps, run full build. |
+| 3 | command-handler | `@CommandHandler` outside aggregate | AF5 command annotation/imports; preserve return type, validation, unit of work side effects. |
+| 4 | event-processor | `@EventHandler`, `@ProcessingGroup` | `@Namespace`, AF5 handler imports, dispatcher parameter, sequencing, processor config. |
+| 5 | command-gateway | AF4 `CommandGateway` / `ReactorCommandGateway` in non-handler caller | AF5 command dispatch preserving blocking/async/reactive/callback shape. |
+| 6 | query-gateway | AF4 `QueryGateway` / `ReactorQueryGateway` in non-handler caller | AF5 query dispatch preserving names, response types, subscription/scatter behavior. |
+| 7 | query-handler | `@QueryHandler` | AF5 query annotations/imports; preserve names and return contracts. |
+| 8 | interceptors | `MessageDispatchInterceptor`, `MessageHandlerInterceptor` | AF5 `interceptOnDispatch` / `interceptOnHandle`, `ProcessingContext`, registration/order. |
+| 9 | configuration | `Configurer`, `ConfigurerModule`, bus/register wiring | AF5 config modules, processor policy, DLQ, serializer, metrics/tracing decisions. |
+| 10 | event-storage-engine | AF4 event store wiring or direct `EventStore` reads | Explicit aggregate-based AF5 engine; route generic event reads/writes here. |
+| 11 | test-fixture | `AggregateTestFixture`, `SagaTestFixture`, `AxonTestFixture` | AF5 fixture setup, registered entities, disabled Axon Server when needed. |
+| 12 | final-build | all rows done | Cleanup isolated scopes, promote deps, run full build. |
 
-Exclude gateway/interceptor routes when the same class is also a handler; route
-handlers first. Saga annotations win before gateway/handler routing and go to
-the `saga` blocker path.
+Route a mixed file by its most invasive Axon role: saga, aggregate,
+command-handler, event-processor, query-handler, gateways, interceptors,
+configuration, event storage, tests.
 
 ## Recipe Checklist
 
