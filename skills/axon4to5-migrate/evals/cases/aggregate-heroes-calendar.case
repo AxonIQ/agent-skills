@@ -2,8 +2,8 @@
 # aggregates with different shapes from the same project.
 
 recipe: aggregate
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java
+af4: evals/fixtures/axon4/heroes/Calendar.java
+af5: evals/fixtures/axon5/heroes/Calendar.java
 
 require: @EventSourced(tagKey = "Calendar"
 require: EventAppender eventAppender

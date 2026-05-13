@@ -1,8 +1,8 @@
-# Phase #8 configuration sweep: SequencingPolicy + correlation provider package moves.
+# event-storage-engine config sweep: SequencingPolicy + correlation provider package moves.
 
 recipe: event-storage-engine
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java
+af4: evals/fixtures/axon4/heroes/GameConfiguration.java
+af5: evals/fixtures/axon5/heroes/GameConfiguration.java
 
 # AF5 imports
 require: import org.axonframework.messaging.core.sequencing.SequencingPolicy

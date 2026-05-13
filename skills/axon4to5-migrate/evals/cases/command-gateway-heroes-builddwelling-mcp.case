@@ -2,8 +2,8 @@
 # (NOT a synchronous callback — no .orTimeout().join() needed).
 
 recipe: command-gateway
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java
+af4: evals/fixtures/axon4/heroes/BuildDwellingMcp.java
+af5: evals/fixtures/axon5/heroes/BuildDwellingMcp.java
 
 require: import org.axonframework.messaging.commandhandling.gateway.CommandGateway
 require: CompletableFuture

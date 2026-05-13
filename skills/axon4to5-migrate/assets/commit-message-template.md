@@ -1,7 +1,7 @@
 # Commit message template
 
 ```
-<type>(af5-migration): <one-line> (Migration Phase #<N>)
+<type>(af5-migration): <one-line>
 
 Verified via: <axon4to5-isolatedtest invocation or `./mvnw test-compile …`>
 <wiring>; <one or two lines on variant / decisions if non-obvious>
@@ -9,7 +9,7 @@ Verified via: <axon4to5-isolatedtest invocation or `./mvnw test-compile …`>
 
 `<type>`: `chore` (one-shot, no behavior change) / `refactor` (iterative migration of one item) / `feat` (storage-engine wiring) / `fix` (stabilization) / `docs` (decision-only).
 
-Subject ≤ 70 chars. "Migration Phase #N" suffix recommended for code commits — readable `git log --oneline`.
+Subject ≤ 70 chars.
 
 ## Rules
 

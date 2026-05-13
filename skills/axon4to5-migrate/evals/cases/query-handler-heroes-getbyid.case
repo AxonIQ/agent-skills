@@ -1,8 +1,8 @@
 # Query-handler recipe — the simplest case: import-only, body untouched.
 
 recipe: query-handler
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java
+af4: evals/fixtures/axon4/heroes/GetDwellingByIdQueryHandler.java
+af5: evals/fixtures/axon5/heroes/GetDwellingByIdQueryHandler.java
 
 require: import org.axonframework.messaging.queryhandling.annotation.QueryHandler
 require: @QueryHandler

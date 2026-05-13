@@ -1,4 +1,4 @@
-# Recipe: openrewrite (Migration Phase #1)
+# Recipe: openrewrite
 
 Thin wrapper around the external **`axon4to5-openrewrite`** skill. Decides `--framework` from pinned license, invokes the skill, classifies the resulting diff.
 
@@ -121,11 +121,10 @@ decisions:
   framework: axon | axoniq
   bail-reason: <one-line from external skill | "n/a">
   behavior-changes-flagged: yes | no | "n/a"
-caller-expects: { commit: <true on success / false otherwise>, next: <proceed | ask-user | halt> }
 notes: <behavior-change warnings on success; external skill's bail message verbatim on failed>
 ```
 
-Orchestrator commit subject: `chore(af5-migration): apply OpenRewrite recipe (--framework <FRAMEWORK>) (Migration Phase #1)`.
+Orchestrator commit subject: `chore(af5-migration): apply OpenRewrite recipe (--framework <FRAMEWORK>)`.
 
 ## Subagent guidelines
 

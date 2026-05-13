@@ -2,8 +2,8 @@
 # and a snapshotTriggerDefinition (B1 blocker — resolved as accept-drop).
 
 recipe: aggregate
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/Dwelling.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/Dwelling.java
+af4: evals/fixtures/axon4/heroes/Dwelling.java
+af5: evals/fixtures/axon5/heroes/Dwelling.java
 
 # Path A — Spring stereotype + entity attributes
 require: @EventSourced(tagKey = "Dwelling"

@@ -2,8 +2,8 @@
 # dispatches commands in-handler, uses @MetaDataValue + sequencing policy.
 
 recipe: event-processor
-af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java
-af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java
+af4: evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java
+af5: evals/fixtures/axon5/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java
 
 # @ProcessingGroup -> @Namespace (1:1 string preserved)
 require: @Namespace("Automation_WhenCreatureRecruitedThenAddToArmy_Processor")

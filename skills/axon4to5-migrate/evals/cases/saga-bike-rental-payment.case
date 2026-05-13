@@ -3,8 +3,8 @@
 # afterwards (Shape B — @Component + JPA state + @Scheduled replacing deadlines).
 
 recipe: saga
-af4: axon4/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentSaga.java
-af5: axon5/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentSaga.java
+af4: evals/fixtures/axon4/bike-rental-extended/PaymentSaga.java
+af5: evals/fixtures/axon5/bike-rental-extended/PaymentSaga.java
 
 # AF5 component shape (Shape B)
 require: @Component

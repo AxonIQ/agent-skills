@@ -1,34 +1,30 @@
 #!/usr/bin/env bash
 # Evals runner for axon4to5-migrate.
 #
+# Reads each evals/cases/<name>.case and verifies the bundled AF5 fixture
+# satisfies the require: / forbid: pattern set.
+#
+# Case file format:
+#   recipe:  <recipe-name>                 # informational
+#   af4:     <path under evals/fixtures/>  # informational (baseline)
+#   af5:     <path under evals/fixtures/>  # required — file is grepped
+#   require: <literal substring>           # must appear in af5
+#   forbid:  <literal substring>           # must NOT appear in af5
+#
 # Usage:
-#   ./skills/axon4to5-migrate/evals/run.sh                # run all cases
-#   ./skills/axon4to5-migrate/evals/run.sh aggregate      # run cases matching "aggregate"
+#   ./skills/axon4to5-migrate/evals/run.sh             # all cases
+#   ./skills/axon4to5-migrate/evals/run.sh aggregate   # filter by name substring
 #
-# Each evals/cases/<name>.case file has the format:
+# Exit code: 0 = every case passed, 1 = at least one failure.
 #
-#   recipe: <recipe-name>
-#   af4: <repo-relative path under .knowledge/repositories/axon-examples/>
-#   af5: <repo-relative path under .knowledge/repositories/axon-examples/>
-#   require: <literal substring that MUST appear in af5>
-#   forbid:  <literal substring that MUST NOT appear in af5>
-#
-# Lines starting with `#` are comments. Blank lines are ignored.
-#
-# Exit code: 0 = every case passed; 1 = at least one failure.
+# Fixtures are bundled by `evals/build.sh`. If `evals/build.sh check` reports
+# drift, refresh by running `evals/build.sh` from the repo root.
 
 set -u
 
 evals_dir="$(cd "$(dirname "$0")" && pwd)"
-repo_root="$(cd "$evals_dir/../../.." && pwd)"
-examples_root="$repo_root/.knowledge/repositories/axon-examples"
-
+skill_dir="$(cd "$evals_dir/.." && pwd)"
 filter="${1:-}"
-
-if [ ! -d "$examples_root" ]; then
-  echo "ERROR: examples root not found at $examples_root" >&2
-  exit 2
-fi
 
 pass=0
 fail=0
@@ -43,7 +39,6 @@ for case_file in "$evals_dir/cases"/*.case; do
     continue
   fi
 
-  af4=""
   af5=""
   requires=()
   forbids=()
@@ -52,9 +47,8 @@ for case_file in "$evals_dir/cases"/*.case; do
     line="${raw_line%$'\r'}"
     case "$line" in
       \#*|"") continue ;;
-      af4:*)     af4="${line#af4:}"; af4="${af4# }" ;;
       af5:*)     af5="${line#af5:}"; af5="${af5# }" ;;
-      recipe:*)  : ;;
+      af4:*|recipe:*) : ;;
       require:*) requires+=("${line#require:}") ;;
       forbid:*)  forbids+=("${line#forbid:}") ;;
       *)         echo "WARN  $name: unrecognized line: $line" >&2 ;;
@@ -62,29 +56,18 @@ for case_file in "$evals_dir/cases"/*.case; do
   done < "$case_file"
 
   if [ -z "$af5" ]; then
-    echo "SKIP  $name (no af5: target — informational case)"
+    echo "SKIP  $name (no af5: target)"
     skip=$((skip + 1))
     continue
   fi
 
-  af5_path="$examples_root/$af5"
+  af5_path="$skill_dir/$af5"
   if [ ! -f "$af5_path" ]; then
     echo "FAIL  $name"
-    echo "      missing AF5 reference: $af5"
+    echo "      missing fixture: $af5 (run evals/build.sh)"
     fail=$((fail + 1))
     failed_names+=("$name")
     continue
-  fi
-
-  if [ -n "$af4" ]; then
-    af4_path="$examples_root/$af4"
-    if [ ! -f "$af4_path" ]; then
-      echo "FAIL  $name"
-      echo "      missing AF4 baseline: $af4"
-      fail=$((fail + 1))
-      failed_names+=("$name")
-      continue
-    fi
   fi
 
   problems=()

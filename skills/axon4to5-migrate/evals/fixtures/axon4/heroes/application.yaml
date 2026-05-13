@@ -1,0 +1,88 @@
+server:
+  port: 3773
+spring:
+  application:
+    name: heroesofddd
+  threads:
+    virtual:
+      enabled: true
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: "Heroes of Might & Magic III - DDD/Event Sourcing Server"
+        version: "1.0.0"
+        instructions: "MCP server for Heroes of Might & Magic III domain built with DDD, Event Sourcing, and Axon Framework. Provides domain operations, game management tools, and educational DDD resources."
+  datasource:
+    url: jdbc:postgresql://localhost:6446/heroes_of_ddd_development
+    username: heroes_of_ddd_db_user
+    password: heroes_of_ddd_db_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+axon:
+  axonserver:
+    enabled: false
+      #  eventhandling:
+      #    processors:
+    # (Optional) You can override processor settings here if needed
+    #  eventstore:
+    # No need to specify storage-engine if axon-server is disabled and JPA is on classpath
+    # Axon will auto-configure JpaEventStorageEngine
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+  eventhandling:
+    processors:
+      Automation_WhenCreatureRecruitedThenAddToArmy_Processor:
+        mode: pooled
+        sequencing-policy: gameIdSequencingPolicy
+        dlq:
+          enabled: true
+      Automation_WhenWeekStartedThenProclaimWeekSymbol_Processor:
+        mode: pooled
+        sequencing-policy: gameIdSequencingPolicy
+        dlq:
+          enabled: true
+      Automation_WhenWeekSymbolProclaimedThenIncreaseDwellingAvailableCreatures_Processor:
+        mode: pooled
+        sequencing-policy: gameIdSequencingPolicy
+        dlq:
+          enabled: true
+      ReadModel_Dwelling:
+        mode: pooled
+        sequencing-policy: gameIdSequencingPolicy
+        initial-segment-count: 2
+        batch-size: 5
+      Read_GetAllDwellings_QueryCache:
+        mode: subscribing
+        sequencing-policy: gameIdSequencingPolicy
+#  update-check:
+#    disabled: true
+application:
+  maintenance:
+    enabled: true
+  interceptors:
+    paid-commands:
+      enabled: false
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+
+axoniq:
+  console:
+    application-name: HeroesOfDDD-Axon4
+    credentials: XYZ
+    dlq-mode: FULL

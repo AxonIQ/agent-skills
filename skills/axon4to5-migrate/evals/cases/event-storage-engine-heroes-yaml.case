@@ -1,9 +1,9 @@
-# Phase #8: application.yaml — axon.serializer.* renamed to axon.converter.*;
+# event-storage-engine — YAML: application.yaml — axon.serializer.* renamed to axon.converter.*;
 # per-processor `sequencing-policy:` removed (moved to class-level annotation).
 
 recipe: event-storage-engine
-af4: axon4/heroes/src/main/resources/application.yaml
-af5: axon5/heroes/src/main/resources/application.yaml
+af4: evals/fixtures/axon4/heroes/application.yaml
+af5: evals/fixtures/axon5/heroes/application.yaml
 
 require: converter:
 require: mode: pooled

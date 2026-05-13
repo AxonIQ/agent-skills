@@ -1,0 +1,98 @@
+# Manifest of source files copied INTO the skill at build time.
+#
+# Format (TSV, # = comment, blank lines ignored):
+#   <source-path-relative-to-repo-root>    <dest-path-relative-to-skill-root>
+#
+# Run `./evals/build.sh` from the skill dir (or any CWD — it resolves paths) to
+# refresh fixtures. The skill must remain self-contained: every file an eval
+# case references MUST be listed below and present under evals/fixtures/.
+
+# --- heroes (AF4 / AF5 paired Spring Boot project, JPA backend) ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/Dwelling.java	evals/fixtures/axon4/heroes/Dwelling.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/Dwelling.java	evals/fixtures/axon5/heroes/Dwelling.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java	evals/fixtures/axon4/heroes/Calendar.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java	evals/fixtures/axon5/heroes/Calendar.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java	evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java	evals/fixtures/axon5/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/recruitcreature/RecruitCreatureRestApi.java	evals/fixtures/axon4/heroes/RecruitCreatureRestApi.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/recruitcreature/RecruitCreatureRestApi.java	evals/fixtures/axon5/heroes/RecruitCreatureRestApi.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java	evals/fixtures/axon4/heroes/BuildDwellingMcp.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java	evals/fixtures/axon5/heroes/BuildDwellingMcp.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsMcp.java	evals/fixtures/axon4/heroes/GetAllDwellingsMcp.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsMcp.java	evals/fixtures/axon5/heroes/GetAllDwellingsMcp.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java	evals/fixtures/axon4/heroes/GetDwellingByIdQueryHandler.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java	evals/fixtures/axon5/heroes/GetDwellingByIdQueryHandler.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/HeroesOfDDDApplication.java	evals/fixtures/axon4/heroes/HeroesOfDDDApplication.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/HeroesOfDDDApplication.java	evals/fixtures/axon5/heroes/HeroesOfDDDApplication.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java	evals/fixtures/axon4/heroes/GameConfiguration.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java	evals/fixtures/axon5/heroes/GameConfiguration.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/resources/application.yaml	evals/fixtures/axon4/heroes/application.yaml
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/resources/application.yaml	evals/fixtures/axon5/heroes/application.yaml
+
+# --- heroes: additional aggregates cited by aggregate recipe ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/astrologers/write/Astrologers.java	evals/fixtures/axon4/heroes/Astrologers.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/astrologers/write/Astrologers.java	evals/fixtures/axon5/heroes/Astrologers.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/resourcespool/write/ResourcesPool.java	evals/fixtures/axon4/heroes/ResourcesPool.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/resourcespool/write/ResourcesPool.java	evals/fixtures/axon5/heroes/ResourcesPool.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java	evals/fixtures/axon4/heroes/Army.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java	evals/fixtures/axon5/heroes/Army.java
+
+# --- heroes: additional command-gateway controllers ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java	evals/fixtures/axon4/heroes/BuildDwellingRestApi.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java	evals/fixtures/axon5/heroes/BuildDwellingRestApi.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/changeavailablecreatures/IncreaseAvailableCreaturesRestApi.java	evals/fixtures/axon4/heroes/IncreaseAvailableCreaturesRestApi.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/changeavailablecreatures/IncreaseAvailableCreaturesRestApi.java	evals/fixtures/axon5/heroes/IncreaseAvailableCreaturesRestApi.java
+
+# --- heroes: additional event-processor variants ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java	evals/fixtures/axon4/heroes/DwellingReadModelProjector.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java	evals/fixtures/axon5/heroes/DwellingReadModelProjector.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/maintenance/write/resetprocessor/StreamProcessorsOperations.java	evals/fixtures/axon4/heroes/StreamProcessorsOperations.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/maintenance/write/resetprocessor/StreamProcessorsOperations.java	evals/fixtures/axon5/heroes/StreamProcessorsOperations.java
+
+# --- heroes: query-gateway / query-handler additional variants ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdRestApi.java	evals/fixtures/axon4/heroes/GetDwellingByIdRestApi.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdRestApi.java	evals/fixtures/axon5/heroes/GetDwellingByIdRestApi.java
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsQueryHandler.java	evals/fixtures/axon4/heroes/GetAllDwellingsQueryHandler.java
+.knowledge/repositories/axon-examples/axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsQueryHandler.java	evals/fixtures/axon5/heroes/GetAllDwellingsQueryHandler.java
+
+# --- heroes: interceptor (AF5 paired file does NOT exist in upstream — AF4 only) ---
+
+.knowledge/repositories/axon-examples/axon4/heroes/src/main/java/com/dddheroes/heroesofddd/resourcespool/write/withdraw/PaidCommandInterceptor.java	evals/fixtures/axon4/heroes/PaidCommandInterceptor.java
+
+# --- gamerental: alternative aggregate + storage-engine reference (Axon Server backend) ---
+
+.knowledge/repositories/axon-examples/axon4/gamerental/src/main/java/io/axoniq/demo/gamerental/command/Game.java	evals/fixtures/axon4/gamerental/Game.java
+.knowledge/repositories/axon-examples/axon5/gamerental/src/main/java/io/axoniq/demo/gamerental/command/Game.java	evals/fixtures/axon5/gamerental/Game.java
+
+# --- bike-rental-extended (AF4 / AF5 paired multi-module project with saga + named queries) ---
+
+.knowledge/repositories/axon-examples/axon4/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentSaga.java	evals/fixtures/axon4/bike-rental-extended/PaymentSaga.java
+.knowledge/repositories/axon-examples/axon5/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentSaga.java	evals/fixtures/axon5/bike-rental-extended/PaymentSaga.java
+
+.knowledge/repositories/axon-examples/axon4/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/PaymentController.java	evals/fixtures/axon4/bike-rental-extended/PaymentController.java
+.knowledge/repositories/axon-examples/axon5/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/PaymentController.java	evals/fixtures/axon5/bike-rental-extended/PaymentController.java
+
+.knowledge/repositories/axon-examples/axon5/bike-rental-extended/payment/src/main/java/io/axoniq/demo/bikerental/payment/GetStatusQuery.java	evals/fixtures/axon5/bike-rental-extended/GetStatusQuery.java
+
+# Saga-side AF5 supporting classes (new in AF5 — Shape B outcome)
+.knowledge/repositories/axon-examples/axon5/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentState.java	evals/fixtures/axon5/bike-rental-extended/PaymentState.java
+.knowledge/repositories/axon-examples/axon5/bike-rental-extended/rental/src/main/java/io/axoniq/demo/bikerental/rental/paymentsaga/PaymentStateRepository.java	evals/fixtures/axon5/bike-rental-extended/PaymentStateRepository.java

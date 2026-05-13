@@ -14,7 +14,7 @@ Intermediate phases leave the project non-compiling — by design. Per-target `i
 
 ## ▶︎ RESUME HERE — read first
 
-- **Current Migration Phase:** _e.g. `#2 — aggregate (iterative)`_
+- **Current recipe:** _e.g. `aggregate (iterative)`_
 - **Phase status:** _pending / in-progress / awaiting-checkpoint / paused / complete_
 - **Next action (one sentence):** _e.g. "Migrate aggregate `org.example.Faculty`."_
 - **Exact recipe:** _e.g. `aggregate` with `target=org.example.Faculty`_
@@ -57,29 +57,30 @@ Frozen for the run. NEVER re-ask.
 
 ---
 
-## Phase status
+## Recipe status
 
 Legend: `pending` · `in-progress` · `awaiting-checkpoint` · `complete` · `paused` · `skipped`
 
-| # | Recipe | Mode | Status | Items done / total | Last commit |
+| Order | Recipe | Mode | Status | Items done / total | Last commit |
 |---|---|---|---|---|---|
-| 1 | openrewrite | one-shot | pending | — | — |
+| 1st | openrewrite | one-shot | pending | — | — |
 | 2 | aggregate | iterative | pending | 0 / ? | — |
 | 3 | event-processor | iterative | pending | 0 / ? | — |
 | 4 | command-gateway | iterative | pending | 0 / ? | — |
 | 5 | query-gateway | iterative | pending | 0 / ? | — |
 | 6 | query-handler | iterative | pending | 0 / ? | — |
 | 7 | interceptors | iterative | pending | 0 / ? | — |
-| 8 | event-storage-engine | one-shot + config sweep | pending | 0 / ? | — |
+| 8 | config-reads | iterative | pending | 0 / ? | — |
+| last | event-storage-engine | one-shot + config sweep | pending | 0 / ? | — |
 | — | stabilization | — | pending | — | — |
 
 > When a phase enters `in-progress`, fill its plan section below with the **complete enumerated list** of FQ classes — don't rely on a fresh session re-running discovery.
 
 ---
 
-## Per-phase plan
+## Per-recipe plan
 
-### Migration Phase #1 — openrewrite
+### openrewrite
 
 - Recipe(s) run: _e.g. `org.axonframework.migration.UpgradeAxon4ToAxoniq5`_
 - Resolved version: _e.g. `5.1.0`_
@@ -87,7 +88,7 @@ Legend: `pending` · `in-progress` · `awaiting-checkpoint` · `complete` · `pa
 - Behavior changes flagged: _verbatim_
 - Commit: `<sha>` — `chore(af5-migration): apply OpenRewrite recipe …`
 
-### Migration Phase #N — `<recipe>`
+### `<recipe>`
 
 | # | FQ class | FQ test | Status | Commit |
 |---|---|---|---|---|
