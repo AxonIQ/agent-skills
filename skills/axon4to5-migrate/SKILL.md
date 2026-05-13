@@ -28,9 +28,11 @@ Read these before touching the target project:
 
 1. [references/routing.md](references/routing.md) — mode dispatch, phase order,
    target discovery, single-file routing, and project-wide unsupported features.
-2. [references/state.md](references/state.md) — `progress.md`, resume,
+2. [references/flow.md](references/flow.md) — one-page diagram of the runner,
+   recipe loop, and finalization.
+3. [references/state.md](references/state.md) — `progress.md`, resume,
    pinned decisions, commits, and final cleanup.
-3. [references/recipe-contract.md](references/recipe-contract.md) — how to run
+4. [references/recipe-contract.md](references/recipe-contract.md) — how to run
    a recipe and interpret its `result:`.
 
 Then load only the recipe file(s) needed for the current target. Do not preload
@@ -128,6 +130,7 @@ The final project build is the only direct build command this skill runs:
 Core:
 
 - [references/routing.md](references/routing.md)
+- [references/flow.md](references/flow.md)
 - [references/state.md](references/state.md)
 - [references/recipe-contract.md](references/recipe-contract.md)
 - [references/output-contract.md](references/output-contract.md)
