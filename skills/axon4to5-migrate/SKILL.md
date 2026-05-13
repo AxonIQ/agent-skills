@@ -85,62 +85,99 @@ Blocker keys (`B1`..`B10`) live in [references/blockers.md](references/blockers.
 
 ## Orchestrator flow
 
+**Two loops, one switch.** The outer loop drains a unit queue; the inner loop retries on user-deferred decisions. Everything else is a flat 6-way switch on `output.result`. **Double-bordered nodes `[[…]]` (also dashed-blue) are subagent-eligible** — read-only or pure-analysis steps with no `AskUserQuestion`, no git, no shared state mutation.
+
+```mermaid
+flowchart TD
+    Start([User invokes skill])
+    State[ensure_state<br/>INIT if no progress.md · ensure_pinned · resume]
+    Mode{mode}
+    EnumSingle[queue = arg]
+    EnumPhased[[enumerate via routing table<br/>top-down, minus deferred]]
+    EnumDebug[[compile + cluster errors<br/>by root cause]]
+
+    Loop{next unit?}
+    Classify[[classify unit → row]]
+    Recipe[[recipe.execute<br/>Preflight · Procedure · EndCondition]]
+    Act{output.result}
+
+    Commit[/commit code + progress.md/]
+    NoCommit[no commit]
+    CommitBlocked[/commit comment-out + TODO/]
+    Ask[AskUserQuestion]
+
+    WrapUp{mode == phased?}
+    Finalize[FINALIZE<br/>cleanup isolated-* · full build]
+    Stop([STOP])
+    Halt([HALT])
+
+    Start --> State --> Mode
+    Mode -->|single| EnumSingle --> Loop
+    Mode -->|phased| EnumPhased --> Loop
+    Mode -->|debug| EnumDebug --> Loop
+
+    Loop -->|yes| Classify --> Recipe --> Act
+    Loop -->|done| WrapUp
+
+    Act -->|success| Commit --> Loop
+    Act -->|skipped / rejected| NoCommit --> Loop
+    Act -->|blocked| CommitBlocked --> Loop
+    Act -->|needs-decision| Ask
+    Act -->|failed| Halt
+
+    Ask -->|fix| Recipe
+    Ask -->|defer| Loop
+    Ask -->|stop| Halt
+
+    WrapUp -->|yes| Finalize --> Stop
+    WrapUp -->|no| Stop
+
+    classDef subagent stroke:#1976d2,stroke-width:3px,stroke-dasharray:5 5
+    class EnumPhased,EnumDebug,Classify,Recipe subagent
 ```
-ORCHESTRATE($ARGUMENTS):
-  target = resolve_and_validate()           # exists, has pom.xml/build.gradle, git repo
-  mode   = parse($ARGUMENTS)
 
-  SINGLE: ensure_pinned(); row = classify(arg); run_recipe(row, arg); /clear; STOP
+### Subagent boundaries (dashed nodes)
 
-  DEBUG:  loop until green or stopped:
-            compile target → diagnostics
-            (row, item) = cluster_by_root_cause()
-            run_recipe(row, item)
-            if compile output unchanged → AskUserQuestion: surface/skip-defer/stop
+| Step | Why subagent-safe |
+|---|---|
+| `enumerate (phased)` | discovery greps walk the project read-only; results are file lists |
+| `enumerate (debug)` | parses compile output read-only; returns clustered (row, item) pairs |
+| `classify (unit)` | inspects a single file; emits a recipe selection — no edits |
+| `recipe.execute` | recipe's Preflight + Procedure run as analysis + edit proposal — **only when the recipe declares `## Subagent guidelines` AND its Procedure does NOT use `AskUserQuestion`** (those prompts must reach the main conversation) |
 
-  PHASED: if no progress.md → INIT
-          else: read progress.md; handle dirty tree; confirm resume
-          for each routing-table row not yet done:
-            items = discover(row) − deferred − unsupported
-            for item in items: run_recipe(row, item)
-            AskUserQuestion: continue/pause/stop
-          FINALIZE
+Everything else is **orchestrator-owned**: `ensure_state` / `INIT` issue `AskUserQuestion` for pinned decisions; `Commit` / `CommitBlocked` own git; `Ask` is interactive; `Finalize` decides on red builds.
 
+### Procedural sketch (for code-style readers)
 
-run_recipe(row, item):
-  inputs = { target: item, wiring: pinned, build-tool: pinned, license: pinned }
-  output = execute(row.recipe, inputs)      # ## Preflight → ## Procedure → ## End condition
-  act(output)                               # branch on output.result — see table above
-
-
-INIT (first PHASED run only):
-  mkdir <target>/.axon4to5-migration/; seed from assets/*-template.md
-  ensure_pinned()                            # MANDATORY before any recipe runs
-  scan project for saga blockers (per blockers.md detection); record decisions
-  commit "chore(af5-migration): initialize migration"
-
-
-ensure_pinned():                              # called from INIT AND from SINGLE
-  license:    recommend_license() → AskUserQuestion with rec listed first as "(Recommended) — {reason}"
-              free-af5 | axoniq-commercial
-              rec = axoniq-commercial if: axon-{mongo,kafka,amqp,tracing-opentelemetry}, org.axoniq.* dep,
-                                          saga/upcaster/replay/DLQ-on-mongo (features not in free AF5)
-              else: free-af5
-  wiring:     axon-spring-boot-starter dep OR @SpringBootApplication      → spring-boot
-              DefaultConfigurer.defaultConfiguration / direct Configurer   → framework-config
-              else AskUserQuestion
-  build-tool: pom.xml only → maven; build.gradle* only → gradle; both → AskUserQuestion; neither → HALT
-
-
-FINALIZE (after every row done):
-  for each isolated-<X> scope in progress.md: invoke axon4to5-isolatedtest cleanup:true
-  promote AF5 deps; remove activation refs from scripts/CI/docs
-  full build:  maven → ./mvnw -f <target>/pom.xml clean verify
-               gradle → ./gradlew -p <target> clean build
-  if red, classify: recipe-traceable → reopen that recipe; missed-dep → diff scope deps + retry;
-                    env/infra → AskUserQuestion
-  commit "chore(af5-migration): remove isolated-* scaffolding"; recommend /clear
 ```
+queue = enumerate(mode)              # single → [arg]; phased → routing-table walk;
+                                     # debug → cluster build errors
+for unit in queue:
+  row    = classify(unit)
+  output = recipe.execute(row, unit)
+  act(output)                         # flat switch on output.result — see table above
+wrap_up(mode)                         # phased → FINALIZE; otherwise STOP
+```
+
+### One-shots
+
+**INIT** (first PHASED run, before the queue):
+- `mkdir <target>/.axon4to5-migration/`; seed from `assets/*-template.md`.
+- `ensure_pinned()` — mandatory.
+- scan project for blockers per [blockers.md](references/blockers.md) Detection greps (saga, mongo-event-store, jdbc-event-store, axon-kafka); record decisions.
+- commit `chore(af5-migration): initialize migration`.
+
+**ensure_pinned()** (INIT + first SINGLE run on a virgin project):
+- **license** — `recommend_license()` returns `axoniq-commercial` if project depends on `axon-{mongo,kafka,amqp,tracing-opentelemetry}` / any `org.axoniq.*` artifact / uses saga / upcaster / replay / DLQ-on-mongo; else `free-af5`. `AskUserQuestion` with recommendation listed first as `(Recommended) — {reason}`.
+- **wiring** — `axon-spring-boot-starter` dep OR `@SpringBootApplication` → `spring-boot`; `DefaultConfigurer.defaultConfiguration` or direct `Configurer` → `framework-config`; else `AskUserQuestion`.
+- **build-tool** — `pom.xml` only → `maven`; `build.gradle*` only → `gradle`; both → `AskUserQuestion`; neither → HALT.
+
+**FINALIZE** (after every PHASED unit done):
+- for each `isolated-<X>` scope in `progress.md`: invoke `axon4to5-isolatedtest` with `cleanup: true`.
+- promote AF5 deps; remove activation refs from scripts/CI/docs.
+- full build: `./mvnw -f <target>/pom.xml clean verify` (Maven) / `./gradlew -p <target> clean build` (Gradle).
+- if red, classify: recipe-traceable → reopen that recipe; missed-dep → diff scope deps + retry; env/infra → `AskUserQuestion`.
+- commit `chore(af5-migration): remove isolated-* scaffolding`; recommend `/clear`.
 
 Pinned decisions are **never re-asked**. Stored in `progress.md` Pinned-decisions block in fixed order: license → wiring → build-tool → blocker decisions.
 
