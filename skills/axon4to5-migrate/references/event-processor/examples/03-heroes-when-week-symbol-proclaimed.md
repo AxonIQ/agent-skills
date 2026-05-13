@@ -208,7 +208,7 @@ private void increaseAvailableCreatures(CommandDispatcher commandDispatcher,
 - The second `@EventHandler` (`on(DwellingBuilt …)`) is a **pure
   projection** — no dispatcher, no command, return type stays `void`.
   Only the imports/annotations migrate (variant: pure projector — see
-  SKILL.md "Variants").
+  the recipe's "Variants" section in [../event-processor.md](../event-processor.md)).
 - Same out-of-scope concern as examples 01 and 02: `GameMetaData.with`
   still returns the AF4 `MetaData` type. Flag the helper as a separate
   follow-up rather than editing it here.

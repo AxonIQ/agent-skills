@@ -81,6 +81,6 @@ EOF
 
 ## Dirty working tree mid-phase
 
-If `git -C <target> status --porcelain` shows files the orchestrator did not touch, the orchestrator's resume protocol prompts via `AskUserQuestion`. See SKILL.md "Mid-phase dirty tree" — three options: stage-only-migration-files / let-user-clean-up / skip-this-commit.
+If `git -C <target> status --porcelain` shows files the orchestrator did not touch, the orchestrator's resume protocol prompts via `AskUserQuestion`. See SKILL.md "Dirty working tree on resume" — three options: stage-only-migration-files / let-user-clean-up / skip-this-commit.
 
 Don't silently sweep user's WIP into a migration commit.
