@@ -97,12 +97,36 @@ def route(content: str) -> str | None:
 def check_entrypoint() -> None:
     skill = read(ROOT / "SKILL.md")
     lines = skill.splitlines()
-    assert_true(len(lines) <= 220, f"SKILL.md too long: {len(lines)} lines")
-    for required in ["references/routing.md", "references/state.md", "references/recipe-contract.md"]:
+    assert_true(len(lines) <= 180, f"SKILL.md too long: {len(lines)} lines")
+    for required in ["references/routing.md", "references/flow.md", "references/state.md", "references/recipe-contract.md"]:
         assert_true(required in skill, f"SKILL.md does not point to {required}")
     forbidden = ["PROCESS_ITEMS", "EXECUTE_RECIPE", "digraph", "orchestration.svg"]
     for token in forbidden:
         assert_true(token not in skill, f"entrypoint still contains orchestration token {token!r}")
+
+
+def check_size_and_nesting() -> None:
+    too_long: list[str] = []
+    too_deep: list[str] = []
+    for path in ROOT.rglob("*.md"):
+        rel = path.relative_to(ROOT)
+        if rel.parts and rel.parts[0] == "docs":
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines()
+        limit = 180 if rel.name == "SKILL.md" else 30 if "examples" in rel.parts else 130
+        if len(lines) > limit:
+            too_long.append(f"{rel}: {len(lines)} > {limit}")
+        for i, line in enumerate(lines, start=1):
+            if line.startswith("####"):
+                too_deep.append(f"{rel}:{i}")
+    assert_true(not too_long, "markdown file(s) too long: " + "; ".join(too_long[:20]))
+    assert_true(not too_deep, "heading nesting deeper than ###: " + "; ".join(too_deep[:20]))
+    oversized_docs = []
+    for path in (ROOT / "docs").rglob("*.adoc"):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if len(lines) > 220:
+            oversized_docs.append(f"{path.relative_to(ROOT)}: {len(lines)} > 220")
+    assert_true(not oversized_docs, "docs too long: " + "; ".join(oversized_docs[:20]))
 
 
 def check_artifacts_removed() -> None:
@@ -162,6 +186,7 @@ def check_vocabulary() -> None:
 
 def main() -> None:
     check_entrypoint()
+    check_size_and_nesting()
     check_artifacts_removed()
     check_routing()
     check_recipe_surface()

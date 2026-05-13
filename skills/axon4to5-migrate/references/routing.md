@@ -11,6 +11,18 @@ Use this file to choose the next recipe. It is the only phase-order table.
 
 ## Phase Order
 
+```mermaid
+flowchart LR
+  OR[OpenRewrite] --> AG[Aggregate]
+  AG --> EP[Event Processor]
+  EP --> CG[Command Gateway]
+  CG --> QG[Query Gateway]
+  QG --> QH[Query Handler]
+  QH --> IN[Interceptors]
+  IN --> ES[Event Storage + Config]
+  ES --> ST[Stabilization]
+```
+
 | Phase | Recipe | Mode | Discovery | Applies when | Notes |
 |---:|---|---|---|---|---|
 | 1 | `openrewrite` | one-shot | n/a | Project depends on Axon 4 and is not yet on AF5 BOM/deps. | Calls `axon4to5-openrewrite`. |
