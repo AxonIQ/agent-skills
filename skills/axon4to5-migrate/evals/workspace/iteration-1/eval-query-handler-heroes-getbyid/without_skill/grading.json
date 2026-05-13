@@ -1,0 +1,41 @@
+{
+  "eval_id": 7,
+  "eval_name": "query-handler-heroes-getbyid",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-1/eval-query-handler-heroes-getbyid/without_skill/outputs/GetDwellingByIdQueryHandler.java",
+  "output_exists": true,
+  "passed": 5,
+  "total": 6,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "AF5 @QueryHandler import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in output"
+    },
+    {
+      "text": "@QueryHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@QueryHandler`"
+    },
+    {
+      "text": "@Component preserved (Path A auto-discovery)",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "AF4 @QueryHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` absent \u2014 good"
+    },
+    {
+      "text": "No QueryHandlingModule registration added on Path A",
+      "passed": true,
+      "evidence": "forbidden substring `QueryHandlingModule` absent \u2014 good"
+    },
+    {
+      "text": "No configurer.register call added",
+      "passed": true,
+      "evidence": "forbidden substring `configurer.register` absent \u2014 good"
+    }
+  ]
+}

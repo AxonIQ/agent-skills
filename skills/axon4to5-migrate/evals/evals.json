@@ -1,0 +1,228 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "notes": "Each eval gives a subagent an AF4 source file plus pinned decisions (license / wiring / build-tool) and asks it to apply the matching recipe in the skill. The subagent writes the migrated file to <output_dir>/<filename>. The grader greps that file for AF5 must-haves and AF4 forbids. Output need NOT be 1:1 with the AF5 reference fixture — only the characteristic AF5 patterns are required.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "aggregate-heroes-dwelling",
+      "recipe": "aggregate",
+      "input": "evals/fixtures/axon4/heroes/Dwelling.java",
+      "output_filename": "Dwelling.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate the Axon Framework 4 aggregate at INPUT_PATH to AF5 following references/aggregate.md. Pinned decisions: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Blocker B1 (snapshotTriggerDefinition): user picked accept-drop — drop the attribute. Steps 3-14 + Path A. Don't run scoped tests; just produce the migrated file. Save the rewritten Java to OUTPUT_PATH. Do not write any other files.",
+      "assertions": [
+        { "text": "Spring stereotype @EventSourced is applied (Path A)", "type": "grep_require", "pattern": "@EventSourced" },
+        { "text": "tagKey attribute is set on @EventSourced", "type": "grep_require", "pattern": "tagKey" },
+        { "text": "AF5 EventSourced import landed", "type": "grep_require", "pattern": "org.axonframework.extension.spring.stereotype.EventSourced" },
+        { "text": "AF5 @EventSourcingHandler import landed", "type": "grep_require", "pattern": "org.axonframework.eventsourcing.annotation.EventSourcingHandler" },
+        { "text": "AF5 @EntityCreator import landed", "type": "grep_require", "pattern": "org.axonframework.eventsourcing.annotation.reflection.EntityCreator" },
+        { "text": "AF5 @CommandHandler import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.commandhandling.annotation.CommandHandler" },
+        { "text": "AF5 EventAppender import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.gateway.EventAppender" },
+        { "text": "@CommandHandler methods take EventAppender as a parameter", "type": "grep_require", "pattern": "EventAppender eventAppender" },
+        { "text": "eventAppender.append(...) replaces AggregateLifecycle.apply(...)", "type": "grep_require", "pattern": "eventAppender.append" },
+        { "text": "AF4 snapshotTriggerDefinition attribute gone (B1 accept-drop)", "type": "grep_forbid", "pattern": "@Aggregate(snapshotTriggerDefinition" },
+        { "text": "AF4 @AggregateIdentifier removed", "type": "grep_forbid", "pattern": "@AggregateIdentifier" },
+        { "text": "AF4 AggregateLifecycle references removed", "type": "grep_forbid", "pattern": "AggregateLifecycle" },
+        { "text": "AF4 @CreationPolicy annotation removed", "type": "grep_forbid", "pattern": "@CreationPolicy" },
+        { "text": "AF4 Spring @Aggregate import removed", "type": "grep_forbid", "pattern": "org.axonframework.spring.stereotype.Aggregate" },
+        { "text": "AF4 @AggregateIdentifier import removed", "type": "grep_forbid", "pattern": "org.axonframework.modelling.command.AggregateIdentifier" },
+        { "text": "AF4 @CreationPolicy import removed", "type": "grep_forbid", "pattern": "org.axonframework.modelling.command.CreationPolicy" },
+        { "text": "AF4 @CommandHandler import removed", "type": "grep_forbid", "pattern": "import org.axonframework.commandhandling.CommandHandler;" },
+        { "text": "AF4 @EventSourcingHandler import removed", "type": "grep_forbid", "pattern": "import org.axonframework.eventsourcing.EventSourcingHandler;" },
+        { "text": "AF4 AggregateLifecycle static import removed", "type": "grep_forbid", "pattern": "import static org.axonframework.modelling.command.AggregateLifecycle" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "aggregate-heroes-calendar",
+      "recipe": "aggregate",
+      "input": "evals/fixtures/axon4/heroes/Calendar.java",
+      "output_filename": "Calendar.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate the AF4 aggregate at INPUT_PATH to AF5 per references/aggregate.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. No snapshot trigger on this one — straight migration. Steps 3-14 + Path A. Save the migrated Java to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "tagKey is set to Calendar", "type": "grep_require", "pattern": "tagKey = \"Calendar\"" },
+        { "text": "EventAppender parameter present on @CommandHandler", "type": "grep_require", "pattern": "EventAppender eventAppender" },
+        { "text": "@EntityCreator present", "type": "grep_require", "pattern": "@EntityCreator" },
+        { "text": "@CommandHandler annotation kept", "type": "grep_require", "pattern": "@CommandHandler" },
+        { "text": "AF4 @AggregateIdentifier removed", "type": "grep_forbid", "pattern": "@AggregateIdentifier" },
+        { "text": "AF4 AggregateLifecycle references removed", "type": "grep_forbid", "pattern": "AggregateLifecycle" },
+        { "text": "AF4 @CreationPolicy removed", "type": "grep_forbid", "pattern": "@CreationPolicy" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "event-processor-heroes-creature",
+      "recipe": "event-processor",
+      "input": "evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java",
+      "output_filename": "WhenCreatureRecruitedThenAddToArmyProcessor.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 event-handling component to AF5 per references/event-processor.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The class injects CommandGateway and dispatches commands in-handler. Apply @ProcessingGroup → @Namespace (Step 3), rewrite CommandGateway field to method-parameter CommandDispatcher (Step 5), convert sendAndWait to async send chained on getResultMessage (Step 6), update sibling annotations (Step 4). Also annotate with @SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY) — AF4 had a @Bean SequencingPolicy keyed by gameIdSequencingPolicy reading the same metadata key. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "@Namespace replaced @ProcessingGroup with same string", "type": "grep_require", "pattern": "@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")" },
+        { "text": "AF5 Namespace import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.core.annotation.Namespace" },
+        { "text": "@SequencingPolicy with MetadataSequencingPolicy applied", "type": "grep_require", "pattern": "MetadataSequencingPolicy" },
+        { "text": "AF5 @EventHandler import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler" },
+        { "text": "AF5 @DisallowReplay import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay" },
+        { "text": "@MetadataValue (capital D dropped)", "type": "grep_require", "pattern": "@MetadataValue" },
+        { "text": "CommandDispatcher injected as method parameter", "type": "grep_require", "pattern": "CommandDispatcher commandDispatcher" },
+        { "text": "CommandDispatcher AF5 import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher" },
+        { "text": "CompletableFuture imported (async dispatch)", "type": "grep_require", "pattern": "java.util.concurrent.CompletableFuture" },
+        { "text": "AF4 @ProcessingGroup annotation gone", "type": "grep_forbid", "pattern": "@ProcessingGroup" },
+        { "text": "AF4 ProcessingGroup import gone", "type": "grep_forbid", "pattern": "org.axonframework.config.ProcessingGroup" },
+        { "text": "AF4 @EventHandler import gone", "type": "grep_forbid", "pattern": "org.axonframework.eventhandling.EventHandler" },
+        { "text": "AF4 @DisallowReplay import gone", "type": "grep_forbid", "pattern": "org.axonframework.eventhandling.DisallowReplay" },
+        { "text": "AF4 CommandGateway import gone", "type": "grep_forbid", "pattern": "org.axonframework.commandhandling.gateway.CommandGateway" },
+        { "text": "AF4 @MetaDataValue (capital D) gone", "type": "grep_forbid", "pattern": "@MetaDataValue(" },
+        { "text": "AF4 sendAndWait() gone", "type": "grep_forbid", "pattern": "commandGateway.sendAndWait" },
+        { "text": "Class-level CommandGateway field gone", "type": "grep_forbid", "pattern": "private final CommandGateway commandGateway" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "command-gateway-heroes-recruit",
+      "recipe": "command-gateway",
+      "input": "evals/fixtures/axon4/heroes/RecruitCreatureRestApi.java",
+      "output_filename": "RecruitCreatureRestApi.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 Spring @RestController dispatching commands via CommandGateway to AF5 per references/command-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Top-of-chain caller — gateway stays, only import moves. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "AF5 CommandGateway import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway" },
+        { "text": "Gateway kept as class-level field (top-of-chain)", "type": "grep_require", "pattern": "private final CommandGateway commandGateway" },
+        { "text": "Controller method still returns CompletableFuture", "type": "grep_require", "pattern": "CompletableFuture" },
+        { "text": "commandGateway.send call present", "type": "grep_require", "pattern": "commandGateway.send" },
+        { "text": "@RestController preserved", "type": "grep_require", "pattern": "@RestController" },
+        { "text": "AF4 CommandGateway import gone", "type": "grep_forbid", "pattern": "org.axonframework.commandhandling.gateway.CommandGateway" },
+        { "text": "sendAndWait NOT introduced", "type": "grep_forbid", "pattern": "sendAndWait" },
+        { "text": "Gateway NOT replaced with Dispatcher (this is top-of-chain)", "type": "grep_forbid", "pattern": "CommandDispatcher" }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "command-gateway-heroes-builddwelling-mcp",
+      "recipe": "command-gateway",
+      "input": "evals/fixtures/axon4/heroes/BuildDwellingMcp.java",
+      "output_filename": "BuildDwellingMcp.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 Spring AI MCP tool dispatching via CommandGateway to AF5 per references/command-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The tool method returns CompletableFuture<Map<String, Object>> — future-returning, NOT a sync callback. Import-only change; no .orTimeout().join() bridge needed. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "AF5 CommandGateway import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway" },
+        { "text": "CompletableFuture chain preserved", "type": "grep_require", "pattern": "CompletableFuture" },
+        { "text": "commandGateway.send call present", "type": "grep_require", "pattern": "commandGateway.send" },
+        { "text": "AF4 import gone", "type": "grep_forbid", "pattern": "org.axonframework.commandhandling.gateway.CommandGateway" },
+        { "text": "No sendAndWait regression", "type": "grep_forbid", "pattern": "sendAndWait" },
+        { "text": "Not replaced with Dispatcher", "type": "grep_forbid", "pattern": "CommandDispatcher" }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "query-gateway-heroes-mcp",
+      "recipe": "query-gateway",
+      "input": "evals/fixtures/axon4/heroes/GetAllDwellingsMcp.java",
+      "output_filename": "GetAllDwellingsMcp.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 MCP resource handler dispatching queries via QueryGateway to AF5 per references/query-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The lambda is a synchronous framework callback — must bridge the future via .orTimeout(30, TimeUnit.SECONDS).join() per Step 7 'Synchronous framework callback'. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "AF5 QueryGateway import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway" },
+        { "text": "Query call chained with orTimeout", "type": "grep_require", "pattern": ".orTimeout(" },
+        { "text": "TimeUnit imported", "type": "grep_require", "pattern": "java.util.concurrent.TimeUnit" },
+        { "text": "QueryGateway kept as class-level dep", "type": "grep_require", "pattern": "private final QueryGateway queryGateway" },
+        { "text": "AF4 QueryGateway import gone", "type": "grep_forbid", "pattern": "org.axonframework.queryhandling.QueryGateway" },
+        { "text": "ResponseType not introduced", "type": "grep_forbid", "pattern": "ResponseType" },
+        { "text": "Bare .get(); removed", "type": "grep_forbid", "pattern": ".get();" }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "query-handler-heroes-getbyid",
+      "recipe": "query-handler",
+      "input": "evals/fixtures/axon4/heroes/GetDwellingByIdQueryHandler.java",
+      "output_filename": "GetDwellingByIdQueryHandler.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 @QueryHandler class to AF5 per references/query-handler.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Import-only rewrite — body, method signature, return type, @Component all preserved. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "AF5 @QueryHandler import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler" },
+        { "text": "@QueryHandler annotation kept", "type": "grep_require", "pattern": "@QueryHandler" },
+        { "text": "@Component preserved (Path A auto-discovery)", "type": "grep_require", "pattern": "@Component" },
+        { "text": "AF4 @QueryHandler import gone", "type": "grep_forbid", "pattern": "org.axonframework.queryhandling.QueryHandler" },
+        { "text": "No QueryHandlingModule registration added on Path A", "type": "grep_forbid", "pattern": "QueryHandlingModule" },
+        { "text": "No configurer.register call added", "type": "grep_forbid", "pattern": "configurer.register" }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "event-storage-engine-heroes-entityscan",
+      "recipe": "event-storage-engine",
+      "input": "evals/fixtures/axon4/heroes/HeroesOfDDDApplication.java",
+      "output_filename": "HeroesOfDDDApplication.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate the Spring Boot main class at INPUT_PATH to AF5 per references/event-storage-engine.md sub-path A.JPA.5 (mandatory @EntityScan when an explicit @Bean EventStorageEngine will be declared). Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Add @EntityScan(basePackages = {\"com.dddheroes.heroesofddd\", \"org.axonframework\", \"io.axoniq.framework\"}). Don't add the @Bean here — only the @EntityScan goes on the application class. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "@EntityScan import landed", "type": "grep_require", "pattern": "org.springframework.boot.autoconfigure.domain.EntityScan" },
+        { "text": "@EntityScan annotation applied", "type": "grep_require", "pattern": "@EntityScan" },
+        { "text": "Project root included", "type": "grep_require", "pattern": "com.dddheroes.heroesofddd" },
+        { "text": "org.axonframework root included", "type": "grep_require", "pattern": "org.axonframework" },
+        { "text": "io.axoniq.framework root included (commercial line)", "type": "grep_require", "pattern": "io.axoniq.framework" }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "event-storage-engine-heroes-gameconfig",
+      "recipe": "event-storage-engine",
+      "input": "evals/fixtures/axon4/heroes/GameConfiguration.java",
+      "output_filename": "GameConfiguration.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 @Configuration class to AF5 — it has a SequencingPolicy @Bean reading EventMessage metadata, plus CorrelationDataProvider beans. Per references/event-storage-engine.md Step W (bootstrap-layer sweep), rewrite imports for SequencingPolicy + EventMessage + correlation providers, and rewrite the SequencingPolicy lambda to AF5 signature (e, ctx) -> Optional.ofNullable(...) using AF5 record-style e.metadata(). Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "AF5 SequencingPolicy import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.core.sequencing.SequencingPolicy" },
+        { "text": "AF5 EventMessage import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.EventMessage" },
+        { "text": "AF5 CorrelationDataProvider import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.core.correlation.CorrelationDataProvider" },
+        { "text": "AF5 MessageOriginProvider import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.core.correlation.MessageOriginProvider" },
+        { "text": "AF5 SimpleCorrelationDataProvider import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.core.correlation.SimpleCorrelationDataProvider" },
+        { "text": "Optional imported (AF5 return wraps in Optional)", "type": "grep_require", "pattern": "java.util.Optional" },
+        { "text": "Optional.ofNullable in lambda", "type": "grep_require", "pattern": "Optional.ofNullable" },
+        { "text": "AF5 record-style metadata() accessor", "type": "grep_require", "pattern": ".metadata().get" },
+        { "text": "Spring @Bean wiring preserved", "type": "grep_require", "pattern": "@Bean" },
+        { "text": "AF4 SequencingPolicy import gone", "type": "grep_forbid", "pattern": "org.axonframework.eventhandling.async.SequencingPolicy" },
+        { "text": "AF4 EventMessage import gone", "type": "grep_forbid", "pattern": "org.axonframework.eventhandling.EventMessage" },
+        { "text": "AF4 correlation package gone", "type": "grep_forbid", "pattern": "org.axonframework.messaging.correlation" },
+        { "text": "AF4 getMetaData accessor gone", "type": "grep_forbid", "pattern": "e.getMetaData()" }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "event-storage-engine-heroes-yaml",
+      "recipe": "event-storage-engine",
+      "input": "evals/fixtures/axon4/heroes/application.yaml",
+      "output_filename": "application.yaml",
+      "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 application.yaml to AF5 per references/event-storage-engine.md Step W YAML changes. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Two changes: (1) rename axon.serializer.* → axon.converter.*; (2) remove every per-processor 'sequencing-policy:' key (these move to class-level @SequencingPolicy annotations in the event-processor recipe). Preserve everything else byte-for-byte. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "axon.converter section present", "type": "grep_require", "pattern": "converter:" },
+        { "text": "Pooled processors still configured", "type": "grep_require", "pattern": "mode: pooled" },
+        { "text": "Subscribing processor still configured", "type": "grep_require", "pattern": "mode: subscribing" },
+        { "text": "AF4 axon.serializer.* key gone", "type": "grep_forbid", "pattern": "serializer:" },
+        { "text": "Per-processor sequencing-policy keys gone", "type": "grep_forbid", "pattern": "sequencing-policy:" }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "saga-bike-rental-payment",
+      "recipe": "saga",
+      "input": "evals/fixtures/axon4/bike-rental-extended/PaymentSaga.java",
+      "output_filename": "PaymentSaga.java",
+      "prompt": "You have the axon4to5-migrate skill loaded. The AF4 PaymentSaga at INPUT_PATH has @DeadlineHandler — blocker B4 (deadline-handler-in-saga: present). User picked migrate-to-event-handler-with-state + shape-b-jpa-state-with-scheduler. Per references/saga.md Shape B worked example, produce the AF5 migrated PaymentSaga.java: @Component + @DisallowReplay + @EventHandler methods receiving CommandDispatcher as parameter, JPA PaymentStateRepository dependency, @Scheduled(fixedDelay = …) replacing @DeadlineHandler. Do NOT preserve the @Saga / @SagaEventHandler / @DeadlineHandler annotations or DeadlineManager. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Save to OUTPUT_PATH.",
+      "assertions": [
+        { "text": "Spring @Component instead of @Saga", "type": "grep_require", "pattern": "@Component" },
+        { "text": "@DisallowReplay applied", "type": "grep_require", "pattern": "@DisallowReplay" },
+        { "text": "@EventHandler methods", "type": "grep_require", "pattern": "@EventHandler" },
+        { "text": "CommandDispatcher injected as method parameter", "type": "grep_require", "pattern": "CommandDispatcher commandDispatcher" },
+        { "text": "PaymentStateRepository wired", "type": "grep_require", "pattern": "PaymentStateRepository" },
+        { "text": "@Scheduled replaces @DeadlineHandler", "type": "grep_require", "pattern": "@Scheduled" },
+        { "text": "AF5 EventHandler import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler" },
+        { "text": "AF5 DisallowReplay import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay" },
+        { "text": "AF5 CommandDispatcher import landed", "type": "grep_require", "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher" },
+        { "text": "AF4 @Saga annotation gone", "type": "grep_forbid", "pattern": "@Saga" },
+        { "text": "AF4 @SagaEventHandler gone", "type": "grep_forbid", "pattern": "@SagaEventHandler" },
+        { "text": "AF4 @StartSaga gone", "type": "grep_forbid", "pattern": "@StartSaga" },
+        { "text": "AF4 @EndSaga gone", "type": "grep_forbid", "pattern": "@EndSaga" },
+        { "text": "SagaLifecycle gone", "type": "grep_forbid", "pattern": "SagaLifecycle" },
+        { "text": "AF4 @DeadlineHandler gone", "type": "grep_forbid", "pattern": "@DeadlineHandler" },
+        { "text": "DeadlineManager gone", "type": "grep_forbid", "pattern": "DeadlineManager" },
+        { "text": "AF4 saga packages gone", "type": "grep_forbid", "pattern": "org.axonframework.modelling.saga" },
+        { "text": "AF4 deadline packages gone", "type": "grep_forbid", "pattern": "org.axonframework.deadline" }
+      ]
+    }
+  ]
+}

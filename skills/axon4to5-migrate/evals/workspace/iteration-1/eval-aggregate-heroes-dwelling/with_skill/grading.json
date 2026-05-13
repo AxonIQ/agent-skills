@@ -1,0 +1,106 @@
+{
+  "eval_id": 1,
+  "eval_name": "aggregate-heroes-dwelling",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-1/eval-aggregate-heroes-dwelling/with_skill/outputs/Dwelling.java",
+  "output_exists": true,
+  "passed": 17,
+  "total": 19,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "Spring stereotype @EventSourced is applied (Path A)",
+      "passed": true,
+      "evidence": "found `@EventSourced`"
+    },
+    {
+      "text": "tagKey attribute is set on @EventSourced",
+      "passed": true,
+      "evidence": "found `tagKey`"
+    },
+    {
+      "text": "AF5 EventSourced import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.extension.spring.stereotype.EventSourced`"
+    },
+    {
+      "text": "AF5 @EventSourcingHandler import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.eventsourcing.annotation.EventSourcingHandler`"
+    },
+    {
+      "text": "AF5 @EntityCreator import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.eventsourcing.annotation.reflection.EntityCreator` in output"
+    },
+    {
+      "text": "AF5 @CommandHandler import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.commandhandling.annotation.CommandHandler`"
+    },
+    {
+      "text": "AF5 EventAppender import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.gateway.EventAppender` in output"
+    },
+    {
+      "text": "@CommandHandler methods take EventAppender as a parameter",
+      "passed": true,
+      "evidence": "found `EventAppender eventAppender`"
+    },
+    {
+      "text": "eventAppender.append(...) replaces AggregateLifecycle.apply(...)",
+      "passed": true,
+      "evidence": "found `eventAppender.append`"
+    },
+    {
+      "text": "AF4 snapshotTriggerDefinition attribute gone (B1 accept-drop)",
+      "passed": true,
+      "evidence": "forbidden substring `@Aggregate(snapshotTriggerDefinition` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "passed": true,
+      "evidence": "forbidden substring `@AggregateIdentifier` absent \u2014 good"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "passed": true,
+      "evidence": "forbidden substring `AggregateLifecycle` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @CreationPolicy annotation removed",
+      "passed": true,
+      "evidence": "forbidden substring `@CreationPolicy` absent \u2014 good"
+    },
+    {
+      "text": "AF4 Spring @Aggregate import removed",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.spring.stereotype.Aggregate` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier import removed",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.modelling.command.AggregateIdentifier` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @CreationPolicy import removed",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.modelling.command.CreationPolicy` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @CommandHandler import removed",
+      "passed": true,
+      "evidence": "forbidden substring `import org.axonframework.commandhandling.CommandHandler;` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventSourcingHandler import removed",
+      "passed": true,
+      "evidence": "forbidden substring `import org.axonframework.eventsourcing.EventSourcingHandler;` absent \u2014 good"
+    },
+    {
+      "text": "AF4 AggregateLifecycle static import removed",
+      "passed": true,
+      "evidence": "forbidden substring `import static org.axonframework.modelling.command.AggregateLifecycle` absent \u2014 good"
+    }
+  ]
+}

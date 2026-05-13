@@ -85,18 +85,17 @@ Blocker keys (`B1`..`B10`) live in [references/blockers.md](references/blockers.
 
 ## Orchestrator flow
 
-**Two loops, one switch.** The outer loop drains a unit queue; the inner loop retries on user-deferred decisions. Everything else is a flat 6-way switch on `output.result`. **Double-bordered nodes `[[…]]` (also dashed-blue) are subagent-eligible** — read-only or pure-analysis steps with no `AskUserQuestion`, no git, no shared state mutation.
+**One outer loop, one switch.** A single mode-parameterized `next_batch()` step yields units to drain; the orchestrator drains them, then asks `next_batch()` again. The body inside the batch (classify → recipe → act) is identical for every mode — **DEBUG is just PHASED with a different `next_batch()`**. Single-unit modes degenerate (one batch, then empty). **Double-bordered nodes `[[…]]` (also dashed-blue) are subagent-eligible** — read-only or pure-analysis, no `AskUserQuestion`, no git, no shared state mutation.
 
 ```mermaid
 flowchart TD
     Start([User invokes skill])
     State[ensure_state<br/>INIT if no progress.md · ensure_pinned · resume]
-    Mode{mode}
-    EnumSingle[queue = arg]
-    EnumPhased[[enumerate via routing table<br/>top-down, minus deferred]]
-    EnumDebug[[compile + cluster errors<br/>by root cause]]
 
-    Loop{next unit?}
+    NextBatch[["next_batch · mode<br/>single → arg once<br/>phased → next pending routing row<br/>debug → recompile + cluster"]]
+    Empty{empty?}
+
+    InnerLoop{next unit in batch?}
     Classify[[classify unit → row]]
     Recipe[[recipe.execute<br/>Preflight · Procedure · EndCondition]]
     Act{output.result}
@@ -106,58 +105,74 @@ flowchart TD
     CommitBlocked[/commit comment-out + TODO/]
     Ask[AskUserQuestion]
 
-    WrapUp{mode == phased?}
+    Checkpoint{checkpoint<br/>phased / debug only<br/>continue · pause · stop}
+
+    WrapUp{all routing rows<br/>done in progress.md?}
     Finalize[FINALIZE<br/>cleanup isolated-* · full build]
     Stop([STOP])
     Halt([HALT])
 
-    Start --> State --> Mode
-    Mode -->|single| EnumSingle --> Loop
-    Mode -->|phased| EnumPhased --> Loop
-    Mode -->|debug| EnumDebug --> Loop
+    Start --> State --> NextBatch --> Empty
+    Empty -->|yes| WrapUp
+    Empty -->|no| InnerLoop
 
-    Loop -->|yes| Classify --> Recipe --> Act
-    Loop -->|done| WrapUp
+    InnerLoop -->|yes| Classify --> Recipe --> Act
+    InnerLoop -->|done| Checkpoint
 
-    Act -->|success| Commit --> Loop
-    Act -->|skipped / rejected| NoCommit --> Loop
-    Act -->|blocked| CommitBlocked --> Loop
+    Act -->|success| Commit --> InnerLoop
+    Act -->|skipped / rejected| NoCommit --> InnerLoop
+    Act -->|blocked| CommitBlocked --> InnerLoop
     Act -->|needs-decision| Ask
     Act -->|failed| Halt
 
     Ask -->|fix| Recipe
-    Ask -->|defer| Loop
+    Ask -->|defer| InnerLoop
     Ask -->|stop| Halt
+
+    Checkpoint -->|continue / single| NextBatch
+    Checkpoint -->|pause / stop| Halt
 
     WrapUp -->|yes| Finalize --> Stop
     WrapUp -->|no| Stop
 
     classDef subagent stroke:#1976d2,stroke-width:3px,stroke-dasharray:5 5
-    class EnumPhased,EnumDebug,Classify,Recipe subagent
+    class NextBatch,Classify,Recipe subagent
 ```
 
 ### Subagent boundaries (dashed nodes)
 
 | Step | Why subagent-safe |
 |---|---|
-| `enumerate (phased)` | discovery greps walk the project read-only; results are file lists |
-| `enumerate (debug)` | parses compile output read-only; returns clustered (row, item) pairs |
+| `next_batch` (phased) | discovery greps walk the project read-only |
+| `next_batch` (debug) | parses compile output read-only |
 | `classify (unit)` | inspects a single file; emits a recipe selection — no edits |
-| `recipe.execute` | recipe's Preflight + Procedure run as analysis + edit proposal — **only when the recipe declares `## Subagent guidelines` AND its Procedure does NOT use `AskUserQuestion`** (those prompts must reach the main conversation) |
+| `recipe.execute` | recipe's Preflight + Procedure run as analysis + edit proposal — **only when the recipe declares a `Subagent guidelines` section AND its Procedure does NOT use `AskUserQuestion`** (those prompts must reach the main conversation) |
 
-Everything else is **orchestrator-owned**: `ensure_state` / `INIT` issue `AskUserQuestion` for pinned decisions; `Commit` / `CommitBlocked` own git; `Ask` is interactive; `Finalize` decides on red builds.
+Everything else is **orchestrator-owned**: `ensure_state` / `INIT` issue `AskUserQuestion` for pinned decisions; `Commit` / `CommitBlocked` own git; `Ask` is interactive; `Checkpoint` is user-facing; `Finalize` decides on red builds.
 
 ### Procedural sketch (for code-style readers)
 
 ```
-queue = enumerate(mode)              # single → [arg]; phased → routing-table walk;
-                                     # debug → cluster build errors
-for unit in queue:
-  row    = classify(unit)
-  output = recipe.execute(row, unit)
-  act(output)                         # flat switch on output.result — see table above
-wrap_up(mode)                         # phased → FINALIZE; otherwise STOP
+ensure_state()
+
+while True:
+    batch = next_batch(mode)              # single → [arg] once;
+                                          # phased → next pending routing row's discoveries;
+                                          # debug  → recompile + extract next highest-leverage cluster
+    if not batch: break
+
+    for unit in batch:
+        row    = classify(unit)
+        output = recipe.execute(row, unit)
+        act(output)                       # flat switch on output.result — see table above
+
+    if mode in {phased, debug}:
+        AskUserQuestion: continue / pause / stop   # checkpoint between batches
+
+wrap_up()                                 # FINALIZE iff progress.md shows every routing row done; otherwise STOP
 ```
+
+`next_batch` is the only mode-specific code. Everything below it is identical across SINGLE, PHASED, and DEBUG.
 
 ### One-shots
 
@@ -172,7 +187,7 @@ wrap_up(mode)                         # phased → FINALIZE; otherwise STOP
 - **wiring** — `axon-spring-boot-starter` dep OR `@SpringBootApplication` → `spring-boot`; `DefaultConfigurer.defaultConfiguration` or direct `Configurer` → `framework-config`; else `AskUserQuestion`.
 - **build-tool** — `pom.xml` only → `maven`; `build.gradle*` only → `gradle`; both → `AskUserQuestion`; neither → HALT.
 
-**FINALIZE** (after every PHASED unit done):
+**FINALIZE** (any mode — fires when `progress.md` Recipe-status shows every routing row `done` / `skipped`):
 - for each `isolated-<X>` scope in `progress.md`: invoke `axon4to5-isolatedtest` with `cleanup: true`.
 - promote AF5 deps; remove activation refs from scripts/CI/docs.
 - full build: `./mvnw -f <target>/pom.xml clean verify` (Maven) / `./gradlew -p <target> clean build` (Gradle).
@@ -195,7 +210,7 @@ Pinned decisions are **never re-asked**. Stored in `progress.md` Pinned-decision
 - `learnings.md` — append-only narrative. Surprises, manual fixes, blocker keys.
 - `index.md` — short README pointing at the above.
 
-Templates: [assets/](assets/).
+Templates: [progress-template.md](assets/progress-template.md), [learnings-template.md](assets/learnings-template.md), [index-template.md](assets/index-template.md).
 
 **Persistence invariant.** Every state change ends with `progress.md` rewritten + committed in the **same commit** as the code change it documents. Never split work and bookkeeping.
 

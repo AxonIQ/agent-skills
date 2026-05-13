@@ -40,6 +40,10 @@ what was done/ what failed.
 
 Skill content is just for LLM (optimize for this). No human notes.
 
+**Never put TODOs, "future simplifications", roadmap, or refactor backlog into SKILL.md** or any other recipe/reference file inside the skill. SKILL.md is runtime instructions for the LLM — backlog noise distracts and confuses routing.
+
+Park such notes in `.claude/ideas.md` instead (one section per skill or area; each entry: idea → trade-off → "revisit when").
+
 Each skill must define expected input, expected output (structured markdown) and can use agent delegation patterns like.
 
 #### Goal
