@@ -54,7 +54,7 @@ grep -RlnE '@SagaEventHandler\b|@StartSaga\b|@EndSaga\b|@Saga\b' \
 
 **AskUserQuestion — choose one:**
 
-- `wrong-recipe-skip` *(Recommended)* — orchestrator routes this candidate to the (unsupported) saga slot; this recipe exits without touching the file.
+- `wrong-recipe-skip` *(Recommended)* — migration runner routes this candidate to the (unsupported) saga slot; this recipe exits without touching the file.
 - `pause-migration` — stop; user removes saga before resuming.
 
 **Output decision key.** `saga-handler-detected: <none | wrong-recipe-skip | pause-migration>`

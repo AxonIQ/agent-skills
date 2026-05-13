@@ -28,7 +28,7 @@ Compilation is NOT a success criterion. The external skill returns success when 
 - license: `free-af5` | `axoniq-commercial` (required — pinned in `progress.md` Pinned-decisions at INIT). Maps to:
   - `free-af5` → `--framework axon`
   - `axoniq-commercial` → `--framework axoniq`
-- commit: always `--commit false` for this recipe. The orchestrator owns the commit per [commit-cadence.md](commit-cadence.md) — the external skill leaves the working tree modified.
+- commit: always `--commit false` for this recipe. The migration runner owns the commit per [commit-cadence.md](commit-cadence.md) — the external skill leaves the working tree modified.
 
 ## Preflight
 
@@ -70,10 +70,10 @@ Compilation is NOT a success criterion. The external skill returns success when 
    - detects build tool (Maven vs Gradle),
    - resolves the recipe artifact and pins it,
    - bumps the build wrapper on `Unsupported class file major version` errors,
-   - surfaces specific failure routes (`Could not find artifact …`, recipe parse errors, …) with a one-line summary the orchestrator forwards verbatim.
+   - surfaces specific failure routes (`Could not find artifact …`, recipe parse errors, …) with a one-line summary the migration runner forwards verbatim.
 
 5. Read the external skill's report (see "Reading the report" below).
-6. Emit `## Output` for the orchestrator. Orchestrator owns the commit.
+6. Emit `## Output` for the migration runner. The migration runner owns the commit.
 
 ### Step 4a — Inspect free-vs-commercial signals
 
@@ -99,13 +99,13 @@ Classify:
 Two acceptable terminal states (see "End condition" below):
 
 - **Success** — external skill exited 0, recipe applied. Run the Behavior-change classification below.
-- **Failure** — external skill exited non-zero. Copy its one-line bail reason verbatim into `Output.notes`, set `result: failed` with `caller-expects.next: halt`, surface to the orchestrator.
+- **Failure** — external skill exited non-zero. Copy its one-line bail reason verbatim into `Output.notes`, set `result: failed` with `caller-expects.next: halt`, surface to the migration runner.
 
 If the report shows "no changes" but the project is plainly AF4, treat as failure with reason `recipe-no-op` and surface for diagnosis.
 
 ### Step 7 — STOP
 
-DO NOT run `mvn compile` / `mvn verify` / `./gradlew build`. The orchestrator owns the commit and the next-step checkpoint with the user.
+DO NOT run `mvn compile` / `mvn verify` / `./gradlew build`. The migration runner owns the commit and the next-step checkpoint with the user.
 
 ## Behavior-change classification (anti-alarmism)
 
@@ -229,7 +229,7 @@ caller-expects:
 notes: <behavior-change warnings on success; external skill's bail message verbatim on failed>
 ```
 
-> Subject line for the orchestrator's commit (chosen by orchestrator on `result: success`):
+> Subject line for the migration runner's commit (chosen by migration runner on `result: success`):
 > `chore(af5-migration): apply OpenRewrite recipe (--framework <FRAMEWORK>) (Migration Phase #1)`
 
 ## Caveats

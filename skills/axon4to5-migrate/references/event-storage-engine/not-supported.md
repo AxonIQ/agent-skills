@@ -90,6 +90,6 @@ grep -RnE 'extends\s+(JpaEventStorageEngine|JdbcEventStorageEngine|MongoEventSto
 
 **Detection.** During backend inspection (any wiring path / sub-path): any `@Bean Serializer` (Path A — Spring Boot) or component-registry-bound `Serializer` (Path B — framework Configurer) / `XStreamSerializer` / `JacksonSerializer` subclass / custom `RevisionResolver`.
 
-**Action.** Don't auto-port. Add a line to Output `decisions.serializer-ports-flagged: [<list>]` so the orchestrator records it in `learnings.md` for stabilization.
+**Action.** Don't auto-port. Add a line to Output `decisions.serializer-ports-flagged: [<list>]` so the migration runner records it in `learnings.md` for stabilization.
 
 **Output decision key.** `serializer-ports-flagged: [<class FQNs>] | "none"`

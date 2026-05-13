@@ -27,7 +27,7 @@ The interceptor class compiles and behaves on AF5 APIs:
 
 - target: FQ class name of the interceptor class (required)
 - target_test: FQ test class name (optional — auto-discovered as `<target>Test` if absent)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from `progress.md` Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by the migration runner from `progress.md` Pinned-decisions)
 
 ## End condition
 
@@ -60,7 +60,7 @@ notes: <optional free text — verbatim AskUserQuestion options for needs-decisi
 
 ## Preflight
 
-1. Read [not-supported.md](not-supported.md) IF present in this folder — none today, slot reserved for future blockers (e.g. annotation-based `@MessageHandlerInterceptor` methods inside a handler class — NOT functional until AF 5.2.0 per the canonical doc).
+1. No sibling `not-supported.md` exists for this recipe today. Future blockers belong there (for example annotation-based `@MessageHandlerInterceptor` methods inside a handler class if AF 5.2.0 support is not available).
 2. Check compile errors on the file. If zero AND the test class compiles too:
 3. Run scoped tests if they exist.
 4. If green AND no blocker fired → STOP. `AskUserQuestion`: Skip / Deep verify.
@@ -77,8 +77,8 @@ Also in scope: the matching registration site(s) — `Configurer.registerCommand
 
 ## Out of scope
 
-- Classes carrying `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods alongside the interceptor interface — those belong to the matching handler recipe; surface to orchestrator with `result: rejected`, `caller-expects.next: route-to:<event-processor | command-gateway | query-handler>`.
-- Annotation-based `@MessageHandlerInterceptor` methods declared inside a handler class — NOT functional in AF5 < 5.2.0; flag via `learnings.md` and leave commented per the orchestrator's anti-pattern rules.
+- Classes carrying `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods alongside the interceptor interface — those belong to the matching handler recipe; surface with `result: rejected`, `caller-expects.next: route-to:<event-processor | command-gateway | query-handler>`.
+- Annotation-based `@MessageHandlerInterceptor` methods declared inside a handler class — NOT functional in AF5 < 5.2.0; flag via `learnings.md` and leave commented per the migration runner's anti-pattern rules.
 - Component-specific interceptor scoping via `HandlerInterceptorFactory.of(...)` — recipe surfaces it via AskUserQuestion when the user signals a single-component interceptor; recipe does not auto-pick.
 
 ## FQN cheat sheet (recipe-specific quick lookup)
@@ -150,6 +150,6 @@ Full table lives in [../../docs/paths/index.adoc](../../docs/paths/index.adoc) a
 - isolation: none
 
 - prompt-framing: |
-  Atomic per-interceptor rewrite. Do NOT touch handler classes (those belong to event-processor / command-gateway / query-handler recipes). If the candidate class also declares `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods, surface that to the orchestrator with `result: rejected`, `caller-expects.next: route-to:<the matching handler recipe>` — it indicates a wrong-recipe routing.
+  Atomic per-interceptor rewrite. Do NOT touch handler classes (those belong to event-processor / command-gateway / query-handler recipes). If the candidate class also declares `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods, surface that to the migration runner with `result: rejected`, `caller-expects.next: route-to:<the matching handler recipe>` — it indicates a wrong-recipe routing.
 
 - parallelism: per-item

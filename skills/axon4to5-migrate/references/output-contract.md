@@ -5,9 +5,9 @@ Canonical examples for the six-variant Output union defined in
 `## Output` MUST emit a fenced ```yaml block whose top-level
 `result:` is exactly one of: `success | skipped | rejected | needs-decision | blocked | failed`.
 
-The orchestrator branches on `result:` alone. `decisions:` keys are
+The migration runner branches on `result:` alone. `decisions:` keys are
 recipe-specific and feed the commit body. `caller-expects:` is a
-self-describing hint for the caller (orchestrator or parent subagent).
+self-describing hint for the caller (migration runner or parent subagent).
 `notes:` is free text.
 
 ## When to emit which variant
@@ -127,7 +127,7 @@ target: <FQ class | file path | "n/a">
 reason: <one short line — required for every variant except success>
 decisions:
   <recipe-specific key>: <value>
-  # ... freeform; orchestrator copies these into the commit body verbatim.
+  # ... freeform; migration runner copies these into the commit body verbatim.
 caller-expects:
   commit: <true | false>
   next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>

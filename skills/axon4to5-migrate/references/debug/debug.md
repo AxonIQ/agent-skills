@@ -139,14 +139,14 @@ If error count unchanged or grew, the recipe didn't reach the actual root cause.
 - Only manual/out-of-scope errors remain → record in `learnings.md`, defer.
 - Cluster picks repeatedly without progress → escalate to user via `AskUserQuestion`:
   - **Show me the diagnostic dump** — surface raw error output.
-  - **Skip these errors and stash them** — defer to stabilization; orchestrator records the deferral.
+  - **Skip these errors and stash them** — defer to stabilization; migration runner records the deferral.
   - **Stop debugging** — exit recipe.
 
 ## End condition
 
 Build is green for the chosen scope:
 - Main + test compile OK without any `isolated-*` scope active, OR
-- The user accepts a known-deferred subset (orchestrator records the deferral via a decision-only commit).
+- The user accepts a known-deferred subset (migration runner records the deferral via a decision-only commit).
 
 ## Output
 
@@ -174,7 +174,7 @@ decisions:
 caller-expects:
   commit: <true | false>
   next: <proceed | ask-user | halt>
-notes: <optional free text — orchestrator copies any non-obvious lessons here into learnings.md>
+notes: <optional free text — migration runner copies any non-obvious lessons here into learnings.md>
 ```
 
 ## Limited direct fixes
@@ -192,7 +192,7 @@ For manual or unsupported work, stop with a concrete diagnosis instead of guessi
 
 ## Learnings — surface non-obvious fixes
 
-The orchestrator (NOT this recipe) writes `learnings.md`. After a non-obvious delegated or direct fix, surface a concise dated entry in Output `notes`:
+The migration runner (NOT this recipe) writes `learnings.md`. After a non-obvious delegated or direct fix, surface a concise dated entry in Output `notes`:
 
 - root-cause cluster,
 - delegated recipe or direct-fix reason,

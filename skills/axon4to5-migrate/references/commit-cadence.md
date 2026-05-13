@@ -12,8 +12,8 @@ Cadence is driven by the recipe's `Output.result` (see [./output-contract.md](./
 |---|---|---|
 | `success` | code change **+** `progress.md` rewrite **+** `learnings.md` (if dirty) | `refactor(af5-migration): …` / `feat(af5-migration): …` — see per-recipe table below |
 | `skipped` | nothing — no commit | n/a |
-| `rejected` | nothing — no commit; orchestrator may re-route via `caller-expects.next` | n/a |
-| `needs-decision` | nothing — no commit; orchestrator runs `AskUserQuestion` then re-invokes the recipe with the answer pinned | n/a |
+| `rejected` | nothing — no commit; migration runner may re-route via `caller-expects.next` | n/a |
+| `needs-decision` | nothing — no commit; migration runner runs `AskUserQuestion` then re-invokes the recipe with the answer pinned | n/a |
 | `blocked` | when `caller-expects.commit == true`: comment-out + TODO marker **+** `progress.md` Pinned-decisions update **+** `learnings.md` entry; when `caller-expects.commit == false`: `progress.md` Pinned-decisions update only | code-touching: `refactor(af5-migration): …` / `feat(af5-migration): …`; decision-only: `docs(af5-migration): record decision on <recipe>/<target>` |
 | `failed` | **never commit partial work** — surface to user, hand off to `debug` mode or pause | n/a |
 
@@ -28,8 +28,9 @@ Per-recipe subject lines for `result: success`:
 | One `command-gateway` migrated | `refactor(af5-migration): migrate command dispatch in <SimpleClassName> to AF5 (Migration Phase #4)` |
 | One `query-gateway` migrated | `refactor(af5-migration): migrate query dispatch in <SimpleClassName> to AF5 (Migration Phase #5)` |
 | One `query-handler` migrated | `refactor(af5-migration): migrate query handler <SimpleClassName> to AF5 (Migration Phase #6)` |
-| One configuration-reader / generic-writer class migrated | `refactor(af5-migration): migrate configuration class <SimpleClassName> to AF5 (Migration Phase #7)` (via the topic's nested `configuration-reads.md` / `configuration.md` — `event-processor`, `command-gateway`, `query-gateway`, or `event-storage-engine`) |
-| `event-storage-engine` bean wired | `feat(af5-migration): wire AggregateBased{Jpa,AxonServer}EventStorageEngine (Migration Phase #7)` (code change only — recipe does NOT emit SQL/DDL; user owns any required schema/data change out-of-band) |
+| One `interceptors` class migrated | `refactor(af5-migration): migrate interceptor <SimpleClassName> to AF5 (Migration Phase #7)` |
+| One configuration-reader / generic-writer class migrated | `refactor(af5-migration): migrate configuration class <SimpleClassName> to AF5 (Migration Phase #8)` (via the topic's nested `configuration-reads.md` / `configuration.md` — `event-processor`, `command-gateway`, `query-gateway`, or `event-storage-engine`) |
+| `event-storage-engine` bean wired | `feat(af5-migration): wire AggregateBased{Jpa,AxonServer}EventStorageEngine (Migration Phase #8)` (code change only — recipe does NOT emit SQL/DDL; user owns any required schema/data change out-of-band) |
 | Stabilization fix | `fix(af5-migration): <one-line description>` — one commit per logical fix, NOT one big bundle |
 | Decision-only (defer / unsupported-feature accept) | `docs(af5-migration): record decision on <recipe>/<target>` (no code change; the decision is recorded in `progress.md` Pinned-decisions and/or `learnings.md`) |
 | Plan committed at start of iterative phase | `chore(af5-migration): plan Migration Phase #<N>` |
@@ -75,12 +76,12 @@ EOF
 
 - `git add -A` / `git add .` — risks staging unrelated WIP or secrets.
 - `git commit --amend` — each migration step is its own historical record. If a step needs a follow-up fix, commit it on top.
-- `git push` — user pushes when ready. Orchestrator does not.
+- `git push` — user pushes when ready. Migration runner does not.
 - `--no-verify` — if a pre-commit hook fails, surface to user and let them decide.
 - Co-author attribution lines (`Co-Authored-By: Claude` etc.) — per project convention, do not add.
 
 ## Dirty working tree mid-phase
 
-If `git -C <target> status --porcelain` shows files the orchestrator did not touch, the orchestrator's resume protocol prompts via `AskUserQuestion`. See SKILL.md "Mid-phase dirty tree" — three options: stage-only-migration-files / let-user-clean-up / skip-this-commit.
+If `git -C <target> status --porcelain` shows files the migration runner did not touch, the migration runner's resume protocol prompts via `AskUserQuestion`. See SKILL.md "Mid-phase dirty tree" — three options: stage-only-migration-files / let-user-clean-up / skip-this-commit.
 
 Don't silently sweep user's WIP into a migration commit.

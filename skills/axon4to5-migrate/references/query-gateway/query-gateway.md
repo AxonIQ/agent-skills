@@ -27,7 +27,7 @@ The class compiles on AF5:
 
 - target: FQ class name of the top-of-chain dispatcher injecting `QueryGateway` (required)
 - target_test: FQ test class name (optional)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by migration runner from progress.md Pinned-decisions)
 
 ## End condition
 

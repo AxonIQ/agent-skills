@@ -30,7 +30,7 @@ The event-handling class compiles and behaves on AF5 APIs:
 
 - target: FQ class name of the event-handling component (required)
 - target_test: FQ test class name (optional — auto-discovered as `<target>Test` if absent)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by migration runner from progress.md Pinned-decisions)
 
 ## End condition
 
@@ -91,7 +91,7 @@ Optionally:
 
 ## Out of scope
 
-- Sagas (`@SagaEventHandler`, `@StartSaga`, `@EndSaga`) — currently not supported by this skill; the orchestrator surfaces it at INIT.
+- Sagas (`@SagaEventHandler`, `@StartSaga`, `@EndSaga`) — currently not supported by this skill; the migration runner surfaces it at INIT.
 - Top-of-chain `CommandGateway` callers (REST controllers etc. with NO `@EventHandler`) — those belong to the command-gateway recipe.
 
 ## FQN cheat sheet (recipe-specific quick lookup)
@@ -207,7 +207,7 @@ Steps (in-context case):
    ```
 4. Update the import to AF5 `CommandDispatcher` location.
 
-If gateway is used outside handler methods too → **mixed class** — surface in Output notes so the orchestrator schedules the command-gateway recipe as a follow-up pass.
+If gateway is used outside handler methods too → **mixed class** — surface in Output notes so the migration runner schedules the command-gateway recipe as a follow-up pass.
 
 ### 6. Rewrite blocking `sendAndWait(...)` → async `send(...)`
 
@@ -552,7 +552,7 @@ If the projector has no test class, pass `test-sources: []`; the external skill 
 
 - **Pure projector (no command dispatch).** Handler reads event + updates read model — no `CommandGateway`. Apply steps 1–4 + 8–12 only. Skip 5–7. Return type stays `void`.
 - **Saga-like reactor with non-handler dispatch.** Class also exposes a public method that dispatches commands outside any `ProcessingContext` (REST endpoint, scheduler entry). Keep `CommandGateway` as a class-level dependency for that path AND add `CommandDispatcher` as a method parameter on in-context handlers. Both coexist.
-- **Mixed `@EventHandler` + `@QueryHandler`.** `CommandDispatcher` parameter resolution applies to query handlers too — declare it as a method parameter wherever the handler runs inside a `ProcessingContext`. Out of scope here; surface in Output notes so the orchestrator schedules the query-handler recipe afterwards.
+- **Mixed `@EventHandler` + `@QueryHandler`.** `CommandDispatcher` parameter resolution applies to query handlers too — declare it as a method parameter wherever the handler runs inside a `ProcessingContext`. Out of scope here; surface in Output notes so the migration runner schedules the query-handler recipe afterwards.
 
 ## Anti-patterns
 

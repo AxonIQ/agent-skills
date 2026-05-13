@@ -1,7 +1,7 @@
 # Axon Framework 4 → 5 Migration — index
 
-This directory holds the migration state for this project. The orchestrator
-(skill `axon4to5-migration`) reads and writes here. The skill works
+This directory holds the migration state for this project. The migration runner
+(skill `axon4to5-migrate`) reads and writes here. The skill works
 for both Spring Boot and plain framework-configuration projects — the
 **`wiring`** pinned decision in `progress.md` selects which path each
 recipe runs.

@@ -4,7 +4,7 @@ Atomic migration of the **event store backend wiring (code only)**: pick the rig
 
 AF4 used `EmbeddedEventStore` + `JpaEventStorageEngine` / `JdbcEventStorageEngine` / Axon Server backed engine. AF5 collapses to a single bean of type `org.axonframework.eventsourcing.eventstore.EventStorageEngine`.
 
-This is a one-shot recipe (Migration Phase #7) — no item iteration; one bean swap.
+This is a one-shot recipe (Migration Phase #8) — no item iteration; one bean swap.
 
 > 🚨 **SQL / DDL / data migration is OUT OF SCOPE.** This recipe does NOT
 > emit, run, or curate any schema-migration script. The AF5 JPA table
@@ -13,7 +13,7 @@ This is a one-shot recipe (Migration Phase #7) — no item iteration; one bean s
 > out-of-band, on a non-prod copy first, with row counts verified.
 > Recipe only swaps the **Java/Kotlin code** wiring.
 
-> **Bootstrap-layer reads & generic write-side migration.** During the same Phase #7 sweep, route any class that reads `Configuration#eventStore()` / `eventBus()` OR declares generic write-side configuration (`@Bean ConfigurerModule` for non-Axon components, `DefaultConfigurer.defaultConfiguration()`, free-standing lifecycle hooks, `implements Lifecycle`, generic `configurer.registerComponent(...)`) through [configuration.md](configuration.md). Each such class is migrated as its own atomic item, separate from the storage-engine bean swap below.
+> **Bootstrap-layer reads & generic write-side migration.** During the same Phase #8 sweep, route any class that reads `Configuration#eventStore()` / `eventBus()` OR declares generic write-side configuration (`@Bean ConfigurerModule` for non-Axon components, `DefaultConfigurer.defaultConfiguration()`, free-standing lifecycle hooks, `implements Lifecycle`, generic `configurer.registerComponent(...)`) through [configuration.md](configuration.md). Each such class is migrated as its own atomic item, separate from the storage-engine bean swap below.
 
 ## Canonical reference
 
@@ -44,7 +44,7 @@ Recipe ships the code change only. Schema / data moves are explicitly out of sco
 ## Inputs
 
 - target: FQ name of the configuration class that today declares the `EventStorageEngine` bean / Configurer registration (required)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by migration runner from progress.md Pinned-decisions)
 - backend: `jpa` | `axon-server` (optional — derived from inspection; user picks via AskUserQuestion when ambiguous)
 
 ## Subagent guidelines
@@ -57,7 +57,7 @@ Recipe ships the code change only. Schema / data moves are explicitly out of sco
   This is a one-shot bean swap. NO test runs as part of the recipe — runtime verification
   happens during stabilization, after the user has applied any required schema changes
   out-of-band on their database. The recipe's job is: pick the right AF5 engine, replace
-  the bean / Configurer registration, surface custom-Serializer ports to the orchestrator.
+  the bean / Configurer registration, surface custom-Serializer ports to the migration runner.
   SQL / DDL / data migration is out of scope and must NOT be produced by this recipe.
 - parallelism: single
 
@@ -272,7 +272,7 @@ AF5's JPA event store uses `aggregate_event_entry` (renamed columns, stricter co
 
 > 🚨 **This recipe does NOT emit, run, or stage any SQL / DDL.** Schema change and any associated data move are the user's responsibility, executed out-of-band on a non-prod copy first. The recipe's job is only to flag that the schema change is needed.
 
-Record one entry in the recipe's Output `notes` so the orchestrator surfaces it to the user (e.g. *"JPA backend selected — user must apply AF5 schema change for `aggregate_event_entry` table before runtime verification. See AF5 reference docs."*). Do not write `.sql` files into the target.
+Record one entry in the recipe's Output `notes` so the migration runner surfaces it to the user (e.g. *"JPA backend selected — user must apply AF5 schema change for `aggregate_event_entry` table before runtime verification. See AF5 reference docs."*). Do not write `.sql` files into the target.
 
 For the AF5 schema shape and a worked example of a possible rename script, point the user at the AF5 reference guide ([../../docs/paths/event-store.adoc](../../docs/paths/event-store.adoc) — informational only).
 
@@ -327,7 +327,7 @@ Choose based on the migration goal, not just on Axon Server presence:
 
 | Goal | Engine | Path |
 |---|---|---|
-| Preserve AF4 aggregate-keyed event log on AF5 (orchestrator default — "legacy storage preserved") | `AggregateBasedAxonServerEventStorageEngine` | **B-aggregate** — explicit `@Bean`. |
+| Preserve AF4 aggregate-keyed event log on AF5 (migration runner default — "legacy storage preserved") | `AggregateBasedAxonServerEventStorageEngine` | **B-aggregate** — explicit `@Bean`. |
 | Migrate to AF5 DCB semantics (flat event log, no aggregate routing) | `AxonServerEventStorageEngine` | **B-DCB** — let autoconfig win. |
 
 If unsure, ask user. Aggregate preservation is the safe default; DCB migration is a separate, larger initiative.
@@ -436,16 +436,16 @@ No SQL migration on the Axon Server backend — Axon Server stores its own event
    - **Backend** comes from inspection / blocker resolution: `jpa` or `axon-server`.
    - any blocker resolved with `pause-migration` / `accept-stays-af4` / `defer-until-af5-jdbc` / `surface-and-defer` → Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit (no bean swap).
 4. Run path Steps (see ### Path A / ### Path B above; pick the right sub-path inside).
-5. Surface custom-`Serializer` ports in Output `notes` (orchestrator records to `learnings.md`).
+5. Surface custom-`Serializer` ports in Output `notes` (migration runner records to `learnings.md`).
 6. On the JPA backend, surface "schema change required, user-owned, out-of-band" in Output `notes` (no SQL artifact produced).
 7. Verify against ## End condition.
-8. Emit ## Output. Orchestrator commits the code change only.
+8. Emit ## Output. The migration runner commits the code change only.
 
 ## End condition
 
 1. Configuration class compiles cleanly under an `isolated-<BeanSimpleName>` scope created by the external `axon4to5-isolatedtest` skill (compile-only invocation).
 2. JPA backend only (sub-path A.JPA or B.JPA): user-owned schema change flagged in Output `notes` (no SQL produced or staged by the recipe).
-3. Custom `Serializer` → `Converter` ports surfaced to the orchestrator in Output `notes` (orchestrator records to `learnings.md`).
+3. Custom `Serializer` → `Converter` ports surfaced to the migration runner in Output `notes` (migration runner records to `learnings.md`).
 
 > Runtime verification of the storage engine belongs to stabilization (after the user has applied any required schema change on the build's database out-of-band).
 

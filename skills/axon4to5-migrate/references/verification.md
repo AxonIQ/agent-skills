@@ -43,7 +43,7 @@ Recipes read the report and decide their own End condition. They never parse Mav
 
 - **First pass**: pass the minimal `main-sources` / `test-sources`. The external skill names any file the compiler needed but couldn't find — copy those names into a follow-up invocation.
 - **Augmenting**: a follow-up call with an extended source list merges into the existing scope, deduped. Sibling scopes are untouched.
-- **Cleanup**: invoke a final time with `cleanup: true` ONLY when both compile and tests are green AND the orchestrator is ready to commit. On red runs the external skill leaves the scope in place so the user can iterate.
+- **Cleanup**: invoke a final time with `cleanup: true` ONLY when both compile and tests are green AND the migration runner is ready to commit. On red runs the external skill leaves the scope in place so the user can iterate.
 
 ## `axon4to5-openrewrite` — call shape
 
@@ -61,14 +61,14 @@ Mapping from pinned license to `--framework`:
 | `free-af5` | `axon` |
 | `axoniq-commercial` | `axoniq` |
 
-`--commit false` keeps the orchestrator in charge of the commit (per [commit-cadence.md](commit-cadence.md)); the external skill leaves the working tree modified for the orchestrator to stage and commit with the conventional message.
+`--commit false` keeps the migration runner in charge of the commit (per [commit-cadence.md](commit-cadence.md)); the external skill leaves the working tree modified for the migration runner to stage and commit with the conventional message.
 
 What the external skill does:
 
 - Detects build tool (Maven vs Gradle).
 - Resolves and pins the recipe artifact version.
 - Bumps the build wrapper on `Unsupported class file major version` errors.
-- Surfaces specific failure routes (`Could not find artifact …`, recipe parse errors, etc.) with a one-line summary the orchestrator forwards verbatim.
+- Surfaces specific failure routes (`Could not find artifact …`, recipe parse errors, etc.) with a one-line summary the migration runner forwards verbatim.
 
 Recipes never invent Maven/Gradle invocations for this phase.
 
@@ -88,7 +88,7 @@ Before invoking ANY iterative recipe's procedure, run its preflight. Pattern:
 
 ## Full verify (stabilization / FINALIZE only)
 
-At FINALIZE every `isolated-*` scope has been cleaned out via repeated `axon4to5-isolatedtest` invocations with `cleanup: true`. The orchestrator then runs the project's standard build directly — this is the only place this skill ever shells out to Maven/Gradle by hand, and only because the build is project-wide, not per-target:
+At FINALIZE every `isolated-*` scope has been cleaned out via repeated `axon4to5-isolatedtest` invocations with `cleanup: true`. The migration runner then runs the project's standard build directly — this is the only place this skill ever shells out to Maven/Gradle by hand, and only because the build is project-wide, not per-target:
 
 ```bash
 ./mvnw -f <target>/pom.xml clean verify       # Maven path

@@ -73,7 +73,7 @@ There is no "already migrated" path — once a saga has been ported to `@Compone
 
 3. AskUserQuestion — choose one:
 
-   - `migrate-to-event-handler-with-state` *(recommended only when step 1 found NO deadline hit AND step 2 association mechanics are simple)* — recipe exits with a pointer to the worked example below; user re-runs the orchestrator on the rewritten class as an `event-processor` recipe target.
+   - `migrate-to-event-handler-with-state` *(recommended only when step 1 found NO deadline hit AND step 2 association mechanics are simple)* — recipe exits with a pointer to the worked example below; user re-runs the migration runner on the rewritten class as an `event-processor` recipe target.
      - Sub-choice — pick the shape:
        - `shape-a-injected-event-sourced-state` — when saga state is fully derivable from the events the saga consumes. See **Worked example A** below.
        - `shape-b-jpa-state-with-scheduler` — when state has fields not derivable from events, or you need to replace deadlines with an own scheduler. See **Worked example B** below.
@@ -83,7 +83,7 @@ There is no "already migrated" path — once a saga has been ported to `@Compone
 
 4. Append a dated narrative entry to `learnings.md` recording the decision, the saga FQN, and the reason.
 
-5. Emit Output. The orchestrator commits a decision-only record (`recipe: saga`, `decisions: [saga: <choice>]`).
+5. Emit Output. The migration runner commits a decision-only record (`recipe: saga`, `decisions: [saga: <choice>]`).
 
 ## Worked example A — `@InjectEntity` + event-sourced state (Spring Boot, AF5)
 
@@ -492,7 +492,7 @@ public class PaymentSaga {
 
 ## End condition
 
-Never green automatically — there is no compile-time check the recipe can run. The orchestrator commits the user's recorded decision; the actual saga rewrite (when `migrate-to-event-handler-with-state` is picked) is a follow-up the user runs through the `event-processor` recipe afterwards.
+Never green automatically — there is no compile-time check the recipe can run. The migration runner commits the user's recorded decision; the actual saga rewrite (when `migrate-to-event-handler-with-state` is picked) is a follow-up the user runs through the `event-processor` recipe afterwards.
 
 ## Output
 

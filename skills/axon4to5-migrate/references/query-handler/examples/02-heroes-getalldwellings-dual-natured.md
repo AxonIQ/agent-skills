@@ -13,7 +13,7 @@ to the event-handler skill first. **But** when phase-1 OpenRewrite
 (`UpgradeAxon4ToAxon5` / `UpgradeAxon4ToAxoniq5`) has already run,
 all four annotations have been moved to their AF5 packages and there
 is nothing for either skill to do. The skill closes as a **no-op**
-and the orchestrator records the unit of work as done.
+and the migration runner records the unit of work as done.
 
 **File state (after phase-1 OpenRewrite, before this skill ran):**
 
@@ -102,7 +102,7 @@ BUILD SUCCESS.
 - **The "Mixed-message class — out of scope" rule still applies as a
   default**, but with an exception when every annotation is already
   AF5-shaped. Don't refuse to close; record the no-op so the
-  orchestrator can move on.
+  migration runner can move on.
 - **Event-handler side belongs to a sibling skill** when there *is*
   AF4-shape work to do. If the class had a class-level
   `CommandGateway` field that the event handler dispatched through

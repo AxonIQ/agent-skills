@@ -31,7 +31,7 @@ The aggregate (and its commands, events, and primary test class) compile and beh
 
 - target: FQ aggregate class name (required)
 - target_test: FQ test class name (optional — auto-discovered as `<target>Test` if absent)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by migration runner from progress.md Pinned-decisions)
 
 ## End condition (verify BEFORE declaring done)
 
@@ -113,14 +113,14 @@ Maybe the job is already done — don't waste context.
 ## Subagent guidelines
 
 Aggregates are mutually independent — different files, different tests, different
-profile entries in `pom.xml`. The orchestrator MAY fan out one subagent per
+profile entries in `pom.xml`. The migration runner may fan out one subagent per
 aggregate to parallelise the analysis half of the recipe. Apply / verify / commit
-stay serial in the orchestrator (`pom.xml` is a single shared file; merging
+stay serial in the migration runner (`pom.xml` is a single shared file; merging
 parallel `<profiles>` inserts is fragile).
 
 ```yaml
 - subagent_type: general-purpose
-- isolation: none           # subagents return a structured plan; orchestrator writes
+- isolation: none           # subagents return a structured plan; migration runner writes
 - parallelism: per-item     # one subagent per discovered aggregate target
 - prompt-framing: |
     READ-ONLY analysis of ONE aggregate target. Do NOT edit files,
@@ -149,7 +149,7 @@ parallel `<profiles>` inserts is fragile).
          the external `axon4to5-isolatedtest` skill for the
          `isolated-<Target>` scope (per [../verification.md](../verification.md)).
 
-    DO NOT WRITE FILES. The orchestrator owns: applying edits, splicing
+    DO NOT WRITE FILES. The migration runner owns: applying edits, splicing
     the profile into pom.xml, running scoped verify, committing.
 ```
 
@@ -159,7 +159,7 @@ shared build file (`pom.xml` or `build.gradle(.kts)`). Concurrent worktree
 commits to the same scope-block region produce merge conflicts that need
 deterministic resolution. The "research-in-parallel, write-in-serial" shape
 above gets the analysis-time wall-clock savings without the merge problem.
-A fully isolated worktree variant is feasible if the orchestrator pre-allocates
+A fully isolated worktree variant is feasible if the migration runner pre-allocates
 all scope slots first in a single commit, then subagents fill their slot —
 out of scope for this version of the recipe.
 
@@ -348,11 +348,11 @@ Inputs:
 
 The external skill returns the exact copy-paste compile + test commands; recipes do NOT hand-craft Maven `-P` flags or Gradle `:testIsolated…` invocations.
 
-Run a follow-up invocation with `cleanup: true` ONLY when the recipe's End condition is green AND the orchestrator is ready to commit (the cleanup removes the scope from the build file).
+Run a follow-up invocation with `cleanup: true` ONLY when the recipe's End condition is green AND the migration runner is ready to commit (the cleanup removes the scope from the build file).
 
 > ⚠️ **Prefer per-file source paths over package wildcards.** A glob like `src/main/java/com/example/write/**/*.java` would pull in every file in that package — including `*Mcp.java`, `*RestApi.java`, and other non-migration files that may still use AF4 APIs or Java preview features. The external skill defaults to per-file includes; pass explicit paths.
 
-> ⚠️ **Multi-module / multi-project**: the external skill writes the scope into the build file of the module that owns the target. The orchestrator's pinned `build-tool` plus the target's owning module determine `build-file` — pass the absolute path to the right module's build file (not the parent reactor pom).
+> ⚠️ **Multi-module / multi-project**: the external skill writes the scope into the build file of the module that owns the target. The migration runner's pinned `build-tool` plus the target's owning module determine `build-file` — pass the absolute path to the right module's build file (not the parent reactor pom).
 
 ## Caveats
 

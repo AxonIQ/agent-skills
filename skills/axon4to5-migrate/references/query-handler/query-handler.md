@@ -21,7 +21,7 @@ In the simple case, **import-only** change. Method bodies, parameter lists, retu
 
 - target: FQ class name of the `@QueryHandler` host (required)
 - target_test: FQ test class name (optional)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
+- wiring: "spring-boot" | "framework-config" (required, supplied by migration runner from progress.md Pinned-decisions)
 
 ## End condition
 

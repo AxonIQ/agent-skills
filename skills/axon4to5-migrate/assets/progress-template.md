@@ -22,7 +22,7 @@ created by the external `axon4to5-isolatedtest` skill) keep verification
 scoped through phases 2–8. Stabilization drops every `isolated-*` scope.
 
 > Manual work is sometimes unavoidable. Out-of-scope features, custom
-> subclasses, bespoke config may need user judgment. Orchestrator records
+> subclasses, bespoke config may need user judgment. The migration runner records
 > `blocked` / `deferred-to-stabilization` and keeps moving.
 
 ---
@@ -52,7 +52,7 @@ The single block a fresh session needs to make the next move. Keep
   ```
 - **Awaiting user input?** _yes (and the question) / no_
 - **Working-tree expectation at resume time:** _clean — last commit `<sha>` is the previous item. If dirty → previous session crashed mid-step._
-- **Last commit recorded by orchestrator:** `<short-sha>` — `<commit subject>`
+- **Last commit recorded by migration runner:** `<short-sha>` — `<commit subject>`
 
 ---
 
@@ -62,7 +62,7 @@ The single block a fresh session needs to make the next move. Keep
 - **Started:** `<YYYY-MM-DD>`
 - **Last updated:** `<YYYY-MM-DD HH:MM>`
 - **Active branch:** `<branch-name>`
-- **Build tool:** _Maven / Gradle (Maven only is fully automated)_
+- **Build tool:** _Maven / Gradle_
 
 ---
 
@@ -70,14 +70,14 @@ The single block a fresh session needs to make the next move. Keep
 
 Frozen for the run. A fresh session must respect these without re-asking.
 
+- **License target:** _free-af5 / axoniq-commercial — set at INIT_
 - **Wiring:** _spring-boot / framework-config — set at INIT, drives Path A vs Path B in every recipe_
 - **Build tool:** _maven / gradle — set at INIT, passed as `build-file` to the external `axon4to5-isolatedtest` skill_
-- **License target:** _free-af5 / axoniq-commercial — set at INIT_
 - **Recipe scope (openrewrite):** _top-level / per-module subset (list)_
 - **Unsupported features detected at INIT:** _none / list (saga, deadline …). Per-aggregate `@DeadlineHandler` is recorded under the affected aggregate's row as well._
 - **Per-feature decision:** _one line per feature: `<feature>: accept-stays-af4 / pause / remove-first`_
 - **Commit cadence:** _per-item (default) / per-phase squashed / no auto-commits_
-- **Storage-engine path:** _A (framework-config) / B (Spring Boot) — set when reached. Each path may use JPA or Axon Server as a sub-path._
+- **Storage-engine path:** _A (Spring Boot) / B (framework-config) — set when reached. Each path may use JPA or Axon Server as a sub-path._
 
 ---
 
@@ -93,7 +93,8 @@ Legend: `pending` · `in-progress` · `awaiting-checkpoint` · `complete` · `pa
 | 4 | command-gateway | iterative | pending | 0 / ? | — |
 | 5 | query-gateway | iterative | pending | 0 / ? | — |
 | 6 | query-handler | iterative | pending | 0 / ? | — |
-| 7 | event-storage-engine | one-shot + configuration sweep | pending | 0 / ? | — |
+| 7 | interceptors | iterative | pending | 0 / ? | — |
+| 8 | event-storage-engine | one-shot + configuration sweep | pending | 0 / ? | — |
 | — | stabilization | — | pending | — | — |
 
 > When a phase enters `in-progress`, fill its detailed section below with the
@@ -158,9 +159,15 @@ Inputs:
 |---|---|---|---|---|
 | 1 | … | … | pending | — |
 
-### Migration Phase #7 — event-storage-engine + configuration sweep
+### Migration Phase #7 — interceptors
 
-> Phase #7 bundles two related concerns into one pass:
+| # | FQ class | FQ test | Status | Commit |
+|---|---|---|---|---|
+| 1 | … | … | pending | — |
+
+### Migration Phase #8 — event-storage-engine + configuration sweep
+
+> Phase #8 bundles two related concerns into one pass:
 > 1. **Storage-engine bean swap** (one-shot) — JPA / Axon Server engine, see below.
 > 2. **Configuration classes** (iterative) — any class reading `eventStore()` / `eventBus()` OR declaring generic writes (`@Bean ConfigurerModule` for non-Axon components, `DefaultConfigurer.defaultConfiguration()`, free-standing lifecycle hooks, `Lifecycle` interface). Migrated via [event-storage-engine/configuration.md](../references/event-storage-engine/configuration.md). Topic-specific configuration is handled by its topic recipe: event-processor reads / wiring in #3 (see also [event-processor/configuration-reads.md](../references/event-processor/configuration-reads.md)), command-gateway reads in #4 ([command-gateway/configuration-reads.md](../references/command-gateway/configuration-reads.md)), query-gateway reads in #5 ([query-gateway/configuration-reads.md](../references/query-gateway/configuration-reads.md)), aggregate registration in #2.
 
@@ -172,7 +179,7 @@ Inputs:
 
 **Storage-engine bean swap**
 
-- **Path chosen:** _A (framework-config) / B (Spring Boot)_
+- **Path chosen:** _A (Spring Boot) / B (framework-config)_
 - **Sub-path:** _JPA / Axon Server_
 - **Evidence:** _AF4 beans observed + dependencies_
 - **Configuration class touched:** _FQ class — bean(s) replaced_
