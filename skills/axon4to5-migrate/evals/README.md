@@ -1,30 +1,15 @@
 # Evals — axon4to5-migrate
 
-Scenario-based evals. Each `NN-*.md` file is one scenario: setup, prompt, expected behavior, pass/fail signals. Run manually in a session with the skill loaded — there is no automated harness yet.
+Manual scenarios — one paragraph each. Run by hand in a session with the skill loaded. Pass = every check holds; fail otherwise.
 
-A future automation can read these files as YAML-fronted scenarios and exec the prompt in a sandbox project; for now they're a checklist for human review when the skill changes.
-
-## Scenarios
-
-| # | File | Mode exercised | What it pins down |
-|---|---|---|---|
-| 01 | [01-routing-aggregate.md](01-routing-aggregate.md) | SINGLE | A file with `@Aggregate` + `@EventSourcingHandler` routes to `aggregate` — not `event-processor`. |
-| 02 | [02-routing-command-gateway-vs-handler.md](02-routing-command-gateway-vs-handler.md) | SINGLE | Exclude-when rule: a class that injects `CommandGateway` AND has `@CommandHandler` routes to its handler recipe, not `command-gateway`. |
-| 03 | [03-init-license-mandatory.md](03-init-license-mandatory.md) | PHASED first run | INIT asks license BEFORE any recipe runs, including openrewrite. SINGLE mode on a virgin project does the same via `ensure_pinned()`. |
-| 04 | [04-resume-phased.md](04-resume-phased.md) | PHASED resume | Fresh session reads `progress.md`, confirms via `AskUserQuestion`, picks up the next item with no re-prompts for pinned decisions. |
-| 05 | [05-dirty-tree-on-resume.md](05-dirty-tree-on-resume.md) | PHASED resume | When the working tree has user WIP, orchestrator pauses with three options instead of sweeping into the migration commit. |
-| 06 | [06-blocker-comments-not-deletes.md](06-blocker-comments-not-deletes.md) | any | `result: blocked` keeps the AF4 surface commented-out + `TODO[AF5 migration: <key>]`. Never silent delete. |
-| 07 | [07-debug-mode-clusters.md](07-debug-mode-clusters.md) | DEBUG | Debug mode clusters errors by root cause, not by message; routes ONE cluster, recompiles, re-clusters. |
-| 08 | [08-finalize-cleanup.md](08-finalize-cleanup.md) | FINALIZE | After every row is done, FINALIZE invokes `axon4to5-isolatedtest cleanup:true` per scope, promotes deps, runs full build with no scope active. |
-| 09 | [09-no-data-migration.md](09-no-data-migration.md) | any | Skill never emits SQL/DDL, never copies event-store rows. `move-to-*` blocker options are code-rewrite choices; user owns the data move. |
-
-## Pass criteria
-
-A scenario passes when the orchestrator's behavior in that session matches **every** check in the scenario's "Expected behavior" list. A single check failing = scenario fails; record which check failed.
-
-## Adding a new scenario
-
-1. Pick the next `NN`.
-2. Use [_template.md](_template.md).
-3. Frame the scenario as: starting state → user input → expected orchestrator actions (numbered) → pass/fail signals.
-4. Add a row in the table above.
+| # | Scenario | Pass / fail |
+|---|---|---|
+| **1** | **Single-file routes to `aggregate`.** Project pinned. User runs `/axon4to5-migrate src/main/java/com/example/GiftCard.java`. → Mode: SINGLE; `ensure_pinned()` no-prompts; routing walks rows by phase; `aggregate` (phase 2) matches first; recipe runs with `inputs.wiring = spring-boot`; ONE commit `refactor(af5-migration): migrate aggregate GiftCard …`. **Fail** if any auto-routing prompt appears or wrong recipe is picked. |
+| **2** | **exclude-when honored.** Class injects `CommandGateway` AND has `@EventHandler`. → `event-processor` wins at phase 3; `command-gateway`'s `exclude-when` fires (handler annotations present). **Fail** if orchestrator routes to `command-gateway`. |
+| **3** | **License is asked BEFORE any recipe runs.** Virgin project with `axon-mongo` dep. PHASED or SINGLE invocation. → `recommend_license() = axoniq-commercial`; **first** `AskUserQuestion` is license with `axoniq-commercial (Recommended) — your project depends on features not in free AF5 yet` listed first. **Fail** if openrewrite or any recipe runs before license is pinned. |
+| **4** | **Fresh session resumes from `progress.md` alone.** `progress.md` exists with pinned decisions, phase 3 in-progress. Working tree clean, HEAD matches. → ONE confirmation prompt naming `▶︎ RESUME HERE`'s next item; no re-prompts for license/wiring/build-tool. **Fail** on any re-prompt of pinned decisions. |
+| **5** | **Dirty tree on resume → AskUserQuestion.** `git status --porcelain` shows files orchestrator didn't touch. → BEFORE any recipe: prompt with three options (stage-only-migration-files (recommended) / let-user-clean-up / skip-this-commit). NEVER `git add -A`. **Fail** if WIP gets swept into the migration commit. |
+| **6** | **`result: blocked` comments out, never deletes.** Recipe hits `@Bean DeadlineManager`, user picks `defer-until-af5-deadlines`. → AF4 bean stays in the file as a comment with `// TODO[AF5 migration: <key>]`; `progress.md` Pinned-decisions records the resolution; `learnings.md` has a fresh dated entry. **Fail** on silent deletion. |
+| **7** | **DEBUG clusters by root cause.** Post-OpenRewrite: 40 errors across ~2 root causes (e.g. `AggregateLifecycle.apply` + `AggregateTestFixture`). → orchestrator runs `./mvnw test-compile`, clusters by root cause not by message, routes ONE high-leverage cluster, recompiles, re-clusters. **Fail** if orchestrator runs `aggregate` recipe 15 times for 15 message-shaped buckets. |
+| **8** | **FINALIZE removes every `isolated-*`.** All routing rows done; build files contain three `isolated-<X>` profiles. → orchestrator invokes `axon4to5-isolatedtest cleanup:true` per scope, promotes AF5 deps, removes script/CI activation refs, runs full build with no scope active, single commit `chore(af5-migration): remove isolated-* scaffolding`. **Fail** if any `isolated-*` survives the final commit, OR FINALIZE runs while rows are still pending. |
+| **9** | **No data migration, ever.** User reaches phase 8 with `JdbcEventStorageEngine`. → `AskUserQuestion` offers code-rewrite options only (`move-to-jpa` / `accept-stays-af4` / `pause-migration`); recipe NEVER produces `.sql` / Flyway / Liquibase / `mvn flyway:migrate` etc. If `move-to-jpa`, recipe replaces bean wiring only and records in `learnings.md` that the user must run the schema change before runtime. **Fail** if any DDL artifact is produced. |

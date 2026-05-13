@@ -1,233 +1,156 @@
-# Recipe: `QueryGateway` caller (top-of-chain, non-handler)
+# Recipe: query-gateway (top-of-chain caller)
 
-Atomic migration of ONE class that dispatches queries via `QueryGateway` from outside any message handler — typically Spring `@RestController`, service entry point, scheduler.
+Atomic migration of ONE class dispatching queries via `QueryGateway` from outside any message handler.
 
-> **Configuration-reader variant.** If the candidate class instead injects AF4 `Configuration` and reads `queryBus()` / `queryUpdateEmitter()` to dispatch low-level query messages, follow [configuration-reads.md](configuration-reads.md) instead of this main recipe.
+> If the class injects AF4 `Configuration` and reads `queryBus()` / `queryUpdateEmitter()`, use [configuration-reads.md](configuration-reads.md).
 
-## Canonical reference
-
-- [../../docs/paths/messages.adoc](../../docs/paths/messages.adoc) — query annotations, `MessageType`, `ResponseType` removal context.
-- [../../docs/paths/index.adoc](../../docs/paths/index.adoc) §"Import and package changes" — `QueryGateway` package move.
-
-Recipe holds the call-shape rewrites (`ResponseType` → plain `Class<R>`, subscription queries).
-
-## Goal
-
-The class compiles on AF5:
-- `QueryGateway` import switched to AF5 location.
-- `ResponseType` wrapper removed (eliminated in AF5).
-- `query(...)` / `subscriptionQuery(...)` rewritten to use plain `Class<R>` overloads.
-- Multi-response queries split into `queryMany(...)`.
-- Surrounding method's return type adapted (e.g. Spring controller `CompletableFuture<R>`).
-- Named queries (`queryGateway.query("name", payload, ...)`) move from call-site name to payload-class via `@Query` annotation.
-
-> **Hard rule — never wrap a dispatch in `GenericQueryMessage` to preserve a named query.** Constructing `new GenericQueryMessage(new MessageType("name"), payload)` at the call site is mechanically valid but architecturally wrong: scatters routing names across every dispatch site instead of keeping them on the payload type. The only correct migration for an AF4 named query is to put the name on the payload class via `@Query` (`org.axonframework.messaging.queryhandling.annotation.Query`). If AF4 payload was bare scalar (`String`, enum, `Long`, …), introduce a dedicated record and annotate it.
+**Hard rule — named queries.** Never wrap a dispatch in `GenericQueryMessage` to preserve a named query. The only correct AF5 migration for an AF4 named query is `@Query` on the payload class (`org.axonframework.messaging.queryhandling.annotation.Query`). If AF4 payload was a bare scalar, introduce a record and annotate it.
 
 ## Inputs
 
-- target: FQ class name of the top-of-chain dispatcher injecting `QueryGateway` (required)
-- target_test: FQ test class name (optional)
-- wiring: "spring-boot" | "framework-config" (required, supplied by orchestrator from progress.md Pinned-decisions)
-
-## End condition
-
-1. Zero compile errors in the class.
-2. No `ResponseType` / `ResponseTypes.*` wrappers remain.
-3. Surrounding method's return type flows the result correctly.
-4. Verify decided by user — often integration test.
-
-## Output
-
-Emit exactly one fenced ```yaml block per the six-variant Output contract
-([../output-contract.md](../output-contract.md)). Schema below shows the
-`success` shape with all query-gateway `decisions` keys; for the other
-five variants copy the matching example from `output-contract.md`.
-
-```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
-target: <FQ class>
-reason: <one short line — required for every variant except success>
-decisions:
-  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-  query-shape: <single | stream | subscription>
-caller-expects:
-  commit: <true | false>
-  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
-notes: <optional free text — verbatim AskUserQuestion options for needs-decision>
-```
+- `target` — FQ class (required)
+- `target_test` — FQ test class (optional)
+- `wiring` — `spring-boot` | `framework-config` (pinned)
 
 ## Preflight
 
-1. File imports `QueryGateway` from `org.axonframework.messaging.queryhandling.gateway` (AF5 FQN), not `org.axonframework.queryhandling` (AF4 FQN).
-2. No imports of `org.axonframework.messaging.responsetypes.*` (`ResponseType` / `ResponseTypes` SPI removed in AF5).
-3. No call sites wrapping in `instanceOf(...)` / `multipleInstancesOf(...)` / `optionalInstanceOf(...)` or referencing `ResponseTypes` statically.
-4. No `queryGateway.scatterGather(...)` (removed in AF5; if present → **not** a no-op, flag for user).
-5. Subscription-query call sites pass plain `Class<I>` / `Class<U>`; callers expecting AF4 `Mono<I>` initial result already adapted to AF5 `Flux<I>` shape.
-6. **No bare blocking calls without timeout.** `.get()` / `.join()` without `.orTimeout(...)` at sync boundaries is a real fix the recipe should apply — **not** a no-op. Most common diff post-recipe.
-7. **No AF4 named-query call sites.** Any `queryGateway.query("<name>", payload, ...)` / `queryGateway.queryMany("<name>", payload, ...)` (3-arg, first arg `String`) is the AF4 named overload, **removed in AF5** — apply rewrite from section 3 even when 1–6 hold.
+1. AF5 import `org.axonframework.messaging.queryhandling.gateway.QueryGateway` present?
+2. No `org.axonframework.messaging.responsetypes.*` imports?
+3. No `ResponseTypes.instanceOf` / `multipleInstancesOf` / `optionalInstanceOf`?
+4. No `queryGateway.scatterGather(...)` (removed in AF5; **not** a no-op — flag).
+5. Subscription queries pass plain `Class<I>` / `Class<U>`?
+6. No bare `.get()` / `.join()` without `.orTimeout(...)` at sync boundaries — most common diff post-recipe, real fix to apply.
+7. No AF4 named-query call sites `queryGateway.query("<name>", payload, …)` — apply rewrite even when 1–6 hold.
 
-If items 1–5 hold AND item 6 holds: file is recipe-pre-migrated → STOP. `AskUserQuestion`: Skip / Deep verify.
+All clean → `AskUserQuestion`: Skip / Deep verify.
 
 ## In scope
 
-ONE class that:
-- Imports `org.axonframework.queryhandling.QueryGateway` (AF4), AND
-- Holds it as class-level dependency, AND
-- Calls `queryGateway.query(...)` / `subscriptionQuery(...)` / `streamingQuery(...)` / `scatterGather(...)`, AND
-- Is **NOT** a message-handling component.
-
-## Out of scope
-
-- Handler-resident dispatch — see the event-processor recipe.
-- `scatterGather(...)` removal — flag for user; **removed in AF5 with no drop-in replacement**.
-- `@QueryHandler` classes (the receiving side) — see the query-handler recipe.
+ONE class importing AF4 `QueryGateway`, class-level dep, calls `.query(...)` / `.subscriptionQuery(...)` / `.streamingQuery(...)` / `.scatterGather(...)`, NOT a message-handling component.
 
 ## FQN cheat sheet
 
 | Element | AF4 | AF5 |
 |---|---|---|
 | `QueryGateway` | `org.axonframework.queryhandling.QueryGateway` | `org.axonframework.messaging.queryhandling.gateway.QueryGateway` |
-| `ResponseType` (and `ResponseTypes`) | `org.axonframework.messaging.responsetypes.ResponseType` | *(removed — use plain `Class<R>`)* |
-| `@Query` (new in AF5) | n/a | `org.axonframework.messaging.queryhandling.annotation.Query` |
-| `SubscriptionQueryResult` | `org.axonframework.queryhandling.SubscriptionQueryResult` | **split** — `SubscriptionQueryResponse<I, U>` (gateway, payloads) and `SubscriptionQueryResponseMessages` (bus, messages); FQN under `org.axonframework.messaging.queryhandling.*` |
+| `ResponseType` / `ResponseTypes` | `org.axonframework.messaging.responsetypes.*` | **removed** — use plain `Class<R>` |
+| `@Query` (new) | n/a | `org.axonframework.messaging.queryhandling.annotation.Query` |
+| `SubscriptionQueryResult` | `org.axonframework.queryhandling.SubscriptionQueryResult` | **split** — `SubscriptionQueryResponse<I,U>` (gateway, payloads) / `SubscriptionQueryResponseMessages` (bus, messages); `org.axonframework.messaging.queryhandling.*` |
+| `GenericQueryMessage` | `org.axonframework.queryhandling.GenericQueryMessage` | `org.axonframework.messaging.queryhandling.GenericQueryMessage` — never construct at call sites (see hard rule) |
 | `MetaData` | `org.axonframework.messaging.MetaData` | `org.axonframework.messaging.core.Metadata` |
-| `GenericQueryMessage` | `org.axonframework.queryhandling.GenericQueryMessage` | `org.axonframework.messaging.queryhandling.GenericQueryMessage` — **never construct at call sites** to preserve a named query (see hard rule); use `@Query`-annotated payload classes instead |
 
 ## Procedure
 
-### 1. Locate
+### Step 1 — Locate
 
-```bash
-grep -rln --include='*.java' --include='*.kt' \
-  'org.axonframework.queryhandling.QueryGateway' \
-  <target>/src
-```
+Same filter as command-gateway: AF4 `QueryGateway` import AND no handler annotations.
 
-Filter out files with handler annotations (same as command-gateway recipe).
-
-### 2. Update import
+### Step 2 — Update import
 
 `org.axonframework.queryhandling.QueryGateway` → `org.axonframework.messaging.queryhandling.gateway.QueryGateway`.
 
-**How the gateway is obtained (path-conditional, no code change here):**
-- **Path A (Spring Boot):** `QueryGateway` is auto-created as a Spring bean by the AF5 starter. Constructor injection / `@Autowired` field continues to work.
-- **Path B (framework Configurer):** the gateway is pulled from the live `AxonConfiguration` returned by `start()`:
-  ```java
-  var config       = configurer.start();
-  var queryGateway = config.getComponent(QueryGateway.class);
-  var controller   = new MyController(queryGateway);
-  ```
-  Steps 3–8 are identical in both paths.
+- **Path A (Spring Boot):** auto-bean from starter; injection unchanged.
+- **Path B (framework Configurer):** `config.getComponent(QueryGateway.class)`.
 
-### 3. Handle named queries — `@Query` annotation
+### Step 3 — Named queries (`@Query`)
 
-**If the AF4 call is** `queryGateway.query("queryName", payload, ResponseType...)`:
+If AF4 call is `queryGateway.query("queryName", payload, ResponseType…)`:
 
-a. Change call site to use the typed overload (no name string, no `ResponseType` wrapper):
+1. Change call site to typed overload (no name, no `ResponseType`):
    ```java
    queryGateway.query(payload, ResponseClass.class);
    ```
-b. **Move the name to the payload class** via `@Query`. `@Query.name()` becomes the `QualifiedName.localName()` AF5 uses to route. Match the AF4 string **exactly** so the handler-side `@QueryHandler(queryName = "<the AF4 name>")` registration keeps routing to the same method:
+2. Move the name to the payload via `@Query`. Match AF4 string **exactly** — `@Query.name()` becomes the `QualifiedName.localName()` AF5 routes by:
    ```java
    import org.axonframework.messaging.queryhandling.annotation.Query;
 
    @Query(name = "queryName")
    public record GetXById(String id) { }
    ```
-   `@Query.namespace()` defaults to package, `@Query.name()` defaults to simple class name. Set `name` **explicitly** to AF4 string — never rely on default; AF4 name and class name almost never agree.
-c. If AF4 payload was a bare scalar (`String`, enum, `Long`, …), introduce a record wrapper and annotate it.
-d. **Coupled handler-side edit (in scope here, only when payload class changes).** When the AF4 payload was a bare scalar and a new record is introduced, the matching `@QueryHandler(queryName = "<name>")` method's parameter type must be updated to accept the new record — otherwise build breaks. Apply in same run even though `@QueryHandler` migration is normally another recipe; the change is inseparable.
+   Set `name` explicitly — AF4 name and class name almost never agree.
+3. Bare scalar payload (`String`, enum, …) → introduce a record wrapper, annotate it.
+4. **Coupled handler-side edit** (only when payload class changes): update the matching `@QueryHandler(queryName = "<name>")` parameter type to accept the new record. Inseparable from the call-site change:
    ```java
-   // before — handler took the bare scalar
-   @QueryHandler(queryName = "getStatus")
-   public PaymentStatus getStatus(String paymentId) { ... }
-
-   // after — handler takes the new record
-   @QueryHandler(queryName = "getStatus")
-   public PaymentStatus getStatus(GetPaymentStatusQuery query) {
-       return ... query.paymentId() ...;
-   }
+   // before
+   @QueryHandler(queryName = "getStatus") PaymentStatus getStatus(String paymentId)
+   // after
+   @QueryHandler(queryName = "getStatus") PaymentStatus getStatus(GetPaymentStatusQuery query)
    ```
-   When AF4 payload was already a dedicated class, handler signature unchanged — only the payload class gains `@Query`.
 
-### 4. Remove `ResponseType` wrappers — table
+### Step 4 — Remove `ResponseType` wrappers
 
 | AF4 | AF5 | Returns |
 |---|---|---|
-| `queryGateway.query(payload, R.class)` (already `Class` overload) | same — **import-only change** | `CompletableFuture<R>` |
-| `queryGateway.query(payload, ResponseTypes.instanceOf(R.class))` | `queryGateway.query(payload, R.class)` | `CompletableFuture<R>` |
-| `queryGateway.query(payload, ResponseTypes.optionalInstanceOf(R.class))` | `queryGateway.query(payload, R.class)` — future resolves to `null` if absent | `CompletableFuture<R>` (nullable) |
-| `queryGateway.query(payload, ResponseTypes.multipleInstancesOf(R.class))` | `queryGateway.queryMany(payload, R.class)` | `CompletableFuture<List<R>>` |
-| `queryGateway.query("name", payload, ResponseTypes.instanceOf(R.class))` | `queryGateway.query(payload, R.class)` + `@Query(name = "name")` on payload | `CompletableFuture<R>` |
-| `queryGateway.query("name", payload, ResponseTypes.multipleInstancesOf(R.class))` | `queryGateway.queryMany(payload, R.class)` + `@Query(name = "name")` on payload | `CompletableFuture<List<R>>` |
-| `queryGateway.query("name", payload, ResponseTypes.optionalInstanceOf(R.class))` | `queryGateway.query(payload, R.class)` + `@Query(name = "name")` on payload (future resolves `null` if absent) | `CompletableFuture<R>` (nullable) |
-| `queryGateway.streamingQuery(payload, R.class)` | same — **import-only change** | `Publisher<R>` |
-| `queryGateway.scatterGather(...)` | **REMOVED** — flag for user; no drop-in | — |
+| `query(payload, R.class)` (already `Class` overload) | same — import only | `CompletableFuture<R>` |
+| `query(payload, ResponseTypes.instanceOf(R.class))` | `query(payload, R.class)` | `CompletableFuture<R>` |
+| `query(payload, ResponseTypes.optionalInstanceOf(R.class))` | `query(payload, R.class)` — future resolves `null` if absent | `CompletableFuture<R>` (nullable) |
+| `query(payload, ResponseTypes.multipleInstancesOf(R.class))` | `queryMany(payload, R.class)` | `CompletableFuture<List<R>>` |
+| `query("name", payload, ResponseTypes.instanceOf(R.class))` | `query(payload, R.class)` + `@Query(name="name")` on payload | `CompletableFuture<R>` |
+| `query("name", payload, ResponseTypes.multipleInstancesOf(R.class))` | `queryMany(payload, R.class)` + `@Query(name="name")` on payload | `CompletableFuture<List<R>>` |
+| `streamingQuery(payload, R.class)` | same — import only | `Publisher<R>` |
+| `scatterGather(...)` | **REMOVED** — flag user; no drop-in | — |
 
-Notes:
-- `query(...)` is **always single-response** in AF5. Multi-response → `queryMany(...)`.
-- `ResponseType` / `ResponseTypes` SPI **gone**. Drop wrappers and static imports of `ResponseTypes.*`.
-- **Custom `ResponseType` subclass** in the project → flag for user; per-callsite plan needed.
+- `query(...)` is **always single-response** in AF5; multi-response → `queryMany(...)`.
+- `ResponseType` / `ResponseTypes` SPI gone — drop wrappers and static imports.
+- Custom `ResponseType` subclass → flag for user; per-callsite plan needed.
 
-### 5. Subscription queries
+### Step 5 — Subscription queries
 
-AF4 `SubscriptionQueryResult` is **split** in AF5: `SubscriptionQueryResponseMessages` (bus, `Message`s) vs `SubscriptionQueryResponse<I, U>` (gateway, payloads). Top-of-chain callers see the gateway flavour.
-
-Drop `ResponseType` wrappers — pass plain `Class<I>` / `Class<U>`. The gateway's `initialResult()` is a `Flux` (not `Mono`) because AF5 supports 0/1/N initial results uniformly.
+AF4 `SubscriptionQueryResult` is **split** in AF5. Top-of-chain callers see the gateway flavour (`SubscriptionQueryResponse<I, U>`). `initialResult()` is `Flux` in AF5 (not `Mono`) because AF5 supports 0/1/N initial results uniformly.
 
 ```java
 SubscriptionQueryResponse<R, U> resp = queryGateway.subscriptionQuery(payload, R.class, U.class);
-Flux<R> initial = resp.initialResult();   // NOT Mono in AF5
+Flux<R> initial = resp.initialResult();   // Flux, not Mono
 Flux<U> updates = resp.updates();
 ```
 
-If the AF4 caller assumed a single initial result, collapse with `.next()` / `.singleOrEmpty()` so behaviour stays compatible — flag for user when in doubt. Call `resp.cancel()` when done (project-specific lifecycle).
+If AF4 caller assumed single initial result, collapse with `.next()` / `.singleOrEmpty()`. Call `resp.cancel()` when done (project-specific).
 
-### 6. Scatter-gather — flag for user
+### Step 6 — Scatter-gather
 
-```java
-queryGateway.scatterGather(payload, …)
+`queryGateway.scatterGather(payload, …)` is REMOVED in AF5. No drop-in replacement. Flag to user; redesign (single broadcast handler aggregating internally, or domain-specific).
+
+### Step 7 — Adapt surrounding method's return type
+
+- **Spring MVC controller** → return `CompletableFuture<R>` directly; Spring serves async out of the box.
+- **Reactive (Mono/Flux)** → `Mono.fromFuture(future)` for `query`, `Flux.from(publisher)` for `streamingQuery`. Reactor extension survives at `extension.reactor`.
+- **Blocking caller** (CLI runner, integration test) → `future.orTimeout(<d>, <u>).join()`. Never bare `.join()` / `.get()`.
+- **Synchronous framework callback** (MCP resource handler, `@KafkaListener`, `@JmsListener`, Camel route step) — same blocking pattern. Pick timeout consciously (often 30s default).
+
+### Step 8 — Verify nothing else
+
+- Stale AF4 `org.axonframework.queryhandling.*` imports → remove.
+- `ResponseTypes` static imports → drop when unused.
+- `QueryExecutionException` → update FQN if present.
+
+## End condition
+
+1. Zero compile errors.
+2. No `ResponseType` / `ResponseTypes.*` wrappers remain.
+3. Return type flows correctly.
+4. Compile-only via `axon4to5-isolatedtest`:
+   ```
+   target-name: <ClassSimpleName>
+   main-sources: [<Class>.java]
+   test-sources: []
+   extra-deps: [axon-messaging]
+   ```
+
+## Output
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ class>
+reason: <one short line>
+decisions:
+  path: A (Spring Boot) | B (framework Configurer)
+  query-shape: single | stream | subscription
+caller-expects: { commit: <bool>, next: <…> }
+notes: <…>
 ```
 
-**Removed in AF5.** No drop-in replacement. Flag to user; user must redesign (typical replacement: a single broadcast query handler that aggregates internally, or a domain-specific approach).
+## Out of scope
 
-### 7. Adapt surrounding method's return type
-
-Four shapes:
-
-- **Spring MVC controller** — return `CompletableFuture<R>` directly; Spring serves async out of the box. Most simple migrations end up unchanged here.
-- **Reactive return** (`Mono` / `Flux`) — bridge with `Mono.fromFuture(future)` for `query(...)`, `Flux.from(publisher)` for `streamingQuery(...)`. Reactor extension survives in AF5 at `extension.reactor` (active migration, not removal).
-- **Blocking caller** (CLI runner, integration test) — `query(...)` returns `CompletableFuture<R>`. Block with `future.orTimeout(<duration>, <unit>).join()`. **Never** bare `.join()` / `.get()`.
-- **Synchronous framework callback** (MCP resource handler, `@KafkaListener`, `@JmsListener`, Camel route step) — callback signature requires synchronous return. Same rewrite as blocking caller: `.orTimeout(<d>, <u>).join()`. Pick a timeout consciously (often 30s default; shorter when framework has its own request budget). `CompletionException` from `.join()` is unchecked — existing `catch (Exception)` still matches.
-
-### 8. Verify nothing else
-
-- Stale imports — remove leftover `org.axonframework.queryhandling.*` AF4 imports.
-- `ResponseTypes` static imports (`import static org.axonframework.messaging.responsetypes.ResponseTypes.*;`) — drop when no longer referenced.
-- `QueryExecutionException` — FQN moved. Update if present.
-- Try/catch on AF4 query-handling exceptions whose FQN moved.
-
-Do not introduce abstractions or refactors that aren't required by the AF5 API change.
-
-## Verify (against End condition)
-
-Invoke the external `axon4to5-isolatedtest` skill (see [../verification.md](../verification.md)):
-
-```
-Skill: axon4to5-isolatedtest
-Inputs:
-  target-name: <ClassSimpleName>
-  build-file: <target>/pom.xml | <target>/build.gradle(.kts)
-  main-sources:
-    - src/main/java/<…>/<Class>.java
-  test-sources: []                              # compile-only run
-  extra-deps:
-    - org.axonframework:axon-messaging:${axon5.version}
-  cleanup: false
-```
-
-If an integration test exists, pass it via `test-sources` and add `axon-test` to `extra-deps`.
-
-## Examples
-
-See [examples/](examples/) — includes the named-query-via-`@Query` pattern.
+- Handler-resident dispatch → event-processor recipe.
+- `scatterGather(...)` removal → flag user; no drop-in.
+- `@QueryHandler` classes → query-handler recipe (except the coupled edit in Step 3.4).

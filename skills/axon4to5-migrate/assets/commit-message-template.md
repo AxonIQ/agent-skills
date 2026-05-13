@@ -1,45 +1,21 @@
 # Commit message template
 
-Conventional commits, short subject, free-form body. State lives in
-`progress.md`, not in the commit body.
-
-## Subject line
-
 ```
-<type>(af5-migration): <one-line description> (Migration Phase #<N>)
+<type>(af5-migration): <one-line> (Migration Phase #<N>)
+
+Verified via: <axon4to5-isolatedtest invocation or `./mvnw test-compile …`>
+<wiring>; <one or two lines on variant / decisions if non-obvious>
 ```
 
-- `<type>`: `chore` (one-shot, no behavior change), `refactor` (iterative
-  migration of one item), `feat` (storage-engine wiring), `fix` (a
-  stabilization fix), `docs` (decision-only commits — no code change).
-- Subject ≤ 70 chars when possible.
-- "Migration Phase #<N>" suffix is optional but recommended for code-changing
-  commits — it lets a reader scan `git log --oneline` and see progress
-  phase by phase.
+`<type>`: `chore` (one-shot, no behavior change) / `refactor` (iterative migration of one item) / `feat` (storage-engine wiring) / `fix` (stabilization) / `docs` (decision-only).
 
-## Body
+Subject ≤ 70 chars. "Migration Phase #N" suffix recommended for code commits — readable `git log --oneline`.
 
-Free-form prose. Include the verification command used and anything a
-reviewer needs. Keep brief — detail belongs in `progress.md` /
-`learnings.md`.
+## Rules
 
-```
-Verified via:
-  ./mvnw -f <target>/pom.xml test -P <profile-id> \
-    -Dtest='<FQTestClass>' \
-    -DfailIfNoTests=false \
-    -Dsurefire.failIfNoSpecifiedTests=false
-
-wiring=<spring-boot|framework-config>; <one or two short lines on the variant / decisions, if non-obvious>
-```
-
-## Hard rules
-
-- One commit per item — never bundle multiple migrations.
-- Stage explicit paths. NEVER `git add -A` / `git add .`.
-- Include the matching `progress.md` rewrite in the same commit (rewrite
-  the relevant sections before staging).
+- One commit per item; never bundle migrations.
+- Stage explicit paths; never `git add -A`.
+- Include matching `progress.md` rewrite in the same commit.
 - Include `learnings.md` if a non-obvious lesson surfaced.
-- Never push, never amend, never `--no-verify`.
-- Commit on the user's current branch — never on `main` / `master`.
-- No co-author attribution lines (per project convention).
+- Never push / amend / `--no-verify` / commit on `main`.
+- No co-author lines.

@@ -1,90 +1,66 @@
-# Recipe `event-processor` — not-supported / blockers
+# Recipe `event-processor` — blockers
 
-**Read this file BEFORE running `## Procedure`.** Each blocker below has a Detection grep and an `AskUserQuestion` flow. If a blocker fires and the user does not pick a path that maps onto AF5, exit with `result: needs-decision`, `caller-expects.next: ask-user` — never silently rewrite around an unresolved blocker.
+Run every Detection grep BEFORE `## Procedure`. For each hit: run the `AskUserQuestion`, record under `decisions.<key>`, apply "Effect". Never silently rewrite around an unresolved blocker.
 
-> 🚨 **DATA MIGRATION IS NOT IN SCOPE.** This skill rewrites **code only** (annotations, imports, dispatcher wiring, processor-bound config). Token-store rows, DLQ entries, and any other persisted state owned by event processors are NOT migrated by this skill. Token data is usually rebuildable by replay (full replay rewrites all tokens), so a `move-to-jpa-token-store` choice is a **code-rewrite + replay-from-event-store** plan — **not** a Mongo→relational data export. The user owns and runs the replay (or any out-of-band copy) themselves.
+> 🚨 **DATA MIGRATION IS NOT IN SCOPE.** Token-store rows, DLQ entries, and any other persisted state are NOT migrated by this skill. Token data is rebuildable by replay; `move-to-jpa-token-store` is a **code rewrite + user-run replay**, NOT a Mongo→relational data export.
 
-## How to use
+## B1 — `MongoTokenStore` (no AF5 release of `axon-mongo`)
 
-1. Run every Detection grep below from the target root, scoped to the candidate class and the configuration tied to its processing group.
-2. For each blocker that fires:
-   - Run the `AskUserQuestion` exactly as written.
-   - Record the user's pick under Output `decisions.<key>`.
-   - Apply "Effect on Procedure".
-3. Only when every fired blocker has a recorded outcome → proceed to `## Procedure`.
+**Why.** No AF5 release of `axon-mongo` / `MongoTokenStore`. Token data is rebuildable by replay, but the switch MUST be a deliberate user decision.
 
-## Blockers
-
-### B1 — `MongoTokenStore` (no AF5 release of `axon-mongo`)
-
-**Why blocker.** No AF5 release of `axon-mongo`; no AF5 `MongoTokenStore`. Token data is per-processor and can usually be rebuilt by replay from the event store, so a switch is feasible — but it MUST be a deliberate user decision.
-
-**Detection.**
-
+**Detection:**
 ```bash
 grep -RnE 'MongoTokenStore|registerTokenStore.*Mongo|org\.axonframework\.extensions\.mongo' \
-     --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' \
-     <project root> 2>/dev/null
+     --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' <project root>
 ```
 
-Also detect via the standard processor-group sweep (Procedure step 2 in the main file).
+**AskUserQuestion:**
+- `move-to-jpa-token-store` — **code rewrite only.** Switch bean to AF5 `JpaTokenStore`. Token data rebuilt by **replay from event store**, run by the user. If project can't tolerate a replay (large event log, side-effecting projections, idempotency concerns), pick `pause-migration`.
+- `pause-migration` — user replaces token store (incl. data plan) before resuming.
+- `accept-stays-af4` — keep token-store slice on AF4 deps; recipe exits.
 
-**AskUserQuestion — choose one:**
+**Output key:** `mongo-token-store: none | move-to-jpa-token-store | pause-migration | accept-stays-af4`.
 
-- `move-to-jpa-token-store` — **code-rewrite only — switch the bean to AF5 `JpaTokenStore`.** This skill will NOT copy token rows from Mongo to the new JPA table. Token data is rebuilt by **replay from the event store**, which the user runs themselves (and verifies against expected projection state). If the project cannot tolerate a replay (large event log, side-effecting projections, idempotency concerns), pick `pause-migration` instead.
-- `pause-migration` — stop; user replaces token store (incl. data plan) before resuming.
-- `accept-stays-af4` — keep the token-store slice on AF4 deps; recipe exits with `result: blocked`, `caller-expects.next: record-and-skip`.
+**Effect:**
+- `move-to-jpa-token-store` → proceed; surface for event-storage-engine to replace the bean. Learnings line: *"User accepts replay-from-event-store as the token-data plan."*
+- others → `result: blocked`, `next: record-and-skip`, exit.
 
-**Output decision key.** `mongo-token-store: <none | move-to-jpa-token-store | pause-migration | accept-stays-af4>`
+## B2 — Saga handler in candidate
 
-**Effect on Procedure.**
-- `move-to-jpa-token-store` → proceed; surface for the event-storage-engine recipe's [configuration.md](../event-storage-engine/configuration.md) (Steps W.*) to replace the bean. Add a learnings line: *"User accepts replay-from-event-store as the token-data plan; this skill does NOT copy token rows."*
-- `pause-migration` / `accept-stays-af4` → emit Output, exit. No code change in this class.
+**Why.** Sagas have no automatic AF5 rewrite. Wrong recipe.
 
-### B2 — Saga handler in candidate (`@SagaEventHandler` / `@StartSaga` / `@EndSaga`)
-
-**Why blocker.** Sagas have no automatic AF5 rewrite. Workflow support is on the Axoniq roadmap. The candidate is a saga, not an event-processor — wrong recipe.
-
-**Detection.**
-
+**Detection:**
 ```bash
-grep -RlnE '@SagaEventHandler\b|@StartSaga\b|@EndSaga\b|@Saga\b' \
-     --include='*.java' --include='*.kt' <candidate file>
+grep -RlnE '@SagaEventHandler\b|@StartSaga\b|@EndSaga\b|@Saga\b' --include='*.java' --include='*.kt' <candidate file>
 ```
 
-**AskUserQuestion — choose one:**
+**AskUserQuestion:**
+- `wrong-recipe-skip` *(Recommended)* — orchestrator routes to saga slot; this recipe exits untouched.
+- `pause-migration` — user removes saga first.
 
-- `wrong-recipe-skip` *(Recommended)* — orchestrator routes this candidate to the (unsupported) saga slot; this recipe exits without touching the file.
-- `pause-migration` — stop; user removes saga before resuming.
+**Output key:** `saga-handler-detected: none | wrong-recipe-skip | pause-migration`.
 
-**Output decision key.** `saga-handler-detected: <none | wrong-recipe-skip | pause-migration>`
+**Effect:**
+- `wrong-recipe-skip` → `result: rejected`, `next: route-to:saga`, exit. No edits.
+- `pause-migration` → `result: blocked`, `next: record-and-skip`, exit.
 
-**Effect on Procedure.**
-- `wrong-recipe-skip` → emit Output with `result: rejected`, `caller-expects.next: route-to:saga`, exit. No edits to the candidate.
-- `pause-migration` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits to the candidate.
+## B3 — `axon-kafka` extension (no AF5 release)
 
-### B3 — `axon-kafka` extension (no AF5 release)
+**Why.** No AF5 release of `axon-kafka`. `KafkaPublisher`, `StreamableKafkaMessageSource`, `KafkaMessageSourceConfigurer`, `KafkaProperties` reference AF4-only APIs. No automatic translation.
 
-**Why blocker.** No AF5 release of `axon-kafka`. AF5's `EventBus` and streaming abstractions changed shape — `KafkaPublisher`, `StreamableKafkaMessageSource`, `KafkaMessageSourceConfigurer`, `KafkaProperties`, `axon-kafka-spring-boot-autoconfigure` all reference AF4-only APIs. Even a manual rewrite is non-trivial; there is no automatic translation path. Affects publication side (`KafkaPublisher`) and the consumption side that wires the processor's `messageSource` to a `StreamableKafkaMessageSource`.
-
-**Detection.**
-
+**Detection:**
 ```bash
 grep -RnE 'org\.axonframework\.extensions\.kafka|axon-kafka|KafkaPublisher|StreamableKafkaMessageSource|KafkaMessageSourceConfigurer' \
-     --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' --include='pom.xml' --include='*.gradle*' \
-     <project root> 2>/dev/null
+     --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' --include='pom.xml' --include='*.gradle*' <project root>
 ```
 
-Also detect via the standard processor-group sweep (Procedure step 2 in the main file) — Kafka is most often wired per-processor via a `messageSource(...)` callback or `KafkaMessageSourceConfigurer`.
+**AskUserQuestion:**
+- `accept-stays-af4` — Kafka slice stays AF4; affected modules won't compile against AF5; scope pinned.
+- `pause-migration` — user replaces Kafka integration (native Kafka client + custom `EventBus` adapter, or move publication to Axon Server).
+- `remove-feature-first` — user deletes Kafka wiring now, re-introduces a non-Axon Kafka integration later.
 
-**AskUserQuestion — choose one:**
+**Output key:** `axon-kafka: none | accept-stays-af4 | pause-migration | remove-feature-first`.
 
-- `accept-stays-af4` — Kafka slice stays on AF4 deps; the modules touching `axon-kafka` will not compile against AF5; user accepts that scope is pinned. Recipe exits without touching this candidate.
-- `pause-migration` — stop; user replaces Kafka integration (e.g. native Kafka client + custom `EventBus` adapter, or move publication to Axon Server) before resuming.
-- `remove-feature-first` — user agrees to delete the Kafka wiring now and re-introduce a non-Axon Kafka integration later.
+**Effect:** Any non-`none` → `result: blocked`, `next: record-and-skip`, exit. No edits. Learnings line: *"User accepts axon-kafka has no AF5 path; Kafka slice is the user's responsibility, out-of-band."*
 
-**Output decision key.** `axon-kafka: <none | accept-stays-af4 | pause-migration | remove-feature-first>`
-
-**Effect on Procedure.** Any non-`none` choice → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits to this candidate. Add a learnings line: *"User accepts axon-kafka has no AF5 path; Kafka slice is the user's responsibility, out-of-band."*
-
-> 🚨 **No data migration.** Switching off `axon-kafka` does not migrate, replay, or re-publish any messages already on Kafka topics. Topic state is untouched by this skill — replay / catch-up is the user's responsibility.
+> 🚨 **No data migration.** Switching off `axon-kafka` does not migrate, replay, or re-publish any messages already on Kafka topics.
