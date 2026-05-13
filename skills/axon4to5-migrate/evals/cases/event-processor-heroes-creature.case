@@ -1,0 +1,47 @@
+# Event-processor recipe on a projector that injects CommandGateway,
+# dispatches commands in-handler, uses @MetaDataValue + sequencing policy.
+
+recipe: event-processor
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java
+
+# @ProcessingGroup -> @Namespace (1:1 string preserved)
+require: @Namespace("Automation_WhenCreatureRecruitedThenAddToArmy_Processor")
+require: import org.axonframework.messaging.core.annotation.Namespace
+
+# Sequencing policy moved from a @Bean to a class-level annotation
+require: @SequencingPolicy(type = MetadataSequencingPolicy.class
+require: import org.axonframework.messaging.core.annotation.SequencingPolicy
+require: import org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy
+
+# AF5 annotation imports
+require: import org.axonframework.messaging.eventhandling.annotation.EventHandler
+require: import org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay
+require: import org.axonframework.messaging.core.annotation.MetadataValue
+
+# Class-level CommandGateway field replaced by method-parameter CommandDispatcher
+require: import org.axonframework.messaging.commandhandling.gateway.CommandDispatcher
+require: CommandDispatcher commandDispatcher
+require: @MetadataValue(GameMetaData.GAME_ID_KEY)
+
+# Async dispatch — future returned, no blocking
+require: .getResultMessage()
+require: java.util.concurrent.CompletableFuture
+require: @DisallowReplay
+require: @Component
+
+# AF4 surface gone
+forbid: @ProcessingGroup
+forbid: import org.axonframework.config.ProcessingGroup
+forbid: import org.axonframework.eventhandling.EventHandler
+forbid: import org.axonframework.eventhandling.DisallowReplay
+forbid: import org.axonframework.commandhandling.gateway.CommandGateway
+forbid: @MetaDataValue(
+forbid: import org.axonframework.messaging.annotation.MetaDataValue
+forbid: commandGateway.sendAndWait
+forbid: commandGateway.send
+forbid: private final CommandGateway commandGateway
+
+# No bare blocking
+forbid: .join()
+forbid: .get()

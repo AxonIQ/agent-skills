@@ -1,0 +1,16 @@
+# Query-handler recipe — the simplest case: import-only, body untouched.
+
+recipe: query-handler
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getdwellingbyid/GetDwellingByIdQueryHandler.java
+
+require: import org.axonframework.messaging.queryhandling.annotation.QueryHandler
+require: @QueryHandler
+require: @Component
+
+# AF4 import gone
+forbid: import org.axonframework.queryhandling.QueryHandler
+
+# Path A → no manual registration; Path B's module wiring must not leak here
+forbid: QueryHandlingModule
+forbid: configurer.register

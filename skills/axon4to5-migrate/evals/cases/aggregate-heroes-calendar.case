@@ -1,0 +1,15 @@
+# Second aggregate to widen the eval — confirms the recipe handles multiple
+# aggregates with different shapes from the same project.
+
+recipe: aggregate
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/calendar/write/Calendar.java
+
+require: @EventSourced(tagKey = "Calendar"
+require: EventAppender eventAppender
+require: @EntityCreator
+require: @CommandHandler
+
+forbid: @AggregateIdentifier
+forbid: AggregateLifecycle
+forbid: @CreationPolicy

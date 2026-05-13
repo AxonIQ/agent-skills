@@ -1,0 +1,27 @@
+# Query-gateway recipe in a synchronous MCP callback.
+# AF4 ended with .get(); AF5 must bridge through .orTimeout(...).join().
+
+recipe: query-gateway
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsMcp.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/getalldwellings/GetAllDwellingsMcp.java
+
+# AF5 import + sync bridge
+require: import org.axonframework.messaging.queryhandling.gateway.QueryGateway
+require: queryGateway.query(query, GetAllDwellings.Result.class)
+require: .orTimeout(30, TimeUnit.SECONDS)
+require: import java.util.concurrent.TimeUnit
+require: private final QueryGateway queryGateway
+
+# Spring stereotypes preserved
+require: @Component
+require: @Bean
+
+# AF4 surface gone
+forbid: import org.axonframework.queryhandling.QueryGateway
+forbid: ResponseType
+forbid: ResponseTypes.instanceOf
+forbid: ResponseTypes.multipleInstancesOf
+forbid: scatterGather
+
+# Naked .get() must not remain (caller previously chained .get() on the future)
+forbid: .get();

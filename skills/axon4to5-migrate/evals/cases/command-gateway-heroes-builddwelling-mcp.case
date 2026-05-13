@@ -1,0 +1,14 @@
+# Command-gateway in a Spring AI MCP tool method that returns CompletableFuture
+# (NOT a synchronous callback — no .orTimeout().join() needed).
+
+recipe: command-gateway
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingMcp.java
+
+require: import org.axonframework.messaging.commandhandling.gateway.CommandGateway
+require: CompletableFuture
+require: commandGateway.send
+
+forbid: import org.axonframework.commandhandling.gateway.CommandGateway
+forbid: sendAndWait
+forbid: CommandDispatcher

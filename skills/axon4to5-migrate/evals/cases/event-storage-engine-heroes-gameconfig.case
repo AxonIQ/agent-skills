@@ -1,0 +1,26 @@
+# Phase #8 configuration sweep: SequencingPolicy + correlation provider package moves.
+
+recipe: event-storage-engine
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/GameConfiguration.java
+
+# AF5 imports
+require: import org.axonframework.messaging.core.sequencing.SequencingPolicy
+require: import org.axonframework.messaging.eventhandling.EventMessage
+require: import org.axonframework.messaging.core.correlation.CorrelationDataProvider
+require: import org.axonframework.messaging.core.correlation.MessageOriginProvider
+require: import org.axonframework.messaging.core.correlation.SimpleCorrelationDataProvider
+require: import java.util.Optional
+
+# AF5 record-style accessors + Optional return on SequencingPolicy
+require: Optional.ofNullable
+require: e.metadata().get
+
+# Spring bean wiring preserved
+require: @Bean
+
+# AF4 imports gone
+forbid: import org.axonframework.eventhandling.async.SequencingPolicy
+forbid: import org.axonframework.eventhandling.EventMessage
+forbid: import org.axonframework.messaging.correlation
+forbid: e.getMetaData()

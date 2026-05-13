@@ -174,4 +174,11 @@ After every non-trivial commit, suggest `/clear` — phase boundaries especially
 
 ## Evals
 
-Real AF4↔AF5 pairs from `.knowledge/repositories/axon-examples/{heroes,gamerental,bike-rental-extended}` drive the eval suite. See [evals/scenarios.md](evals/scenarios.md) for the routing + recipe + orchestrator scenario table and [evals/fixtures/](evals/fixtures/) for per-recipe must-haves / anti-patterns grounded in concrete file diffs.
+Executable. Real AF4↔AF5 pairs from `.knowledge/repositories/axon-examples/` drive the suite — one bash runner + one `.case` file per scenario, each with `require:` / `forbid:` grep patterns against the AF5 reference.
+
+```bash
+./skills/axon4to5-migrate/evals/run.sh          # all cases
+./skills/axon4to5-migrate/evals/run.sh aggregate # filter by name substring
+```
+
+See [evals/README.md](evals/README.md) for the case format and coverage table.

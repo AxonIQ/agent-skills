@@ -1,36 +1,47 @@
-# Evals — axon4to5-migrate
+# Evals — executable
 
-Each eval pairs a real **AF4 source file** with its **AF5 target file** from the example repositories under `.knowledge/repositories/axon-examples/`. Both ends are checked-in; the orchestrator is graded on whether running the recipe on the AF4 file produces a result that matches the AF5 file (modulo whitespace).
+Real AF4↔AF5 file pairs from `.knowledge/repositories/axon-examples/` drive the suite. The runner greps each AF5 reference for `require:` patterns (must appear) and `forbid:` patterns (must NOT appear). One short bash script + one `.case` file per scenario.
 
-Project pairs available:
-- `axon-examples/axon{4,5}/heroes/` — Spring Boot, JPA event store, rich domain (aggregates, projectors, gateway callers, query handlers, an interceptor).
-- `axon-examples/axon{4,5}/gamerental/` — Spring Boot, Axon Server, command + query side.
-- `axon-examples/axon{4,5}/bike-rental-extended/` — multi-module Spring Boot, Axon Server, contains the **PaymentSaga** + `@DeadlineHandler` reference.
+## Run
 
-Each scenario in [scenarios.md](scenarios.md) names:
+```bash
+./skills/axon4to5-migrate/evals/run.sh          # all cases
+./skills/axon4to5-migrate/evals/run.sh aggregate # cases whose name contains "aggregate"
+```
 
-1. **Trigger** — the user invocation against the AF4 project.
-2. **AF4 source** — repo-relative path under the AF4 example.
-3. **Recipe expected** — exactly one routing-table row.
-4. **AF5 reference** — the matching file in the paired AF5 example.
-5. **Must-haves** — concrete assertions on the AF5 output (annotations, imports, method shapes, `Output.decisions` keys).
-6. **Anti-patterns** — what the recipe MUST NOT do (silent deletions, wrong recipe routing, etc.).
+Exit code: `0` = every case passed, `1` = at least one failed.
 
-Scenarios are grouped by recipe so when a recipe changes, the relevant evals run.
+## Case format
 
-## How to run manually
+```
+recipe:  <recipe-name>
+af4:     <repo-relative path under .knowledge/repositories/axon-examples/>
+af5:     <repo-relative path>
+require: <literal substring that MUST appear in af5>
+forbid:  <literal substring that MUST NOT appear in af5>
+```
 
-1. Copy the AF4 example tree to a scratch dir: `cp -r .knowledge/repositories/axon-examples/axon4/<project> /tmp/<project>-af4-clone`.
-2. Initialize git there: `cd /tmp/<project>-af4-clone && git init && git add -A && git commit -m 'baseline'`.
-3. Invoke the skill against the scratch dir per the scenario's **Trigger**.
-4. After the recipe commits, diff the migrated file against the AF5 reference:
-   ```bash
-   diff -u /tmp/<project>-af4-clone/<af4-source> .knowledge/repositories/axon-examples/axon5/<project>/<af5-reference>
-   ```
-5. **Pass** when every must-have holds. **Fail** when any anti-pattern triggers OR a must-have is missing.
+Lines starting with `#` are comments. Blank lines are ignored. Multiple `require:` and `forbid:` lines per case.
 
-## How to add a scenario
+## Current coverage
 
-1. Find a real before/after pair in the repos above.
-2. Add a row in [scenarios.md](scenarios.md).
-3. If the scenario needs more than one assertion line, drop a `fixtures/<recipe>-<short-name>.md` file with the full check list.
+| Case | Recipe | What it audits |
+|---|---|---|
+| `aggregate-heroes-dwelling` | aggregate | `@EventSourced`, `EventAppender`, `@EntityCreator`, snapshotting B1 dropped, all AF4 imports gone. |
+| `aggregate-heroes-calendar` | aggregate | Second aggregate — different `tagKey`, same shape. |
+| `event-processor-heroes-creature` | event-processor | `@Namespace`, `@SequencingPolicy(type = MetadataSequencingPolicy.class)`, class-level `CommandGateway` → method-parameter `CommandDispatcher`, no naked `.join()` / `.get()`. |
+| `command-gateway-heroes-recruit` | command-gateway | Import-only swap in a Spring controller. Gateway stays. |
+| `command-gateway-heroes-builddwelling-mcp` | command-gateway | Future-returning MCP tool — `commandGateway.send` chained, no blocking. |
+| `query-gateway-heroes-mcp` | query-gateway | Sync callback bridges via `.orTimeout(30, TimeUnit.SECONDS).join()`. |
+| `query-handler-heroes-getbyid` | query-handler | Import-only `@QueryHandler` rewrite, body untouched. |
+| `event-storage-engine-heroes-entityscan` | event-storage-engine | Mandatory `@EntityScan(org.axonframework, io.axoniq.framework, …)` (A.JPA.5). |
+| `event-storage-engine-heroes-gameconfig` | event-storage-engine | `SequencingPolicy` + correlation-provider package moves, `e.getMetaData()` → `e.metadata()`, `Optional` return. |
+| `event-storage-engine-heroes-yaml` | event-storage-engine | YAML `axon.serializer.*` → `axon.converter.*`, per-processor `sequencing-policy:` removed. |
+| `saga-bike-rental-payment` | saga | Shape B outcome: `@Component` + `@Scheduled` replacing `@DeadlineHandler`, all AF4 saga imports gone. |
+
+## Add a case
+
+1. Find a real before/after pair in `.knowledge/repositories/axon-examples/axon{4,5}/`.
+2. Run greps on the AF5 file to confirm patterns you want to assert.
+3. Drop a `cases/<recipe>-<short-name>.case` file.
+4. Re-run `./run.sh` — the new case should pass.

@@ -1,0 +1,28 @@
+# Command-gateway recipe on a Spring @RestController.
+# Import-only rewrite — gateway stays, controller still returns CompletableFuture<Void>.
+
+recipe: command-gateway
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/recruitcreature/RecruitCreatureRestApi.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/recruitcreature/RecruitCreatureRestApi.java
+
+# AF5 import landed
+require: import org.axonframework.messaging.commandhandling.gateway.CommandGateway
+
+# Top-of-chain — gateway stays as a class-level dep
+require: private final CommandGateway commandGateway
+
+# Async controller shape preserved
+require: CompletableFuture<Void>
+require: commandGateway.send
+require: GameMetaData.with
+require: @RestController
+require: @PutMapping
+
+# AF4 import gone
+forbid: import org.axonframework.commandhandling.gateway.CommandGateway
+
+# No blocking introduced; gateway NOT replaced with dispatcher (this is top-of-chain)
+forbid: sendAndWait
+forbid: CommandDispatcher
+forbid: .join()
+forbid: .get()

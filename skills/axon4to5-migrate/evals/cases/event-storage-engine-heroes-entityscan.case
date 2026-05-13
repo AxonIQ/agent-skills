@@ -1,0 +1,12 @@
+# Phase #8 sub-target: mandatory @EntityScan covering the three framework roots.
+# Per A.JPA.5, partial @EntityScan is worse than none.
+
+recipe: event-storage-engine
+af4: axon4/heroes/src/main/java/com/dddheroes/heroesofddd/HeroesOfDDDApplication.java
+af5: axon5/heroes/src/main/java/com/dddheroes/heroesofddd/HeroesOfDDDApplication.java
+
+require: import org.springframework.boot.autoconfigure.domain.EntityScan
+require: @EntityScan(basePackages
+require: "com.dddheroes.heroesofddd"
+require: "org.axonframework"
+require: "io.axoniq.framework"

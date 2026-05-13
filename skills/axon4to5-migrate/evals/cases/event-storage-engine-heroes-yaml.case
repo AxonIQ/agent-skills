@@ -1,0 +1,13 @@
+# Phase #8: application.yaml — axon.serializer.* renamed to axon.converter.*;
+# per-processor `sequencing-policy:` removed (moved to class-level annotation).
+
+recipe: event-storage-engine
+af4: axon4/heroes/src/main/resources/application.yaml
+af5: axon5/heroes/src/main/resources/application.yaml
+
+require: converter:
+require: mode: pooled
+require: mode: subscribing
+
+forbid: serializer:
+forbid: sequencing-policy:
