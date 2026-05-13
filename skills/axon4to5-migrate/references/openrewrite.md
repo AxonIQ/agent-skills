@@ -34,7 +34,7 @@ Compilation is NOT a success criterion. The external skill returns success when 
 
 1. Project already at AF5? Check `pom.xml` BOM / dep versions (or `build.gradle*` for Gradle).
 2. Recent OpenRewrite run already committed? `git log --oneline | grep af5-migration | head -5`.
-3. If both clean → return Output with `recipe-status: skipped-already-applied`, `skip=true`. AskUserQuestion only when the user explicitly wants to re-run.
+3. If both clean → return Output with `result: skipped`, `reason: "already on AF5 — OpenRewrite already applied"`. AskUserQuestion only when the user explicitly wants to re-run.
 
 ## Subagent guidelines
 
@@ -99,7 +99,7 @@ Classify:
 Two acceptable terminal states (see "End condition" below):
 
 - **Success** — external skill exited 0, recipe applied. Run the Behavior-change classification below.
-- **Failure** — external skill exited non-zero. Copy its one-line bail reason verbatim into `Output.notes`, set `recipe-status: failed`, surface to the orchestrator.
+- **Failure** — external skill exited non-zero. Copy its one-line bail reason verbatim into `Output.notes`, set `result: failed` with `caller-expects.next: halt`, surface to the orchestrator.
 
 If the report shows "no changes" but the project is plainly AF4, treat as failure with reason `recipe-no-op` and surface for diagnosis.
 
@@ -194,24 +194,42 @@ When in doubt, grep the diff for the AF5 counterpart before claiming an AF4 elem
 
 ## End condition
 
-Two acceptable terminal states — both are normal exits, neither halts the caller:
+Three acceptable terminal states — only `failed` halts the caller; the others let the migration proceed:
 
-1. **Success.** External skill exited 0 with at least one rewrite (or "already migrated" — see Preflight). `git diff --stat` shows the expected set of mechanical rewrites for the chosen framework. Output `decisions` captures `framework`, `recipe-status: success`, and behavior-change notes.
-2. **Graceful bail.** External skill exited non-zero. Working tree is clean (the external skill rolls back on failure). Output `recipe-status: failed` with the bail reason verbatim. Per-construct recipes proceed without this step — make that explicit to the caller.
+1. **`result: success`.** External skill exited 0 with at least one rewrite. `git diff --stat` shows the expected set of mechanical rewrites for the chosen framework. `decisions` captures `framework` and behavior-change notes.
+2. **`result: skipped`.** Preflight detected "already on AF5" (BOM + recent migration commits). No rewrites applied. Caller proceeds to the next phase without committing.
+3. **`result: failed`.** External skill exited non-zero. Working tree is clean (the external skill rolls back on failure). `notes` carries the bail reason verbatim. Per-construct recipes proceed without OpenRewrite — make that explicit to the caller in `notes`.
 
 ## Output
 
-- target: <target project root>
-- decisions:
-    - license: <free-af5 | axoniq-commercial>
-    - framework: <axon | axoniq>
-    - recipe-status: <success | failed | skipped-already-applied>
-    - bail-reason: <one-line from external skill | "n/a">
-    - behavior-changes-flagged: <yes | no | "n/a">
-- needs-user-decision: false typically — true only when the external skill reported a recoverable failure the user can fix mid-session.
-- notes: behavior-change warnings on success; or the external skill's bail message on failure.
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([./output-contract.md](./output-contract.md)).
 
-> Subject line for the orchestrator's commit (chosen by orchestrator based on Output):
+Mapping:
+
+| External skill state | `result:` | `caller-expects.next` |
+|---|---|---|
+| Recipe applied; rewrites in working tree | `success` | `proceed` |
+| Already migrated (Preflight) | `skipped` | `proceed` |
+| External skill exited non-zero with rollback (clean tree) | `failed` | `halt` |
+| Recoverable bail the user can fix mid-session | `needs-decision` | `ask-user` |
+
+```yaml
+result: success | skipped | failed | needs-decision
+target: <target project root>
+reason: <one short line — required for every variant except success>
+decisions:
+  license: <free-af5 | axoniq-commercial>
+  framework: <axon | axoniq>
+  bail-reason: <one-line from external skill | "n/a">
+  behavior-changes-flagged: <yes | no | "n/a">
+caller-expects:
+  commit: <true | false>     # true on success; false otherwise
+  next: <proceed | ask-user | halt>
+notes: <behavior-change warnings on success; external skill's bail message verbatim on failed>
+```
+
+> Subject line for the orchestrator's commit (chosen by orchestrator on `result: success`):
 > `chore(af5-migration): apply OpenRewrite recipe (--framework <FRAMEWORK>) (Migration Phase #1)`
 
 ## Caveats

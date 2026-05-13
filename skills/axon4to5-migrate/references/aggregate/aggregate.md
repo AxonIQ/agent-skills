@@ -52,20 +52,35 @@ If aggregate has NO test class, end condition is just (2). Skip T.1–T.5 below.
 
 ## Output
 
-- target: <FQ aggregate class>
-- decisions:
-    - path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-    - variant: <simple | multi-entity | polymorphic>
-    - creation-policy: <NEVER | ALWAYS-handled | ALWAYS-static-factory>
-    - test-fixture: <migrated | none>
-    - snapshotting: <none | accept-drop | pause-migration | remove-feature-first>             # B1
-    - configurer-registration: <auto-spring | added-explicit | surfaced-for-user>              # Path B only
-    - map-typed-aggregate-member: <none | surface-and-defer | pause-migration>                 # B3
-    - saga-test-fixture-flagged: <none | surface-and-skip-test | pause-migration>              # B4
-    - deadline-handler: <none | accept-stays-af4 | pause-migration | remove-feature-first>     # B5
-- needs-user-decision: <true | false>
-- needs-user-decision-reason: <text> (only when true)
-- notes: optional
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). Schema below shows the
+`success` shape with all aggregate-specific `decisions` keys; for
+`skipped` / `rejected` / `needs-decision` / `blocked` / `failed` shapes
+copy the matching example from `output-contract.md` and keep the
+aggregate-specific decision keys that apply.
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ aggregate class>
+reason: <one short line — required for every variant except success>
+decisions:
+  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
+  variant: <simple | multi-entity | polymorphic>
+  creation-policy: <NEVER | ALWAYS-handled | ALWAYS-static-factory>
+  test-fixture: <migrated | none>
+  snapshotting: <none | accept-drop | pause-migration | remove-feature-first>             # B1
+  configurer-registration: <auto-spring | added-explicit | surfaced-for-user>              # Path B only
+  map-typed-aggregate-member: <none | surface-and-defer | pause-migration>                 # B3
+  saga-test-fixture-flagged: <none | surface-and-skip-test | pause-migration>              # B4
+  deadline-handler: <none | accept-stays-af4 | pause-migration | remove-feature-first>     # B5
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
+notes: <optional free text — verbatim AskUserQuestion options for needs-decision>
+```
+
+Blocker keys (`B1` / `B3` / `B4` / `B5`) map to `result: blocked` or
+`result: needs-decision` per [not-supported.md](not-supported.md).
 
 ## Preflight (ALWAYS run first)
 
@@ -268,7 +283,7 @@ public class GiftCardConfiguration {
 
 B.4. If the project's command handler also lives in a separate class (typical for framework-config layouts) and is not yet registered, add it via `CommandHandlingModule.autodetectedCommandHandlingComponent(...)`. This typically belongs in the `command-gateway` recipe or the bootstrap configuration class (see [../event-storage-engine/configuration.md](../event-storage-engine/configuration.md)) — but if the aggregate cannot reach a registered handler, it has no entry point. Surface this as Output `notes` rather than expanding scope here.
 
-B.5. If you cannot locate the configurer setup file (multi-module project, generated wiring, etc.), do NOT silently skip. Emit Output with `needs-user-decision=true` and `needs-user-decision-reason="Path B annotation rewrite done; please register the entity via EventSourcedEntityModule.autodetected(...) in your Configurer chain — recipe could not locate it."` Annotation rewrites from Steps 3–14 + B.1–B.2 are still committed.
+B.5. If you cannot locate the configurer setup file (multi-module project, generated wiring, etc.), do NOT silently skip. Emit Output with `result: needs-decision`, `caller-expects.next: ask-user`, and `reason: "Path B annotation rewrite done; please register the entity via EventSourcedEntityModule.autodetected(...) in your Configurer chain — recipe could not locate it."` Annotation rewrites from Steps 3–14 + B.1–B.2 are still committed (so `caller-expects.commit: true` for the partial work).
 
 ## Test fixture migration
 

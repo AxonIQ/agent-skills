@@ -37,16 +37,26 @@ The interceptor class compiles and behaves on AF5 APIs:
 
 ## Output
 
-- target: <FQ class>
-- decisions:
-  - path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-  - variant: <dispatch | handler | both>
-  - registration-sites-migrated: <count | "n/a (Path A — auto-discovery)">
-  - ordering-decision: <none-needed | order-annotations-added | undefined-accepted | paused>
-  - unit-of-work-callsites: <none | rewritten-to-processing-context>
-- needs-user-decision: <true | false>
-- needs-user-decision-reason: <text> (only when true)
-- notes: optional
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). Schema below shows the
+`success` shape with all interceptor `decisions` keys; for the other
+five variants copy the matching example from `output-contract.md`.
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ class>
+reason: <one short line — required for every variant except success>
+decisions:
+  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
+  variant: <dispatch | handler | both>
+  registration-sites-migrated: <count | "n/a (Path A — auto-discovery)">
+  ordering-decision: <none-needed | order-annotations-added | undefined-accepted | paused>
+  unit-of-work-callsites: <none | rewritten-to-processing-context>
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
+notes: <optional free text — verbatim AskUserQuestion options for needs-decision>
+```
 
 ## Preflight
 
@@ -67,7 +77,7 @@ Also in scope: the matching registration site(s) — `Configurer.registerCommand
 
 ## Out of scope
 
-- Classes carrying `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods alongside the interceptor interface — those belong to the matching handler recipe; surface to orchestrator with `needs-user-decision=true`.
+- Classes carrying `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods alongside the interceptor interface — those belong to the matching handler recipe; surface to orchestrator with `result: rejected`, `caller-expects.next: route-to:<event-processor | command-gateway | query-handler>`.
 - Annotation-based `@MessageHandlerInterceptor` methods declared inside a handler class — NOT functional in AF5 < 5.2.0; flag via `learnings.md` and leave commented per the orchestrator's anti-pattern rules.
 - Component-specific interceptor scoping via `HandlerInterceptorFactory.of(...)` — recipe surfaces it via AskUserQuestion when the user signals a single-component interceptor; recipe does not auto-pick.
 
@@ -140,6 +150,6 @@ Full table lives in [../../docs/paths/index.adoc](../../docs/paths/index.adoc) a
 - isolation: none
 
 - prompt-framing: |
-  Atomic per-interceptor rewrite. Do NOT touch handler classes (those belong to event-processor / command-gateway / query-handler recipes). If the candidate class also declares `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods, surface that to the orchestrator with `needs-user-decision=true` — it likely indicates a wrong-recipe routing.
+  Atomic per-interceptor rewrite. Do NOT touch handler classes (those belong to event-processor / command-gateway / query-handler recipes). If the candidate class also declares `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods, surface that to the orchestrator with `result: rejected`, `caller-expects.next: route-to:<the matching handler recipe>` — it indicates a wrong-recipe routing.
 
 - parallelism: per-item

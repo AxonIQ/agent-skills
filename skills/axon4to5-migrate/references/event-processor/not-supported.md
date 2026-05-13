@@ -1,6 +1,6 @@
 # Recipe `event-processor` — not-supported / blockers
 
-**Read this file BEFORE running `## Procedure`.** Each blocker below has a Detection grep and an `AskUserQuestion` flow. If a blocker fires and the user does not pick a path that maps onto AF5, exit with `needs-user-decision=true` — never silently rewrite around an unresolved blocker.
+**Read this file BEFORE running `## Procedure`.** Each blocker below has a Detection grep and an `AskUserQuestion` flow. If a blocker fires and the user does not pick a path that maps onto AF5, exit with `result: needs-decision`, `caller-expects.next: ask-user` — never silently rewrite around an unresolved blocker.
 
 > 🚨 **DATA MIGRATION IS NOT IN SCOPE.** This skill rewrites **code only** (annotations, imports, dispatcher wiring, processor-bound config). Token-store rows, DLQ entries, and any other persisted state owned by event processors are NOT migrated by this skill. Token data is usually rebuildable by replay (full replay rewrites all tokens), so a `move-to-jpa-token-store` choice is a **code-rewrite + replay-from-event-store** plan — **not** a Mongo→relational data export. The user owns and runs the replay (or any out-of-band copy) themselves.
 
@@ -33,7 +33,7 @@ Also detect via the standard processor-group sweep (Procedure step 2 in the main
 
 - `move-to-jpa-token-store` — **code-rewrite only — switch the bean to AF5 `JpaTokenStore`.** This skill will NOT copy token rows from Mongo to the new JPA table. Token data is rebuilt by **replay from the event store**, which the user runs themselves (and verifies against expected projection state). If the project cannot tolerate a replay (large event log, side-effecting projections, idempotency concerns), pick `pause-migration` instead.
 - `pause-migration` — stop; user replaces token store (incl. data plan) before resuming.
-- `accept-stays-af4` — keep the token-store slice on AF4 deps; recipe exits with `needs-user-decision=true`.
+- `accept-stays-af4` — keep the token-store slice on AF4 deps; recipe exits with `result: blocked`, `caller-expects.next: record-and-skip`.
 
 **Output decision key.** `mongo-token-store: <none | move-to-jpa-token-store | pause-migration | accept-stays-af4>`
 
@@ -59,7 +59,9 @@ grep -RlnE '@SagaEventHandler\b|@StartSaga\b|@EndSaga\b|@Saga\b' \
 
 **Output decision key.** `saga-handler-detected: <none | wrong-recipe-skip | pause-migration>`
 
-**Effect on Procedure.** Either path → emit Output with `needs-user-decision=true`, exit. No edits to the candidate.
+**Effect on Procedure.**
+- `wrong-recipe-skip` → emit Output with `result: rejected`, `caller-expects.next: route-to:saga`, exit. No edits to the candidate.
+- `pause-migration` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits to the candidate.
 
 ### B3 — `axon-kafka` extension (no AF5 release)
 
@@ -83,6 +85,6 @@ Also detect via the standard processor-group sweep (Procedure step 2 in the main
 
 **Output decision key.** `axon-kafka: <none | accept-stays-af4 | pause-migration | remove-feature-first>`
 
-**Effect on Procedure.** Any non-`none` choice → emit Output with `needs-user-decision=true`, exit. No edits to this candidate. Add a learnings line: *"User accepts axon-kafka has no AF5 path; Kafka slice is the user's responsibility, out-of-band."*
+**Effect on Procedure.** Any non-`none` choice → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits to this candidate. Add a learnings line: *"User accepts axon-kafka has no AF5 path; Kafka slice is the user's responsibility, out-of-band."*
 
 > 🚨 **No data migration.** Switching off `axon-kafka` does not migrate, replay, or re-publish any messages already on Kafka topics. Topic state is untouched by this skill — replay / catch-up is the user's responsibility.

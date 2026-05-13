@@ -4,9 +4,20 @@ Migrations are easier to review, bisect, and roll back when each unit of progres
 
 The commit message template (subject line + body shape) lives in [../assets/commit-message-template.md](../assets/commit-message-template.md). This file covers cadence rules: when to commit and what to include.
 
-## When to commit
+## When to commit — `result:` → commit decision
 
-One commit per item. Map a recipe outcome to a commit subject like this:
+Cadence is driven by the recipe's `Output.result` (see [./output-contract.md](./output-contract.md)). One commit per item.
+
+| `result:` | What to commit | Subject style |
+|---|---|---|
+| `success` | code change **+** `progress.md` rewrite **+** `learnings.md` (if dirty) | `refactor(af5-migration): …` / `feat(af5-migration): …` — see per-recipe table below |
+| `skipped` | nothing — no commit | n/a |
+| `rejected` | nothing — no commit; orchestrator may re-route via `caller-expects.next` | n/a |
+| `needs-decision` | nothing — no commit; orchestrator runs `AskUserQuestion` then re-invokes the recipe with the answer pinned | n/a |
+| `blocked` | when `caller-expects.commit == true`: comment-out + TODO marker **+** `progress.md` Pinned-decisions update **+** `learnings.md` entry; when `caller-expects.commit == false`: `progress.md` Pinned-decisions update only | code-touching: `refactor(af5-migration): …` / `feat(af5-migration): …`; decision-only: `docs(af5-migration): record decision on <recipe>/<target>` |
+| `failed` | **never commit partial work** — surface to user, hand off to `debug` mode or pause | n/a |
+
+Per-recipe subject lines for `result: success`:
 
 | Recipe outcome | Subject line |
 |---|---|

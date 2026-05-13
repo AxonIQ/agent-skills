@@ -64,8 +64,8 @@ Also inspect the `@Aggregate` annotation directly — if it carries `snapshotTri
 
 **Effect on Procedure.**
 - `accept-drop` → proceed; do NOT carry `snapshotTriggerDefinition` over to `@EventSourced`.
-- `pause-migration` → emit Output with `needs-user-decision=true`, exit.
-- `remove-feature-first` → emit Output with `needs-user-decision=true`, exit; user will return after the cleanup commit.
+- `pause-migration` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit.
+- `remove-feature-first` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit; user will return after the cleanup commit.
 
 Same surfacing applies to any `Snapshotter` / `SnapshotTriggerDefinition` reference reachable from this aggregate. Caching attributes on `@Aggregate` are similarly not portable — fold into this decision.
 
@@ -87,7 +87,7 @@ grep -RnE '@AggregateMember[\s\S]{0,200}Map<' \
 
 **Output decision key.** `map-typed-aggregate-member: <none | surface-and-defer | pause-migration>`
 
-**Effect on Procedure.** Either path → emit Output with `needs-user-decision=true`, exit. No edits.
+**Effect on Procedure.** Either path → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits.
 
 ### B4 — `SagaTestFixture` on the aggregate's test class
 
@@ -109,7 +109,7 @@ grep -RnE 'SagaTestFixture' \
 
 **Effect on Procedure.**
 - `surface-and-skip-test` → run aggregate steps; skip T.1–T.5 for this test class.
-- `pause-migration` → emit Output with `needs-user-decision=true`, exit.
+- `pause-migration` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit.
 
 ### B5 — `@DeadlineHandler` / `DeadlineManager` use inside the aggregate
 
@@ -135,7 +135,7 @@ Also inspect injected fields on the aggregate / its constructor parameters for `
 
 **Effect on Procedure.**
 - `accept-stays-af4` → proceed with annotation rewrites Steps 3–14 + variant addenda + Path A or Path B; do NOT touch `@DeadlineHandler` methods or `DeadlineManager` injection sites; surface the kept-AF4 surface in Output `notes`. The aggregate slice will need a follow-up commit (or stays on AF4 deps) before stabilization can go green.
-- `pause-migration` / `remove-feature-first` → emit Output with `needs-user-decision=true`, exit. No edits.
+- `pause-migration` / `remove-feature-first` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No edits.
 
 > Same surfacing applies to any `DeadlineManager` reference reachable from this aggregate (constructor parameter, helper class, scheduler bean injected via the aggregate). The Quartz / JobRunr / DbScheduler implementation classes (`*DeadlineManager`) bring AF4 transitive deps that won't resolve on AF5; flag them as part of `accept-stays-af4`.
 

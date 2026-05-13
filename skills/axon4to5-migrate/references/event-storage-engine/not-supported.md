@@ -1,6 +1,6 @@
 # Recipe `event-storage-engine` — not-supported / blockers
 
-**Read this file BEFORE running `## Procedure`.** Each blocker below has a Detection grep and an `AskUserQuestion` flow. If any blocker fires and the user does not pick a path that maps to A/B/C, exit the recipe with `needs-user-decision=true` — never auto-rewrite a bean swap when a blocker is unresolved.
+**Read this file BEFORE running `## Procedure`.** Each blocker below has a Detection grep and an `AskUserQuestion` flow. If any blocker fires and the user does not pick a path that maps to A/B/C, exit the recipe with `result: needs-decision`, `caller-expects.next: ask-user` — never auto-rewrite a bean swap when a blocker is unresolved.
 
 > 🚨 **DATA MIGRATION & SQL/DDL ARE NOT IN SCOPE.** This skill rewrites **code only** (bean wiring, imports, annotations). It does NOT emit, run, or stage any SQL / DDL — including the AF5 JPA table-shape change. Schema changes and any movement of event log / token / DLQ data between stores (Mongo → AS, Mongo → relational, JDBC → JPA, …) are a **separate, out-of-band project the user owns**. The recipe will NOT export, copy, transform, or re-replay event data. Every `move-to-*` option below is **a code-rewrite choice, not a data- or schema-migration offer**. If the user has not planned and rehearsed the schema/data move on a non-prod environment, do NOT pick a `move-to-*` option — pause-migration instead.
 
@@ -31,7 +31,7 @@ grep -RnE 'MongoEventStorageEngine|org\.axonframework\.extensions\.mongo|axon-mo
 - `move-to-axon-server` — **code-rewrite only — Axon Server backend.** This skill will NOT migrate event data from Mongo to Axon Server. User MUST plan, run, and verify Mongo→AS data migration **out-of-band, before deploying the AF5 build**. Without that, the AF5 app starts against an empty Axon Server.
 - `move-to-jpa` — **code-rewrite only — JPA backend.** This skill will NOT migrate event data from Mongo to a relational DB and will NOT emit any SQL / DDL for the AF5 schema. The user owns both the schema change (AF5 JPA table shape) and the Mongo→relational data move, out-of-band, before deploying the AF5 build.
 - `pause-migration` — stop; user replaces Mongo with a supported store (incl. data migration) before resuming.
-- `accept-stays-af4` — keep the event-store slice on AF4 deps; recipe exits with `needs-user-decision=true`.
+- `accept-stays-af4` — keep the event-store slice on AF4 deps; recipe exits with `result: blocked`, `caller-expects.next: record-and-skip`.
 
 **Output decision key.** `mongo-event-store: <none | move-to-axon-server | move-to-jpa | pause-migration | accept-stays-af4>`
 
@@ -62,7 +62,7 @@ grep -RnE 'JdbcEventStorageEngine' \
 **Effect on Procedure.**
 - `move-to-jpa` → backend = `jpa` (sub-path A.JPA or B.JPA — code rewrite only; user owns the AF5 schema change out-of-band).
 - `move-to-axon-server` → backend = `axon-server` (sub-path A.AS or B.AS — code rewrite). Add a learnings line: *"User accepts JDBC→Axon Server data migration is their responsibility, out-of-band."*
-- `defer-until-af5-jdbc` → emit Output with `needs-user-decision=true`, exit.
+- `defer-until-af5-jdbc` → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit.
 
 ### B3 — Custom `EventStorageEngine` subclass
 
@@ -82,7 +82,7 @@ grep -RnE 'extends\s+(JpaEventStorageEngine|JdbcEventStorageEngine|MongoEventSto
 
 **Output decision key.** `custom-storage-engine-subclass: <none | surface-and-defer | pause-migration>`
 
-**Effect on Procedure.** Either path → emit Output with `needs-user-decision=true`, exit. No bean swap.
+**Effect on Procedure.** Either path → emit Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit. No bean swap.
 
 ### B4 — Custom `Serializer` (NOT a hard blocker, but surface)
 

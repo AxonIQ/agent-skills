@@ -216,7 +216,7 @@ the steps; near the bottom works as a closer after the steps):
 - <other recipe-specific args, each typed and required/optional flagged>
 
 ## Preflight
-- quick "already migrated?" check → return Output with skip=true
+- quick "already migrated?" check → return Output with `result: skipped`
 
 ## Procedure
 - main flow as numbered pseudo-code; conditions explicit, parameters typed
@@ -243,17 +243,53 @@ the steps; near the bottom works as a closer after the steps):
 - objective, machine-checkable
 
 ## Output
-- target: <FQ name | file path | "n/a">
-- decisions: [<list of choices made — what feeds the commit body>]
-- needs-user-decision: <true | false>      # internal flag for orchestrator branching
-- needs-user-decision-reason: <string>     # only when needs-user-decision=true
-- notes: <optional free text>
-- <recipe-specific extras (parsed by orchestrator, NOT persisted in commit body)>
+- (YAML block — see "Output contract — six variants" below for the canonical schema)
 ```
+
+Recipe MUST emit **exactly one** `result:` value. See **Output contract — six variants** below for the canonical schema, per-variant invariants, and worked examples.
 
 Optional sections recipes may keep: `## Goal`, `## In scope` / `## Out of
 scope`, `## FQN cheat sheet`, `## Caveats`, `## Examples`, `## Reference
 index` (links INTO the recipe's own folder only).
+
+### Output contract — six variants
+
+Every recipe Output is a union with discriminator `result:`. The orchestrator branches on `result:` alone — never on `needs-user-decision` or `recipe-status` (legacy fields, removed). Variants are mutually exclusive.
+
+| `result:` | Meaning | `caller-expects.commit` | `caller-expects.next` |
+|---|---|---|---|
+| `success` | All `## End condition` checks passed. Code rewritten, scoped verify green. | `true` | `proceed` |
+| `skipped` | Preflight found the target is already on AF5 (idempotent re-run). No edits. | `false` | `proceed` |
+| `rejected` | Routing was wrong: target doesn't match the recipe's domain. No edits. | `false` | `proceed` or `route-to:<recipe>` |
+| `needs-decision` | A choice must be made by a human (`AskUserQuestion` flow from `not-supported.md`, ambiguous wiring, …). MUST bubble up — never resolved inside a subagent. | `false` | `ask-user` |
+| `blocked` | A hard AF5 gap with no recipe-internal recovery (`@DeadlineHandler` without Workflows, Mongo event store with no `move-to-*` chosen). Partial edits MAY be committed; the blocking surface is commented-out with a `TODO[AF5 migration: <key>]` marker per Anti-patterns. | `true` (when blocker key + TODO marker exist) / `false` (when nothing was edited) | `record-and-skip` |
+| `failed` | Recipe started but ended in a state it can't classify (external tool non-zero exit with rollback, scoped verify red, edit conflict). | `false` | `halt` |
+
+**Required fields per variant**
+
+| Field | success | skipped | rejected | needs-decision | blocked | failed |
+|---|---|---|---|---|---|---|
+| `result` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `target` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `reason` | optional | required | required | required | required | required |
+| `decisions` | required (recipe-specific keys) | `{}` | `{}` | partial — record what is known | required (must include the `not-supported.md` blocker key) | optional |
+| `caller-expects.commit` | `true` | `false` | `false` | `false` | `true` or `false` | `false` |
+| `caller-expects.next` | `proceed` | `proceed` | `proceed` \| `route-to:<recipe>` | `ask-user` | `record-and-skip` | `halt` |
+| `notes` | optional | optional | optional | optional — list the verbatim AskUserQuestion options | optional | recommend `debug` mode or surface verbatim tool output |
+
+**Why six and not four**
+
+- `skipped` ≠ `rejected`: same caller action today, but distinguishing them lets `debug` mode catch routing-table bugs (`rejected` means the routing table sent the wrong recipe; `skipped` means it sent the right one but nothing's left to do).
+- `blocked` ≠ `failed`: a blocker is an *expected* AF5 gap with a known commented-out shape and a `not-supported.md` key. A failure is *unexpected* — the recipe doesn't know what's wrong. Caller actions differ: `record-and-skip` (proceed with other items) vs `halt` (stop the run).
+- `needs-decision` ≠ `blocked`: `needs-decision` pauses to ask a question the recipe doesn't yet know the answer to; `blocked` is the post-answer state where the resolution was "no AF5 path".
+
+**Orchestrator classify()**
+
+```
+classify(output) = output.result          # one field, six outcomes
+```
+
+No multi-field walk. Recipe contract requires `result:` to be one of the six values; orchestrator HALTs on any other value (defensive — schema violation, not a user-facing error).
 
 ### Optional `not-supported.md` sibling file
 
@@ -265,7 +301,7 @@ sibling `references/<recipe>/not-supported.md`. Each blocker entry gives:
 - **Detection** — exact grep / inspection.
 - **AskUserQuestion** — verbatim option labels.
 - **Output decision key** — added to the recipe's Output `decisions`.
-- **Effect on Procedure** — proceed / redirect path / exit with `needs-user-decision=true`.
+- **Effect on Procedure** — proceed / redirect path / exit with `result: needs-decision` or `result: blocked` (per the variant table in "Output contract — six variants").
 
 When a `not-supported.md` exists, the recipe's `## Preflight` MUST list
 "Read [not-supported.md] first — run every Detection grep" as its first
@@ -317,6 +353,12 @@ agents — `general-purpose` is the safe default.
   "why this changed" paragraphs. Use a one-line `[docs/paths/…](…)` pointer
   instead. See the **Docs routing table** above for the canonical doc per
   recipe.
+- `## Output` MUST emit a fenced ```yaml block with a single `result:`
+  field, where `result:` is exactly one of
+  `success | skipped | rejected | needs-decision | blocked | failed`.
+  Legacy fields (`needs-user-decision`, `needs-user-decision-reason`,
+  `recipe-status`, `skip`) are forbidden — fold their semantics into
+  `result:` + `decisions:` + `reason:` per the Output contract.
 
 The framework class `org.axonframework.common.lifecycle.Phase` is
 exempt — recipes refer to it as `Phase.<NAME>` or via FQN, never as a
@@ -524,23 +566,31 @@ PROCESS_ITEMS(row, items):
       handle(output)
 
 handle(output):
-  switch classify(output):
-    skip            → no commit; next                    # already migrated
+  switch classify(output):                                  # discriminator: output.result
     success         → commit code + progress.md (per-item conventional);
                       suggest /clear; next
-    bailed          → record bail in progress.md Pinned-decisions;
-                      commit progress.md only ("chore: record <recipe> bail");
-                      next
-    needs-decision  → AskUserQuestion: fix / defer / stop
-                        fix   → re-run EXECUTE_RECIPE (same inputs)
+    skipped         → no commit; next                       # already migrated
+    rejected        → no commit; if next == route-to:<recipe>
+                      re-route via routing table; else next
+    needs-decision  → AskUserQuestion using output.notes options:
+                        fix   → re-run EXECUTE_RECIPE (same inputs + pinned answer)
                         defer → record decision; commit progress.md only; next
                         stop  → HALT
+    blocked         → if output.caller-expects.commit == true
+                        commit code + progress.md (comment-out + TODO marker)
+                      else
+                        commit progress.md only
+                      record blocker key in Pinned-decisions; next
+    failed          → surface output.reason + output.notes verbatim;
+                      AskUserQuestion: hand-off-to-debug-mode / pause / stop
+                      no commit of partial work.
 
-classify(output):                            # one place, four outcomes
-  output.skip                               → skip
-  output.recipe-status startswith "bailed-" → bailed
-  output.needs-user-decision == true        → needs-decision
-  otherwise                                 → success
+classify(output):                            # one place, six outcomes
+  return output.result                       # must be one of:
+                                             #   success | skipped | rejected
+                                             #   needs-decision | blocked | failed
+                                             # any other value → orchestrator HALT
+                                             # (schema violation)
 ```
 
 `commit` here means: stage explicit paths only (touched code + progress.md +
@@ -553,15 +603,17 @@ amend, `--no-verify`, or commit on `main`/`master`.
 EXECUTE_RECIPE(recipe, inputs):
   validate inputs against recipe ## Inputs        # wiring + build-tool
                                                   # always pinned, never re-detected
-  run recipe ## Preflight                         # already-migrated → skip=true
+  run recipe ## Preflight                         # already-migrated → result: skipped
   run recipe ## Procedure                         # subagent if recipe declares
                                                   # ## Subagent guidelines AND its
                                                   # Procedure does NOT use
                                                   # AskUserQuestion; else inline.
                                                   # Inline fallback recorded only
                                                   # in Output.notes.
-  verify recipe ## End condition                  # green → needs-user-decision=false
-                                                  # red   → needs-user-decision=true
+  verify recipe ## End condition                  # green → result: success
+                                                  # red   → result: failed
+                                                  #         (or blocked if mapped to
+                                                  #          a not-supported.md key)
   return Output
 ```
 
@@ -730,6 +782,7 @@ Shared (loaded on demand):
 - [references/verification.md](references/verification.md) — mvn flags, reactor rules.
 - [references/commit-cadence.md](references/commit-cadence.md) — commit rules per recipe kind.
 - [references/source-access.md](references/source-access.md) — where AF4/AF5 sources resolve locally.
+- [references/output-contract.md](references/output-contract.md) — worked examples for the six-variant Output union (`result:` discriminator).
 
 Recipes (one per concept):
 - [references/openrewrite.md](references/openrewrite.md)

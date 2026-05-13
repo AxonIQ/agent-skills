@@ -39,20 +39,35 @@ The event-handling class compiles and behaves on AF5 APIs:
 
 ## Output
 
-- target: <FQ class>
-- decisions:
-    - path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-    - processing-group: <name | "n/a">
-    - event-handler-mode: <subscribing | tracking | "n/a">
-    - processor-definition-migrated: <true | false>          # Step 10 — Spring @Bean or framework module rewrite
-    - error-handler-folded: <none | propagating | custom | listener-invocation-orphaned>   # Step 11
-    - dlq-sites-flagged: <list of file:line | "none">        # Step 2 sweep — out-of-scope, surfaced to user
-    - mongo-token-store: <none | move-to-jpa-token-store | pause-migration | accept-stays-af4>   # B1
-    - saga-handler-detected: <none | wrong-recipe-skip | pause-migration>                         # B2
-    - axon-kafka: <none | accept-stays-af4 | pause-migration | remove-feature-first>             # B3
-- needs-user-decision: <true | false>
-- needs-user-decision-reason: <text> (only when true)
-- notes: optional
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). Schema below shows the
+`success` shape with all event-processor `decisions` keys; for the other
+five variants copy the matching example from `output-contract.md`.
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ class>
+reason: <one short line — required for every variant except success>
+decisions:
+  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
+  processing-group: <name | "n/a">
+  event-handler-mode: <subscribing | tracking | "n/a">
+  processor-definition-migrated: <true | false>          # Step 10 — Spring @Bean or framework module rewrite
+  error-handler-folded: <none | propagating | custom | listener-invocation-orphaned>   # Step 11
+  dlq-sites-flagged: <list of file:line | "none">        # Step 2 sweep — out-of-scope, surfaced to user
+  mongo-token-store: <none | move-to-jpa-token-store | pause-migration | accept-stays-af4>   # B1
+  saga-handler-detected: <none | wrong-recipe-skip | pause-migration>                         # B2
+  axon-kafka: <none | accept-stays-af4 | pause-migration | remove-feature-first>             # B3
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
+notes: <optional free text — verbatim AskUserQuestion options for needs-decision>
+```
+
+Blocker keys (`B1` / `B2` / `B3`) map to `result: blocked` or
+`result: needs-decision` per [not-supported.md](not-supported.md).
+`saga-handler-detected: wrong-recipe-skip` corresponds to `result: rejected`
+with `caller-expects.next: route-to:saga`.
 
 ## Preflight
 

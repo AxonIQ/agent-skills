@@ -35,13 +35,23 @@ The class compiles on AF5:
 
 ## Output
 
-- target: <FQ class>
-- decisions:
-    - path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-    - return-shape: <mvc | scheduler | reactive>
-- needs-user-decision: <true | false>
-- needs-user-decision-reason: <text> (only when true)
-- notes: optional
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). Schema below shows the
+`success` shape with all command-gateway `decisions` keys; for the other
+five variants copy the matching example from `output-contract.md`.
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ class>
+reason: <one short line — required for every variant except success>
+decisions:
+  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
+  return-shape: <mvc | scheduler | reactive>
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
+notes: <optional free text — verbatim AskUserQuestion options for needs-decision>
+```
 
 ## Preflight
 

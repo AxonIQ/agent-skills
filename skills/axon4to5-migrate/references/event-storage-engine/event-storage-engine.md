@@ -67,7 +67,7 @@ Recipe ships the code change only. Schema / data moves are explicitly out of sco
 2. Project already declares a single `EventStorageEngine` bean of an `AggregateBased*` type?
 3. No leftover `JpaEventStorageEngine` / `JdbcEventStorageEngine` / `EmbeddedEventStore` references?
 4. Compile clean?
-5. If 2–4 all yes AND no blocker fired → return Output with skip=true.
+5. If 2–4 all yes AND no blocker fired → return Output with `result: skipped`.
 
 ## Decision tree — which AF5 engine?
 
@@ -434,7 +434,7 @@ No SQL migration on the Axon Server backend — Axon Server stores its own event
 3. Pick path:
    - **Wiring path** is taken from `inputs.wiring` — A (Spring Boot) or B (framework Configurer). NEVER ask.
    - **Backend** comes from inspection / blocker resolution: `jpa` or `axon-server`.
-   - any blocker resolved with `pause-migration` / `accept-stays-af4` / `defer-until-af5-jdbc` / `surface-and-defer` → Output with `needs-user-decision=true`, exit (no bean swap).
+   - any blocker resolved with `pause-migration` / `accept-stays-af4` / `defer-until-af5-jdbc` / `surface-and-defer` → Output with `result: blocked`, `caller-expects.next: record-and-skip`, exit (no bean swap).
 4. Run path Steps (see ### Path A / ### Path B above; pick the right sub-path inside).
 5. Surface custom-`Serializer` ports in Output `notes` (orchestrator records to `learnings.md`).
 6. On the JPA backend, surface "schema change required, user-owned, out-of-band" in Output `notes` (no SQL artifact produced).
@@ -451,18 +451,32 @@ No SQL migration on the Axon Server backend — Axon Server stores its own event
 
 ## Output
 
-- target: <FQ config class>
-- decisions:
-    - path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
-    - backend: <jpa | axon-server>                            # picked from inspection / blocker resolution
-    - bean-replaced: <bean / component name>
-    - schema-change-flagged: <true | false>                   # true on JPA backend (user owns DDL out-of-band)
-    - serializer-ports-flagged: <list | "none">      # B4 (soft blocker)
-    - mongo-event-store: <none | move-to-axon-server | move-to-jpa | pause-migration | accept-stays-af4>   # B1
-    - jdbc-event-store: <none | move-to-jpa | move-to-axon-server | defer-until-af5-jdbc>                  # B2
-    - custom-storage-engine-subclass: <none | surface-and-defer | pause-migration>                          # B3
-- needs-user-decision: false
-- notes: optional free text (e.g. "JdbcEventStorageEngine present — surfaced to user, no AF5 path; user picked JPA backend on Path A; schema change required, user-owned, out-of-band")
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). Schema below shows the
+`success` shape with all event-storage-engine `decisions` keys; for the
+other five variants copy the matching example from `output-contract.md`.
+
+```yaml
+result: success | skipped | rejected | needs-decision | blocked | failed
+target: <FQ config class>
+reason: <one short line — required for every variant except success>
+decisions:
+  path: <A (Spring Boot) | B (framework Configurer)>     # taken from inputs.wiring
+  backend: <jpa | axon-server>                            # picked from inspection / blocker resolution
+  bean-replaced: <bean / component name>
+  schema-change-flagged: <true | false>                   # true on JPA backend (user owns DDL out-of-band)
+  serializer-ports-flagged: <list | "none">      # B4 (soft blocker)
+  mongo-event-store: <none | move-to-axon-server | move-to-jpa | pause-migration | accept-stays-af4>   # B1
+  jdbc-event-store: <none | move-to-jpa | move-to-axon-server | defer-until-af5-jdbc>                  # B2
+  custom-storage-engine-subclass: <none | surface-and-defer | pause-migration>                          # B3
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | record-and-skip | halt | route-to:<recipe>>
+notes: <optional free text — e.g. "JdbcEventStorageEngine present, no AF5 path; user picked defer-until-af5-jdbc; original @Bean preserved as commented block with TODO[AF5 migration: B2]">
+```
+
+Blocker keys (`B1` / `B2` / `B3` / `B4`) map to `result: blocked` or
+`result: needs-decision` per [not-supported.md](not-supported.md).
 
 ## Caveats
 

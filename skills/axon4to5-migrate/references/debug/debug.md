@@ -24,7 +24,7 @@ Reach a compiling project by repeatedly:
 
 ## Preflight
 
-Build is already green? `./mvnw test-compile -DskipTests`. If yes → return Output with skip=true.
+Build is already green? `./mvnw test-compile -DskipTests`. If yes → return Output with `result: skipped`.
 
 ## Preconditions
 
@@ -150,14 +150,32 @@ Build is green for the chosen scope:
 
 ## Output
 
-- target: <build-tool target dir>
-- decisions: per cluster the recipe handled
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)).
+
+Mapping:
+
+| Debug-loop terminal state | `result:` | `caller-expects.next` |
+|---|---|---|
+| Build went green | `success` | `proceed` |
+| Build already green at Preflight | `skipped` | `proceed` |
+| Loop hit "no progress" stop condition (two clusters routed to the same recipe with no error-count drop) | `needs-decision` | `ask-user` |
+| Build still red and no recipe matches remaining clusters | `failed` | `halt` |
+
+```yaml
+result: success | skipped | needs-decision | failed
+target: <build-tool target dir>
+reason: <one short line — required for every variant except success>
+decisions:
+  clusters-handled:                  # one entry per cluster the loop routed
     - cluster: <signature>
-    - routed-to: <recipe>
-    - defer: <reason> (only when applicable)
-- needs-user-decision: <true | false> (true when the loop hit a "no progress" stop condition)
-- needs-user-decision-reason: <text> (e.g. "two clusters in a row picked the same recipe with no error-count drop")
-- notes: optional free text — the orchestrator copies any non-obvious lessons here into `learnings.md`
+      routed-to: <recipe>
+      defer: <reason>                # only when applicable
+caller-expects:
+  commit: <true | false>
+  next: <proceed | ask-user | halt>
+notes: <optional free text — orchestrator copies any non-obvious lessons here into learnings.md>
+```
 
 ## Limited direct fixes
 

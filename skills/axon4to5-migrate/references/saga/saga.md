@@ -496,13 +496,40 @@ Never green automatically — there is no compile-time check the recipe can run.
 
 ## Output
 
-- target: <FQ saga class | file list | "n/a">
-- decisions:
-    - saga: <migrate-to-event-handler-with-state | accept-stays-af4 | pause-migration | remove-feature-first>
-    - shape: <shape-a-injected-event-sourced-state | shape-b-jpa-state-with-scheduler | n/a>   # only when saga = migrate
-    - deadline-handler-in-saga: <none | present>     # if `present` then shape must be `shape-b-jpa-state-with-scheduler` (or surface as a follow-up)
-- needs-user-decision: false   # resolved by AskUserQuestion above
-- notes: free text — when migrate, name the target component class the user will create and the nested state-entity class (Shape A) or JPA entity + repository (Shape B); when accept-stays-af4, list which AF4 deps stay.
+Emit exactly one fenced ```yaml block per the six-variant Output contract
+([../output-contract.md](../output-contract.md)). The saga recipe is a
+top-level `not-supported` mode — it NEVER emits `result: success` because
+this recipe does not produce an AF5 rewrite by itself; the follow-up
+rewrite (when the user picks `migrate-to-event-handler-with-state`) runs
+under the `event-processor` recipe.
+
+Mapping:
+
+| AskUserQuestion answer | `result:` | `caller-expects.next` |
+|---|---|---|
+| (not yet answered) | `needs-decision` | `ask-user` |
+| `accept-stays-af4` | `blocked` | `record-and-skip` |
+| `pause-migration` | `blocked` | `record-and-skip` |
+| `remove-feature-first` | `blocked` | `record-and-skip` |
+| `migrate-to-event-handler-with-state` | `blocked` | `route-to:event-processor` |
+
+```yaml
+result: needs-decision | blocked
+target: <FQ saga class | file list | "n/a">
+reason: <one short line — e.g. "saga detected; user picked accept-stays-af4" / "saga has @DeadlineHandler — four-way choice required">
+decisions:
+  saga: <migrate-to-event-handler-with-state | accept-stays-af4 | pause-migration | remove-feature-first | pending>
+  shape: <shape-a-injected-event-sourced-state | shape-b-jpa-state-with-scheduler | n/a>   # only when saga = migrate
+  deadline-handler-in-saga: <none | present>     # if `present` then shape must be `shape-b-jpa-state-with-scheduler` (or surface as a follow-up)
+caller-expects:
+  commit: <true | false>
+  next: <ask-user | record-and-skip | route-to:event-processor>
+notes: |
+  Free text — when migrate, name the target component class the user will
+  create and the nested state-entity class (Shape A) or JPA entity +
+  repository (Shape B); when accept-stays-af4, list which AF4 deps stay;
+  for needs-decision, list the verbatim AskUserQuestion options.
+```
 
 ## Caveats
 

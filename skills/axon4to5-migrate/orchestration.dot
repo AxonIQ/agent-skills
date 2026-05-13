@@ -144,18 +144,18 @@ digraph AF4_TO_AF5_ORCHESTRATION {
         "validate inputs vs ## Inputs\n(wiring + build-tool pinned)" [shape=box];
         "run ## Preflight" [shape=box];
         "Already migrated?" [shape=diamond];
-        "Output{skip=true}" [shape=box];
+        "Output{result: skipped}" [shape=box];
         "run ## Procedure\n(subagent if declared,\nelse inline; fallback in notes)" [shape=box];
-        "verify ## End condition\n(sets needs-user-decision)" [shape=box];
+        "verify ## End condition\n(sets Output.result)" [shape=box];
         "return Output" [shape=doublecircle, style=filled, fillcolor=lightgreen];
 
         "validate inputs vs ## Inputs\n(wiring + build-tool pinned)" -> "run ## Preflight";
         "run ## Preflight" -> "Already migrated?";
-        "Already migrated?" -> "Output{skip=true}" [label="yes"];
+        "Already migrated?" -> "Output{result: skipped}" [label="yes"];
         "Already migrated?" -> "run ## Procedure\n(subagent if declared,\nelse inline; fallback in notes)" [label="no"];
-        "run ## Procedure\n(subagent if declared,\nelse inline; fallback in notes)" -> "verify ## End condition\n(sets needs-user-decision)";
-        "verify ## End condition\n(sets needs-user-decision)" -> "return Output";
-        "Output{skip=true}" -> "return Output";
+        "run ## Procedure\n(subagent if declared,\nelse inline; fallback in notes)" -> "verify ## End condition\n(sets Output.result)";
+        "verify ## End condition\n(sets Output.result)" -> "return Output";
+        "Output{result: skipped}" -> "return Output";
     }
 
     "EXECUTE_RECIPE(row, item)" -> "validate inputs vs ## Inputs\n(wiring + build-tool pinned)" [style=dotted, label="invokes"];
