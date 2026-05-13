@@ -126,3 +126,7 @@ prompt-framing: |
   If candidate also declares @CommandHandler/@EventHandler/@QueryHandler, return result:rejected
   with next: route-to:<handler recipe>.
 ```
+
+## Reference pairs (AF4 → AF5)
+
+- **`MessageHandlerInterceptor<CommandMessage<?>>` with `UnitOfWork` body sweep, Spring Boot:** `axon4/heroes/.../resourcespool/write/withdraw/PaidCommandInterceptor.java` (AF5 paired file not present — the recipe's mechanical rewrite IS the reference; see [evals/fixtures/interceptors-heroes.md](../../evals/fixtures/interceptors-heroes.md) for the must-haves).

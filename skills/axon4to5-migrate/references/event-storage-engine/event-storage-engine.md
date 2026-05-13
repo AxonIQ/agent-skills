@@ -298,3 +298,8 @@ extra-deps: [axon-eventsourcing, axon-eventsourcing-jpa OR axon-server-connector
 - **Custom `Serializer` ≠ `Converter`.** Subclassed serializers / custom `RevisionResolver` / `ContentTypeConverter` are not one-line ports — surface to stabilization.
 - **`AggregateEventEntry` comes from the framework JAR.** Don't copy it. Custom `DomainEventEntry` subclasses = custom storage-engine = B3 blocker.
 - **Explicit `@Bean EventStorageEngine` kills `@RegisterDefaultEntities`** — see A.JPA.5. Always pair with project-wide `@EntityScan`.
+
+## Reference pairs (AF4 → AF5)
+
+- **Spring Boot + JPA + `axon.axonserver.enabled: false`** (the classic A.JPA case with classpath connector — explicit `@Bean` required): `axon4/heroes/.../GameConfiguration.java` + `axon4/heroes/.../HeroesOfDDDApplication.java` + `axon4/heroes/.../resources/application.yaml` ↔ `axon5/heroes/...`. Shows the YAML `serializer` → `converter` rename, `sequencing-policy` removal from YAML (moved to class annotation in event-processor recipe), and the mandatory `@EntityScan(basePackages = { … org.axonframework, io.axoniq.framework })`.
+- **Spring Boot + Axon Server backend (A.AS, default config — autoconfig adequate):** `axon4/gamerental/...` ↔ `axon5/gamerental/...`.

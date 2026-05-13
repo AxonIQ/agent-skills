@@ -1,15 +1,36 @@
 # Evals — axon4to5-migrate
 
-Manual scenarios — one paragraph each. Run by hand in a session with the skill loaded. Pass = every check holds; fail otherwise.
+Each eval pairs a real **AF4 source file** with its **AF5 target file** from the example repositories under `.knowledge/repositories/axon-examples/`. Both ends are checked-in; the orchestrator is graded on whether running the recipe on the AF4 file produces a result that matches the AF5 file (modulo whitespace).
 
-| # | Scenario | Pass / fail |
-|---|---|---|
-| **1** | **Single-file routes to `aggregate`.** Project pinned. User runs `/axon4to5-migrate src/main/java/com/example/GiftCard.java`. → Mode: SINGLE; `ensure_pinned()` no-prompts; routing walks rows by phase; `aggregate` (phase 2) matches first; recipe runs with `inputs.wiring = spring-boot`; ONE commit `refactor(af5-migration): migrate aggregate GiftCard …`. **Fail** if any auto-routing prompt appears or wrong recipe is picked. |
-| **2** | **exclude-when honored.** Class injects `CommandGateway` AND has `@EventHandler`. → `event-processor` wins at phase 3; `command-gateway`'s `exclude-when` fires (handler annotations present). **Fail** if orchestrator routes to `command-gateway`. |
-| **3** | **License is asked BEFORE any recipe runs.** Virgin project with `axon-mongo` dep. PHASED or SINGLE invocation. → `recommend_license() = axoniq-commercial`; **first** `AskUserQuestion` is license with `axoniq-commercial (Recommended) — your project depends on features not in free AF5 yet` listed first. **Fail** if openrewrite or any recipe runs before license is pinned. |
-| **4** | **Fresh session resumes from `progress.md` alone.** `progress.md` exists with pinned decisions, phase 3 in-progress. Working tree clean, HEAD matches. → ONE confirmation prompt naming `▶︎ RESUME HERE`'s next item; no re-prompts for license/wiring/build-tool. **Fail** on any re-prompt of pinned decisions. |
-| **5** | **Dirty tree on resume → AskUserQuestion.** `git status --porcelain` shows files orchestrator didn't touch. → BEFORE any recipe: prompt with three options (stage-only-migration-files (recommended) / let-user-clean-up / skip-this-commit). NEVER `git add -A`. **Fail** if WIP gets swept into the migration commit. |
-| **6** | **`result: blocked` comments out, never deletes.** Recipe hits `@Bean DeadlineManager`, user picks `defer-until-af5-deadlines`. → AF4 bean stays in the file as a comment with `// TODO[AF5 migration: <key>]`; `progress.md` Pinned-decisions records the resolution; `learnings.md` has a fresh dated entry. **Fail** on silent deletion. |
-| **7** | **DEBUG clusters by root cause.** Post-OpenRewrite: 40 errors across ~2 root causes (e.g. `AggregateLifecycle.apply` + `AggregateTestFixture`). → orchestrator runs `./mvnw test-compile`, clusters by root cause not by message, routes ONE high-leverage cluster, recompiles, re-clusters. **Fail** if orchestrator runs `aggregate` recipe 15 times for 15 message-shaped buckets. |
-| **8** | **FINALIZE removes every `isolated-*`.** All routing rows done; build files contain three `isolated-<X>` profiles. → orchestrator invokes `axon4to5-isolatedtest cleanup:true` per scope, promotes AF5 deps, removes script/CI activation refs, runs full build with no scope active, single commit `chore(af5-migration): remove isolated-* scaffolding`. **Fail** if any `isolated-*` survives the final commit, OR FINALIZE runs while rows are still pending. |
-| **9** | **No data migration, ever.** User reaches phase 8 with `JdbcEventStorageEngine`. → `AskUserQuestion` offers code-rewrite options only (`move-to-jpa` / `accept-stays-af4` / `pause-migration`); recipe NEVER produces `.sql` / Flyway / Liquibase / `mvn flyway:migrate` etc. If `move-to-jpa`, recipe replaces bean wiring only and records in `learnings.md` that the user must run the schema change before runtime. **Fail** if any DDL artifact is produced. |
+Project pairs available:
+- `axon-examples/axon{4,5}/heroes/` — Spring Boot, JPA event store, rich domain (aggregates, projectors, gateway callers, query handlers, an interceptor).
+- `axon-examples/axon{4,5}/gamerental/` — Spring Boot, Axon Server, command + query side.
+- `axon-examples/axon{4,5}/bike-rental-extended/` — multi-module Spring Boot, Axon Server, contains the **PaymentSaga** + `@DeadlineHandler` reference.
+
+Each scenario in [scenarios.md](scenarios.md) names:
+
+1. **Trigger** — the user invocation against the AF4 project.
+2. **AF4 source** — repo-relative path under the AF4 example.
+3. **Recipe expected** — exactly one routing-table row.
+4. **AF5 reference** — the matching file in the paired AF5 example.
+5. **Must-haves** — concrete assertions on the AF5 output (annotations, imports, method shapes, `Output.decisions` keys).
+6. **Anti-patterns** — what the recipe MUST NOT do (silent deletions, wrong recipe routing, etc.).
+
+Scenarios are grouped by recipe so when a recipe changes, the relevant evals run.
+
+## How to run manually
+
+1. Copy the AF4 example tree to a scratch dir: `cp -r .knowledge/repositories/axon-examples/axon4/<project> /tmp/<project>-af4-clone`.
+2. Initialize git there: `cd /tmp/<project>-af4-clone && git init && git add -A && git commit -m 'baseline'`.
+3. Invoke the skill against the scratch dir per the scenario's **Trigger**.
+4. After the recipe commits, diff the migrated file against the AF5 reference:
+   ```bash
+   diff -u /tmp/<project>-af4-clone/<af4-source> .knowledge/repositories/axon-examples/axon5/<project>/<af5-reference>
+   ```
+5. **Pass** when every must-have holds. **Fail** when any anti-pattern triggers OR a must-have is missing.
+
+## How to add a scenario
+
+1. Find a real before/after pair in the repos above.
+2. Add a row in [scenarios.md](scenarios.md).
+3. If the scenario needs more than one assertion line, drop a `fixtures/<recipe>-<short-name>.md` file with the full check list.

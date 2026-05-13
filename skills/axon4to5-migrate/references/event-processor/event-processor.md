@@ -259,3 +259,10 @@ notes: <verbatim AskUserQuestion options for needs-decision>
 
 - Silent deletion of `registerPooledStreaming…` / `registerSubscribing…` / `assignHandlerTypesMatching` / `byDefaultAssignTo` — drops group name, segment count, batch size. Leave a `// TODO: confirm AF5 defaults match AF4 <name> settings` if defaults are genuinely intended.
 - Deleting a `Configuration::eventStore` method reference inside such a registration — encodes which event source feeds the processor; carry it forward.
+
+## Reference pairs (AF4 → AF5)
+
+- **Projector + in-handler dispatch (`@ProcessingGroup`, `CommandGateway` → `CommandDispatcher`):** `axon4/heroes/.../creaturerecruitment/automation/WhenCreatureRecruitedThenAddToArmyProcessor.java` ↔ `axon5/heroes/...`.
+- **Pure projection (`@EventHandler` only, no dispatch):** `axon4/heroes/.../creaturerecruitment/read/DwellingReadModelProjector.java` ↔ `axon5/heroes/...`.
+- **Sequencing policy via `@MetadataValue` + `@SequencingPolicy`:** same processor pair above.
+- **Spring Boot ops endpoint reading `EventProcessingConfiguration` (read-side variant — use [configuration-reads.md](configuration-reads.md)):** `axon4/heroes/.../maintenance/write/resetprocessor/StreamProcessorsOperations.java` ↔ `axon5/heroes/...`.

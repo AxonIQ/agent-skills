@@ -154,3 +154,9 @@ notes: <…>
 - Handler-resident dispatch → event-processor recipe.
 - `scatterGather(...)` removal → flag user; no drop-in.
 - `@QueryHandler` classes → query-handler recipe (except the coupled edit in Step 3.4).
+
+## Reference pairs (AF4 → AF5)
+
+- **Spring `@RestController` returning `CompletableFuture<R>`:** `axon4/heroes/.../read/getdwellingbyid/GetDwellingByIdRestApi.java` ↔ `axon5/heroes/...`.
+- **MCP server endpoint with synchronous callback (`.orTimeout(30, SECONDS).join()` bridge):** `axon4/heroes/.../read/getalldwellings/GetAllDwellingsMcp.java` ↔ `axon5/heroes/...`.
+- **Named query via `@Query` on the payload class:** see `axon4/bike-rental-extended/...` and the AF5 paired file.

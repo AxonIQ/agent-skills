@@ -174,3 +174,11 @@ prompt-framing: |
 ## Caveats
 
 - After OpenRewrite some IDE LSPs report phantom `cannot resolve` errors for package-private types referenced from sub-package tests. javac + build tool are truth — if the scoped run is green, the migration is fine. Don't chase phantom LSP errors with extra `public` modifiers.
+
+## Reference pairs (AF4 → AF5)
+
+Real before/after pairs from `.knowledge/repositories/axon-examples/`:
+
+- **Simple aggregate, Spring Boot, snapshot blocker B1:** `axon4/heroes/.../creaturerecruitment/write/Dwelling.java` ↔ `axon5/heroes/...`. Also `Calendar.java`, `Astrologers.java`, `ResourcesPool.java`.
+- **Aggregate with `@AggregateMember` (multi-entity):** `axon4/heroes/.../armies/write/Army.java` ↔ `axon5/heroes/...`.
+- **Simple aggregate, Axon Server backend:** `axon4/gamerental/.../command/Game.java` ↔ `axon5/gamerental/...`.

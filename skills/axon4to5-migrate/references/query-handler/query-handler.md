@@ -117,3 +117,8 @@ decisions:
 caller-expects: { commit: <bool>, next: <…> }
 notes: <…>
 ```
+
+## Reference pairs (AF4 → AF5)
+
+- **Pure import-only rewrite, Spring `@Component`:** `axon4/heroes/.../read/getdwellingbyid/GetDwellingByIdQueryHandler.java` ↔ `axon5/heroes/...`.
+- **Dual-role class (`@QueryHandler` + `@EventHandler`):** `axon4/heroes/.../read/getalldwellings/GetAllDwellingsQueryHandler.java` ↔ `axon5/heroes/...`.

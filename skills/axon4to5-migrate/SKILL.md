@@ -171,3 +171,7 @@ After every non-trivial commit, suggest `/clear` — phase boundaries especially
 - Treating `event-storage-engine` as auto-configured by the Spring Boot starter — the AF5 starter applies AF5 defaults, not a migration of the existing AF4 event store. The explicit `AggregateBased…EventStorageEngine` bean swap is mandatory.
 - Editing files outside the recipe's scope to "clean up" — keep diffs atomic.
 - Running a recipe in a subagent when its Procedure uses `AskUserQuestion` — those prompts must reach the main conversation.
+
+## Evals
+
+Real AF4↔AF5 pairs from `.knowledge/repositories/axon-examples/{heroes,gamerental,bike-rental-extended}` drive the eval suite. See [evals/scenarios.md](evals/scenarios.md) for the routing + recipe + orchestrator scenario table and [evals/fixtures/](evals/fixtures/) for per-recipe must-haves / anti-patterns grounded in concrete file diffs.

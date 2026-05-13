@@ -137,3 +137,8 @@ notes: <…>
 - Mixed class (some methods are handlers, some top-of-chain) — run handler recipe first; this recipe touches non-handler methods on follow-up.
 - Custom `CommandCallback` impls — flag, don't silently rewrite error semantics.
 - Helper class returning AF4 `MetaData` (`XxxMetaData.with(...)`) — shared elsewhere; flag follow-up.
+
+## Reference pairs (AF4 → AF5)
+
+- **Spring `@RestController` with `CompletableFuture<Void>`:** `axon4/heroes/.../write/recruitcreature/RecruitCreatureRestApi.java` ↔ `axon5/heroes/...`. Also `BuildDwellingRestApi.java`, `IncreaseAvailableCreaturesRestApi.java`.
+- **Spring MCP server endpoint (synchronous callback — `sendAndWait` retained + `.orTimeout().join()` bridge):** `axon4/heroes/.../write/builddwelling/BuildDwellingMcp.java` ↔ `axon5/heroes/...`.

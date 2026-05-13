@@ -325,3 +325,7 @@ notes: |
 - Even with `accept-stays-af4`, sagas reference AF4-only types — stabilization MUST exclude these files from AF5 build path, or the project won't compile.
 - A saga using `DeadlineManager` cannot cleanly migrate without out-of-band deadline replacement (own scheduler / Spring `@Scheduled` / Quartz / Axoniq Workflows). Never silently drop deadlines.
 - When AxonIQ Workflows ships with a saga → workflow migration path, this recipe will gain a fourth option (`migrate-to-axoniq-workflow`).
+
+## Reference pairs (AF4 → AF5)
+
+- **`PaymentSaga` with `@DeadlineHandler` → `@Component` + JPA state + `@Scheduled` (Shape B):** `axon4/bike-rental-extended/rental/.../paymentsaga/PaymentSaga.java` ↔ `axon5/bike-rental-extended/rental/.../paymentsaga/PaymentSaga.java`. AF5 side also adds `PaymentState.java` + `PaymentStateRepository.java` in the same package. The recipe itself NEVER produces this rewrite — it surfaces the four-way decision; the user (or a follow-up `event-processor` recipe run) produces the AF5 code.
