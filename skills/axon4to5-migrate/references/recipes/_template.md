@@ -6,7 +6,11 @@ argument-hint: <Source>
 
 # axon4to5-<component>
 
-> Authoring template for a single recipe. **Section heading = function name** in `_contract.md`'s sub-flow diagram — `## isApplicable`, `## defineScope`, etc. are bound 1:1 to the orchestrator function of the same name. Keep the section names exactly as written; everything inside them is recipe-specific content. Do not describe control flow, retries, or result emission here — those live in `_contract.md`.
+> Authoring template for a single recipe. Sections come in two flavours:
+> - **Body sections** named after the function they implement — `## isApplicable`, `## defineScope`, `## checkSuccessCriteria`. The recipe author writes the function's executable instructions here.
+> - **Data sections** named after their content — `## Gotchas`, `## Out of Scope`, `## References`. These hold data that one or more functions consult; the consuming function names them via `§ X` in `_contract.md`'s sub-flow diagram.
+>
+> Keep section names exactly as written. Do not describe control flow, retries, or result emission here — those live in `_contract.md`.
 >
 > Each section explains *what the section is for* and *what format it must be in*. `<example>` blocks are drawn from the original aggregate-recipe sketch.
 
@@ -28,9 +32,9 @@ What counts as "owned" by `<Source>` for this recipe.
 - Everything that is needed to make the `checkSuccessCriteria` pass. But be conservative, only what is needed!
 </example>
 
-## applyMigrationPlan
+## Out of Scope
 
-Negative constraints — things the recipe must refuse to touch even if tempted.
+Negative constraints — things the recipe must refuse to touch even if tempted. Consulted by `applyMigrationPlan` to reject drive-by refactors.
 
 <example>
 - Sibling aggregates, projections, sagas
@@ -74,9 +78,9 @@ If any of the following is not true, then the success criteria are not met.
 3. **Always** invoke via the `Skill` tool `axon4to5-isolatedtest` and check that the test passes.
 </example>
 
-## buildMigrationPlan
+## References
 
-Recipe playbook — entries `readReferences` filters by read-condition and `buildMigrationPlan` consults. Three subsections; each entry has an explicit *read-condition* (a fact about scope that triggers loading the entry).
+Recipe playbook — shared data. `readReferences` filters entries by their read-condition; `buildMigrationPlan` consults the resulting subset to assemble edits. Three subsections; each entry has an explicit *read-condition* (a fact about scope that triggers loading the entry).
 
 <example>
 Available resources, read them only if the read-condition is met.
@@ -94,9 +98,9 @@ Available resources, read them only if the read-condition is met.
 <!-- TODO: Fill during iterations. -->
 </example>
 
-## hasBlocker
+## Gotchas
 
-Known constructs with no Axon 5 migration path. Each entry: one line "what it is + where to spot it". `hasBlocker` returns true if any in-scope construct matches an entry here OR has no entry in `§ buildMigrationPlan`.
+Known constructs with no Axon 5 migration path. Each entry: one line "what it is + where to spot it". Consulted by `hasBlocker`, which returns true if any in-scope construct matches an entry here OR has no entry in `§ References`.
 
 <example>
 <!-- TODO: Fill during iterations. -->
