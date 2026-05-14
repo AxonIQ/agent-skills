@@ -20,7 +20,7 @@ disable-model-invocation: true
 
 ## Available recipes (auto-listed)
 
-Use Glob to find all `references/recipes/*/RECIPE.md` (skip dirs starting with `_`). For each file, read YAML frontmatter to extract `id`, `title`, `description`, and the `## Applicable` section body. Format output as:
+Run `bash scripts/list-recipes.sh` from the skill root directory. Output format:
 
 ```
 - file: references/recipes/<dir>/RECIPE.md
@@ -63,7 +63,7 @@ Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved 
 
 ## Durability
 
-**ALWAYS `Read` [`references/DURABILITY.md`](references/DURABILITY.md) FIRST — before pre-steps.** Mandatory. It defines the state files under `.axon4to5-migration/`, the hooks observed across pre-steps + queue + recipe results + caller decisions, and the commit protocol. Reads `progress.md` on entry to decide resume vs fresh.
+**Load order — see § Recipe sub-flow.** FLOW.md first, then DURABILITY.md (second). Defines state files under `.axon4to5-migration/`, hooks across pre-steps + queue + recipe results + caller decisions, and commit protocol. Reads `progress.md` on entry to decide resume vs fresh.
 
 ## Pre-steps (common to every mode)
 
@@ -219,14 +219,16 @@ flowchart TD
 
 **Discovery order** — Discover scans recipes in this fixed sequence. Aggregates first: they define the events and commands consumed by downstream types.
 
-| # | Recipe |
-|---|--------|
+| # | Recipe (`id` per frontmatter `order:`) |
+|---|----------------------------------------|
 | 1 | `aggregate` |
 | 2 | `event-processor` |
 | 3 | `command-gateway` |
 | 4 | `query-gateway` |
-| 5 | `interceptor` |
-| 6 | `saga` |
+| 5 | `query-handler` |
+| 6 | `interceptors` |
+| 7 | `saga` |
+| 8 | `event-store` |
 
 ## Debugging loop (project mode only)
 
@@ -270,9 +272,9 @@ See .axon4to5-migration/progress.md for full details.
 
 ## Recipe sub-flow
 
-**ALWAYS load [`references/recipes/FLOW.md`](references/recipes/FLOW.md) via the `Read` tool at skill start — before any
-mode-specific logic.** It defines the orchestrator-owned control flow every recipe executes against. Non-optional.
-Recipes fill in named sections referenced from that flow; they never re-implement it.
+**Load order at skill start (before any pre-steps or mode logic):**
+1. `Read` [`references/recipes/FLOW.md`](references/recipes/FLOW.md) — recipe control-flow spec. Non-optional. Recipes fill in named sections; they never re-implement it.
+2. `Read` [`references/DURABILITY.md`](references/DURABILITY.md) — state + resume protocol (`mode=project`; skim for `mode=single`).
 
 ### Recipe defaults ([`DEFAULT.md`](references/recipes/DEFAULT.md))
 

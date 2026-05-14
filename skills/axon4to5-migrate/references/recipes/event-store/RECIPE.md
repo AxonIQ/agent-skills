@@ -142,7 +142,7 @@ Run these greps in addition to Step 1:
 ```bash
 # YAML flags that disabled Axon Server event store in AF4
 grep -rn 'axon\.axonserver\.enabled\|axon\.axonserver\.event-store\.enabled' \
-    src/main/resources/ application*.yml application*.yaml 2>/dev/null
+    src/main/resources/ 2>/dev/null
 
 # JPA on classpath check
 grep -rn 'spring-boot-starter-data-jpa\|hibernate-core\|axon-eventsourcing-jpa' \
