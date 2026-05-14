@@ -4,7 +4,7 @@
     "skill_path": "<path/to/skill>",
     "executor_model": "<model-name>",
     "analyzer_model": "<model-name>",
-    "timestamp": "2026-05-14T16:53:47Z",
+    "timestamp": "2026-05-14T17:04:27Z",
     "evals_run": [
       1,
       5,
@@ -27,9 +27,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.6,
-        "passed": 3,
-        "failed": 2,
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
         "total": 5,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -39,13 +39,13 @@
       "expectations": [
         {
           "text": "Stop message names `framework`",
-          "passed": false,
-          "evidence": "missing required substring `framework` in result.md"
+          "passed": true,
+          "evidence": "found `framework` in result.md"
         },
         {
           "text": "Stop wording present",
-          "passed": false,
-          "evidence": "none of ['unsupported', 'STOP', 'invalid', 'Unsupported'] found in result.md"
+          "passed": true,
+          "evidence": "found `unsupported` in result.md"
         },
         {
           "text": "Source untouched: no @EventSourced added",
@@ -70,9 +70,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.1818,
-        "passed": 2,
-        "failed": 9,
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
         "total": 11,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -82,33 +82,33 @@
       "expectations": [
         {
           "text": "Path B annotation @EventSourcedEntity applied",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourcedEntity(tagKey = \"Calendar\"` in Calendar.java"
+          "passed": true,
+          "evidence": "found `@EventSourcedEntity(tagKey = \"Calendar\"` in Calendar.java"
         },
         {
           "text": "idType=CalendarId.class explicit",
-          "passed": false,
-          "evidence": "missing required substring `idType = CalendarId.class` in Calendar.java"
+          "passed": true,
+          "evidence": "found `idType = CalendarId.class` in Calendar.java"
         },
         {
           "text": "AF5 EventSourcedEntity import landed",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.eventsourcing.annotation.EventSourcedEntity` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.eventsourcing.annotation.EventSourcedEntity` in Calendar.java"
         },
         {
           "text": "@EntityCreator on no-arg constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in Calendar.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in Calendar.java"
         },
         {
           "text": "EventAppender parameter on @CommandHandler",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender eventAppender` in Calendar.java"
+          "passed": true,
+          "evidence": "found `EventAppender eventAppender` in Calendar.java"
         },
         {
           "text": "eventAppender.append replaces apply",
-          "passed": false,
-          "evidence": "missing required substring `eventAppender.append` in Calendar.java"
+          "passed": true,
+          "evidence": "found `eventAppender.append` in Calendar.java"
         },
         {
           "text": "Path A annotation NOT applied (this is native/Path B)",
@@ -122,18 +122,18 @@
         },
         {
           "text": "@AggregateIdentifier removed",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateIdentifier` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AggregateLifecycle removed",
-          "passed": false,
-          "evidence": "forbidden substring `AggregateLifecycle` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `AggregateLifecycle` absent from Calendar.java \u2014 good"
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         }
       ],
       "notes": []
@@ -143,9 +143,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.1333,
-        "passed": 2,
-        "failed": 13,
+        "pass_rate": 1.0,
+        "passed": 15,
+        "failed": 0,
         "total": 15,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -155,43 +155,43 @@
       "expectations": [
         {
           "text": "@EventSourcedEntity on abstract base Card",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourcedEntity` in Card.java"
+          "passed": true,
+          "evidence": "found `@EventSourcedEntity` in Card.java"
         },
         {
           "text": "concreteTypes attribute lists subtypes",
-          "passed": false,
-          "evidence": "missing required substring `concreteTypes` in Card.java"
+          "passed": true,
+          "evidence": "found `concreteTypes` in Card.java"
         },
         {
           "text": "OpenLoopGiftCard.class enumerated in concreteTypes",
-          "passed": false,
-          "evidence": "missing required substring `OpenLoopGiftCard.class` in Card.java"
+          "passed": true,
+          "evidence": "found `OpenLoopGiftCard.class` in Card.java"
         },
         {
           "text": "RechargeableGiftCard.class enumerated in concreteTypes",
-          "passed": false,
-          "evidence": "missing required substring `RechargeableGiftCard.class` in Card.java"
+          "passed": true,
+          "evidence": "found `RechargeableGiftCard.class` in Card.java"
         },
         {
           "text": "AF4 @AggregateRoot removed from base",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateRoot` STILL present in Card.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateRoot` absent from Card.java \u2014 good"
         },
         {
           "text": "@AggregateIdentifier removed",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Card.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateIdentifier` absent from Card.java \u2014 good"
         },
         {
           "text": "@EntityCreator on OpenLoopGiftCard constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in OpenLoopGiftCard.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in OpenLoopGiftCard.java"
         },
         {
           "text": "OpenLoopGiftCard handlers use EventAppender",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender` in OpenLoopGiftCard.java"
+          "passed": true,
+          "evidence": "found `EventAppender` in OpenLoopGiftCard.java"
         },
         {
           "text": "Subtype NOT annotated @EventSourcedEntity (discovered via base)",
@@ -200,18 +200,18 @@
         },
         {
           "text": "AF4 @Aggregate gone from subtype",
-          "passed": false,
-          "evidence": "forbidden substring `@Aggregate` STILL present in OpenLoopGiftCard.java"
+          "passed": true,
+          "evidence": "forbidden `@Aggregate` absent from OpenLoopGiftCard.java \u2014 good"
         },
         {
           "text": "@EntityCreator on RechargeableGiftCard constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in RechargeableGiftCard.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in RechargeableGiftCard.java"
         },
         {
           "text": "RechargeableGiftCard handlers use EventAppender",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender` in RechargeableGiftCard.java"
+          "passed": true,
+          "evidence": "found `EventAppender` in RechargeableGiftCard.java"
         },
         {
           "text": "Subtype NOT annotated @EventSourcedEntity",
@@ -220,13 +220,13 @@
         },
         {
           "text": "AF4 @Aggregate gone from subtype",
-          "passed": false,
-          "evidence": "forbidden substring `@Aggregate` STILL present in RechargeableGiftCard.java"
+          "passed": true,
+          "evidence": "forbidden `@Aggregate` absent from RechargeableGiftCard.java \u2014 good"
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         }
       ],
       "notes": []
@@ -236,9 +236,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.0,
-        "passed": 0,
-        "failed": 12,
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
         "total": 12,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -248,63 +248,63 @@
       "expectations": [
         {
           "text": "Production source migrated",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourced(tagKey = \"Calendar\"` in Calendar.java"
+          "passed": true,
+          "evidence": "found `@EventSourced(tagKey = \"Calendar\"` in Calendar.java"
         },
         {
           "text": "EventAppender wired in production source",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender` in Calendar.java"
+          "passed": true,
+          "evidence": "found `EventAppender` in Calendar.java"
         },
         {
           "text": "AxonTestFixture replaces AggregateTestFixture",
-          "passed": false,
-          "evidence": "missing required substring `AxonTestFixture` in CalendarTest.java"
+          "passed": true,
+          "evidence": "found `AxonTestFixture` in CalendarTest.java"
         },
         {
           "text": "AF5 fixture import landed",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.test.fixture.AxonTestFixture` in CalendarTest.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.test.fixture.AxonTestFixture` in CalendarTest.java"
         },
         {
           "text": "Fluent given() API used",
-          "passed": false,
-          "evidence": "missing required substring `.given()` in CalendarTest.java"
+          "passed": true,
+          "evidence": "found `.given()` in CalendarTest.java"
         },
         {
           "text": "Fluent .when().command(...) API",
-          "passed": false,
-          "evidence": "missing required substring `.when().command(` in CalendarTest.java"
+          "passed": true,
+          "evidence": "found `.when().command(` in CalendarTest.java"
         },
         {
           "text": "Fluent .then().events(...) API",
-          "passed": false,
-          "evidence": "missing required substring `.then().events(` in CalendarTest.java"
+          "passed": true,
+          "evidence": "found `.then().events(` in CalendarTest.java"
         },
         {
           "text": "AF4 AggregateTestFixture removed",
-          "passed": false,
-          "evidence": "forbidden substring `AggregateTestFixture` STILL present in CalendarTest.java"
+          "passed": true,
+          "evidence": "forbidden `AggregateTestFixture` absent from CalendarTest.java \u2014 good"
         },
         {
           "text": "AF4 fixture import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.test.aggregate.AggregateTestFixture` STILL present in CalendarTest.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.test.aggregate.AggregateTestFixture` absent from CalendarTest.java \u2014 good"
         },
         {
           "text": "AF4 .expectEvents(...) replaced",
-          "passed": false,
-          "evidence": "forbidden substring `.expectEvents(` STILL present in CalendarTest.java"
+          "passed": true,
+          "evidence": "forbidden `.expectEvents(` absent from CalendarTest.java \u2014 good"
         },
         {
           "text": "AF4 .givenNoPriorActivity() replaced (becomes .given().noPriorActivity())",
-          "passed": false,
-          "evidence": "forbidden substring `givenNoPriorActivity()` STILL present in CalendarTest.java"
+          "passed": true,
+          "evidence": "forbidden `givenNoPriorActivity()` absent from CalendarTest.java \u2014 good"
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         }
       ],
       "notes": []
@@ -314,9 +314,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.0,
-        "passed": 0,
-        "failed": 21,
+        "pass_rate": 1.0,
+        "passed": 21,
+        "failed": 0,
         "total": 21,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -326,108 +326,108 @@
       "expectations": [
         {
           "text": "Path A annotation @EventSourced applied with explicit tagKey=\"Calendar\"",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourced(tagKey = \"Calendar\"` in Calendar.java"
+          "passed": true,
+          "evidence": "found `@EventSourced(tagKey = \"Calendar\"` in Calendar.java"
         },
         {
           "text": "idType explicitly set on @EventSourced (non-String identifier)",
-          "passed": false,
-          "evidence": "missing required substring `idType = CalendarId.class` in Calendar.java"
+          "passed": true,
+          "evidence": "found `idType = CalendarId.class` in Calendar.java"
         },
         {
           "text": "AF5 Path A import \u2014 note the .extension.spring. infix",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.extension.spring.stereotype.EventSourced` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.extension.spring.stereotype.EventSourced` in Calendar.java"
         },
         {
           "text": "AF5 EventSourcingHandler import (.annotation. infix)",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.eventsourcing.annotation.EventSourcingHandler` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.eventsourcing.annotation.EventSourcingHandler` in Calendar.java"
         },
         {
           "text": "AF5 EntityCreator import (.reflection. infix mandatory)",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.eventsourcing.annotation.reflection.EntityCreator` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.eventsourcing.annotation.reflection.EntityCreator` in Calendar.java"
         },
         {
           "text": "AF5 CommandHandler import (.messaging. infix mandatory)",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.messaging.commandhandling.annotation.CommandHandler` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.messaging.commandhandling.annotation.CommandHandler` in Calendar.java"
         },
         {
           "text": "AF5 EventAppender import (.messaging. infix mandatory)",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.messaging.eventhandling.gateway.EventAppender` in Calendar.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.messaging.eventhandling.gateway.EventAppender` in Calendar.java"
         },
         {
           "text": "@EntityCreator annotation present on no-arg constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in Calendar.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in Calendar.java"
         },
         {
           "text": "EventAppender parameter added to every @CommandHandler",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender eventAppender` in Calendar.java"
+          "passed": true,
+          "evidence": "found `EventAppender eventAppender` in Calendar.java"
         },
         {
           "text": "AggregateLifecycle.apply(...) rewritten to eventAppender.append(...)",
-          "passed": false,
-          "evidence": "missing required substring `eventAppender.append` in Calendar.java"
+          "passed": true,
+          "evidence": "found `eventAppender.append` in Calendar.java"
         },
         {
           "text": "AF4 @AggregateIdentifier annotation removed",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateIdentifier` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 AggregateLifecycle references removed (static import + call site)",
-          "passed": false,
-          "evidence": "forbidden substring `AggregateLifecycle` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `AggregateLifecycle` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @CreationPolicy annotation removed (replaced by @EntityCreator + instance handler)",
-          "passed": false,
-          "evidence": "forbidden substring `@CreationPolicy` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `@CreationPolicy` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 Spring @Aggregate import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.spring.stereotype.Aggregate` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.spring.stereotype.Aggregate` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @AggregateIdentifier import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.modelling.command.AggregateIdentifier` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.modelling.command.AggregateIdentifier` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @CreationPolicy import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.modelling.command.CreationPolicy` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.modelling.command.CreationPolicy` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @CommandHandler import removed",
-          "passed": false,
-          "evidence": "forbidden substring `import org.axonframework.commandhandling.CommandHandler;` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `import org.axonframework.commandhandling.CommandHandler;` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @EventSourcingHandler import removed",
-          "passed": false,
-          "evidence": "forbidden substring `import org.axonframework.eventsourcing.EventSourcingHandler;` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `import org.axonframework.eventsourcing.EventSourcingHandler;` absent from Calendar.java \u2014 good"
         },
         {
           "text": "AF4 @Aggregate annotation removed (replaced by @EventSourced)",
-          "passed": false,
-          "evidence": "forbidden substring `@Aggregate` STILL present in Calendar.java"
+          "passed": true,
+          "evidence": "forbidden `@Aggregate` absent from Calendar.java \u2014 good"
         },
         {
           "text": "Result block marks Success",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         },
         {
           "text": "Result block names the aggregate recipe",
-          "passed": false,
-          "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+          "passed": true,
+          "evidence": "found `axon4to5-aggregate` in result.md"
         }
       ],
       "notes": []
@@ -437,9 +437,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.0,
-        "passed": 0,
-        "failed": 6,
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
         "total": 6,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -449,33 +449,33 @@
       "expectations": [
         {
           "text": "Result block marks Blocker (\ud83d\udea7 emoji)",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \ud83d\udea7 Blocker` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \ud83d\udea7 Blocker` in result.md"
         },
         {
           "text": "Blocker notes reference snapshotting",
-          "passed": false,
-          "evidence": "missing required substring `snapshot` in result.md"
+          "passed": true,
+          "evidence": "found `snapshot` in result.md"
         },
         {
           "text": "Default Option `skip` is enumerated",
-          "passed": false,
-          "evidence": "missing required substring `skip` in result.md"
+          "passed": true,
+          "evidence": "found `skip` in result.md"
         },
         {
           "text": "Default Option `revert` is enumerated",
-          "passed": false,
-          "evidence": "missing required substring `revert` in result.md"
+          "passed": true,
+          "evidence": "found `revert` in result.md"
         },
         {
           "text": "Default Option `solve-manually` is enumerated",
-          "passed": false,
-          "evidence": "missing required substring `solve-manually` in result.md"
+          "passed": true,
+          "evidence": "found `solve-manually` in result.md"
         },
         {
           "text": "Recipe identifier present",
-          "passed": false,
-          "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+          "passed": true,
+          "evidence": "found `axon4to5-aggregate` in result.md"
         }
       ],
       "notes": []
@@ -485,9 +485,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.1,
-        "passed": 1,
-        "failed": 9,
+        "pass_rate": 1.0,
+        "passed": 10,
+        "failed": 0,
         "total": 10,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -497,13 +497,13 @@
       "expectations": [
         {
           "text": "Path A annotation @EventSourced applied",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourced` in Game.java"
+          "passed": true,
+          "evidence": "found `@EventSourced` in Game.java"
         },
         {
           "text": "tagKey explicit on @EventSourced",
-          "passed": false,
-          "evidence": "missing required substring `tagKey` in Game.java"
+          "passed": true,
+          "evidence": "found `tagKey` in Game.java"
         },
         {
           "text": "Spring @Profile preserved (non-Axon annotation)",
@@ -512,38 +512,38 @@
         },
         {
           "text": "@EntityCreator on constructor (likely on the RegisterGame factory or no-arg one)",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in Game.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in Game.java"
         },
         {
           "text": "EventAppender used in @CommandHandler methods",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender` in Game.java"
+          "passed": true,
+          "evidence": "found `EventAppender` in Game.java"
         },
         {
           "text": "EventAppender.append(...) invoked",
-          "passed": false,
-          "evidence": "missing required substring `.append(` in Game.java"
+          "passed": true,
+          "evidence": "found `.append(` in Game.java"
         },
         {
           "text": "@AggregateIdentifier removed",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Game.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateIdentifier` absent from Game.java \u2014 good"
         },
         {
           "text": "AggregateLifecycle removed",
-          "passed": false,
-          "evidence": "forbidden substring `AggregateLifecycle` STILL present in Game.java"
+          "passed": true,
+          "evidence": "forbidden `AggregateLifecycle` absent from Game.java \u2014 good"
         },
         {
           "text": "AF4 @Aggregate import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.spring.stereotype.Aggregate` STILL present in Game.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.spring.stereotype.Aggregate` absent from Game.java \u2014 good"
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         }
       ],
       "notes": []
@@ -553,9 +553,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.1667,
-        "passed": 2,
-        "failed": 10,
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
         "total": 12,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -565,43 +565,43 @@
       "expectations": [
         {
           "text": "Parent root annotated @EventSourced tagKey=\"GiftCard\"",
-          "passed": false,
-          "evidence": "missing required substring `@EventSourced(tagKey = \"GiftCard\"` in GiftCard.java"
+          "passed": true,
+          "evidence": "found `@EventSourced(tagKey = \"GiftCard\"` in GiftCard.java"
         },
         {
           "text": "Child collection annotated @EntityMember",
-          "passed": false,
-          "evidence": "missing required substring `@EntityMember` in GiftCard.java"
+          "passed": true,
+          "evidence": "found `@EntityMember` in GiftCard.java"
         },
         {
           "text": "AF5 EntityMember import",
-          "passed": false,
-          "evidence": "missing required substring `org.axonframework.modelling.entity.annotation.EntityMember` in GiftCard.java"
+          "passed": true,
+          "evidence": "found `org.axonframework.modelling.entity.annotation.EntityMember` in GiftCard.java"
         },
         {
           "text": "@EntityCreator on parent constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in GiftCard.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in GiftCard.java"
         },
         {
           "text": "AF4 @AggregateMember removed",
-          "passed": false,
-          "evidence": "forbidden substring `@AggregateMember` STILL present in GiftCard.java"
+          "passed": true,
+          "evidence": "forbidden `@AggregateMember` absent from GiftCard.java \u2014 good"
         },
         {
           "text": "AF4 AggregateMember import removed",
-          "passed": false,
-          "evidence": "forbidden substring `org.axonframework.modelling.command.AggregateMember` STILL present in GiftCard.java"
+          "passed": true,
+          "evidence": "forbidden `org.axonframework.modelling.command.AggregateMember` absent from GiftCard.java \u2014 good"
         },
         {
           "text": "Transaction child has @EntityCreator on its constructor",
-          "passed": false,
-          "evidence": "missing required substring `@EntityCreator` in Transaction.java"
+          "passed": true,
+          "evidence": "found `@EntityCreator` in Transaction.java"
         },
         {
           "text": "Transaction's @CommandHandler uses EventAppender",
-          "passed": false,
-          "evidence": "missing required substring `EventAppender` in Transaction.java"
+          "passed": true,
+          "evidence": "found `EventAppender` in Transaction.java"
         },
         {
           "text": "Child Transaction NOT annotated with class-level @EventSourced \u2014 reached via parent",
@@ -615,13 +615,13 @@
         },
         {
           "text": "AggregateLifecycle gone from child too",
-          "passed": false,
-          "evidence": "forbidden substring `AggregateLifecycle` STILL present in Transaction.java"
+          "passed": true,
+          "evidence": "forbidden `AggregateLifecycle` absent from Transaction.java \u2014 good"
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         }
       ],
       "notes": []
@@ -631,9 +631,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.7143,
-        "passed": 5,
-        "failed": 2,
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
         "total": 7,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -668,13 +668,13 @@
         },
         {
           "text": "Success result",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u2705 Success` in result.md"
         },
         {
           "text": "Notes mention `idempotent` per DEFAULT.md baseline",
-          "passed": false,
-          "evidence": "missing required substring `idempotent` in result.md"
+          "passed": true,
+          "evidence": "found `idempotent` in result.md"
         }
       ],
       "notes": []
@@ -684,9 +684,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.0,
-        "passed": 0,
-        "failed": 6,
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
         "total": 6,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -696,33 +696,33 @@
       "expectations": [
         {
           "text": "Blocker emitted (\ud83d\udea7)",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \ud83d\udea7 Blocker` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \ud83d\udea7 Blocker` in result.md"
         },
         {
           "text": "Blocker notes reference Map-typed @AggregateMember",
-          "passed": false,
-          "evidence": "missing required substring `Map` in result.md"
+          "passed": true,
+          "evidence": "found `Map` in result.md"
         },
         {
           "text": "Blocker explicitly names @AggregateMember",
-          "passed": false,
-          "evidence": "missing required substring `@AggregateMember` in result.md"
+          "passed": true,
+          "evidence": "found `@AggregateMember` in result.md"
         },
         {
           "text": "Option `skip` listed",
-          "passed": false,
-          "evidence": "missing required substring `skip` in result.md"
+          "passed": true,
+          "evidence": "found `skip` in result.md"
         },
         {
           "text": "Option `revert` listed",
-          "passed": false,
-          "evidence": "missing required substring `revert` in result.md"
+          "passed": true,
+          "evidence": "found `revert` in result.md"
         },
         {
           "text": "Option `solve-manually` listed",
-          "passed": false,
-          "evidence": "missing required substring `solve-manually` in result.md"
+          "passed": true,
+          "evidence": "found `solve-manually` in result.md"
         }
       ],
       "notes": []
@@ -732,9 +732,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.5714,
-        "passed": 4,
-        "failed": 3,
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
         "total": 7,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -744,18 +744,18 @@
       "expectations": [
         {
           "text": "Rejected outcome emoji (\u23ed\ufe0f)",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \u23ed` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \u23ed` in result.md"
         },
         {
           "text": "Rejected text present",
-          "passed": false,
-          "evidence": "missing required substring `Rejected` in result.md"
+          "passed": true,
+          "evidence": "found `Rejected` in result.md"
         },
         {
           "text": "Recipe identifier present",
-          "passed": false,
-          "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+          "passed": true,
+          "evidence": "found `axon4to5-aggregate` in result.md"
         },
         {
           "text": "Source untouched: original @ProcessingGroup intact",
@@ -785,9 +785,9 @@
       "configuration": "with_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.0,
-        "passed": 0,
-        "failed": 5,
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
         "total": 5,
         "time_seconds": 0.0,
         "tokens": 0,
@@ -797,28 +797,28 @@
       "expectations": [
         {
           "text": "Blocker emitted (\ud83d\udea7)",
-          "passed": false,
-          "evidence": "missing required substring `Result:** \ud83d\udea7 Blocker` in result.md"
+          "passed": true,
+          "evidence": "found `Result:** \ud83d\udea7 Blocker` in result.md"
         },
         {
           "text": "Blocker notes reference deadline-handler",
-          "passed": false,
-          "evidence": "missing required substring `deadline` in result.md"
+          "passed": true,
+          "evidence": "found `deadline` in result.md"
         },
         {
           "text": "Option `skip` listed",
-          "passed": false,
-          "evidence": "missing required substring `skip` in result.md"
+          "passed": true,
+          "evidence": "found `skip` in result.md"
         },
         {
           "text": "Option `revert` listed",
-          "passed": false,
-          "evidence": "missing required substring `revert` in result.md"
+          "passed": true,
+          "evidence": "found `revert` in result.md"
         },
         {
           "text": "Option `solve-manually` listed",
-          "passed": false,
-          "evidence": "missing required substring `solve-manually` in result.md"
+          "passed": true,
+          "evidence": "found `solve-manually` in result.md"
         }
       ],
       "notes": []
@@ -1628,10 +1628,10 @@
   "run_summary": {
     "with_skill": {
       "pass_rate": {
-        "mean": 0.2056,
-        "stddev": 0.2659,
-        "min": 0.0,
-        "max": 0.7143
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
       },
       "time_seconds": {
         "mean": 0.0,
@@ -1667,7 +1667,7 @@
       }
     },
     "delta": {
-      "pass_rate": "+0.00",
+      "pass_rate": "+0.79",
       "time_seconds": "+0.0",
       "tokens": "+0"
     }

@@ -1,0 +1,5 @@
+**Result:** ✅ Success
+**Source:** `com.example.poly.Card`
+**Recipe:** axon4to5-aggregate
+
+**Notes:** Polymorphic Card hierarchy migrated to AF5 (Path B / native). Base `Card` carries `@EventSourcedEntity(tagKey = "Card", idType = String.class, concreteTypes = { OpenLoopGiftCard.class, RechargeableGiftCard.class })` with `@EntityCreator` on the protected no-arg ctor; `DebitCardCommand` handler now takes `EventAppender`. Subtypes `OpenLoopGiftCard` and `RechargeableGiftCard` no longer carry class-level stereotypes — discovered via `concreteTypes`. AF4 constructor command handlers converted to static `@CommandHandler` factories; `@EntityCreator` placed on each subtype's no-arg ctor. `RechargeCommand` handler threaded with `EventAppender`. All AF4 imports (`@AggregateRoot`, `@AggregateIdentifier`, `@Aggregate`, `AggregateLifecycle.apply`) removed; AF5 imports applied (`.messaging.commandhandling.annotation.CommandHandler`, `.eventsourcing.annotation.EventSourcingHandler`, `.eventsourcing.annotation.reflection.EntityCreator`, `.messaging.eventhandling.gateway.EventAppender`).

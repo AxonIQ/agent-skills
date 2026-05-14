@@ -27,19 +27,19 @@
     },
     {
       "text": "Success result",
-      "passed": false,
-      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+      "passed": true,
+      "evidence": "found `Result:** \u2705 Success` in result.md"
     },
     {
       "text": "Notes mention `idempotent` per DEFAULT.md baseline",
-      "passed": false,
-      "evidence": "missing required substring `idempotent` in result.md"
+      "passed": true,
+      "evidence": "found `idempotent` in result.md"
     }
   ],
   "summary": {
-    "passed": 5,
-    "failed": 2,
+    "passed": 7,
+    "failed": 0,
     "total": 7,
-    "pass_rate": 0.7143
+    "pass_rate": 1.0
   }
 }

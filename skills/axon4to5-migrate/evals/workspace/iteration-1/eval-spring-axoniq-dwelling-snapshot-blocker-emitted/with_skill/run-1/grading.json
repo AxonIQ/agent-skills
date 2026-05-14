@@ -2,39 +2,39 @@
   "expectations": [
     {
       "text": "Result block marks Blocker (\ud83d\udea7 emoji)",
-      "passed": false,
-      "evidence": "missing required substring `Result:** \ud83d\udea7 Blocker` in result.md"
+      "passed": true,
+      "evidence": "found `Result:** \ud83d\udea7 Blocker` in result.md"
     },
     {
       "text": "Blocker notes reference snapshotting",
-      "passed": false,
-      "evidence": "missing required substring `snapshot` in result.md"
+      "passed": true,
+      "evidence": "found `snapshot` in result.md"
     },
     {
       "text": "Default Option `skip` is enumerated",
-      "passed": false,
-      "evidence": "missing required substring `skip` in result.md"
+      "passed": true,
+      "evidence": "found `skip` in result.md"
     },
     {
       "text": "Default Option `revert` is enumerated",
-      "passed": false,
-      "evidence": "missing required substring `revert` in result.md"
+      "passed": true,
+      "evidence": "found `revert` in result.md"
     },
     {
       "text": "Default Option `solve-manually` is enumerated",
-      "passed": false,
-      "evidence": "missing required substring `solve-manually` in result.md"
+      "passed": true,
+      "evidence": "found `solve-manually` in result.md"
     },
     {
       "text": "Recipe identifier present",
-      "passed": false,
-      "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+      "passed": true,
+      "evidence": "found `axon4to5-aggregate` in result.md"
     }
   ],
   "summary": {
-    "passed": 0,
-    "failed": 6,
+    "passed": 6,
+    "failed": 0,
     "total": 6,
-    "pass_rate": 0.0
+    "pass_rate": 1.0
   }
 }

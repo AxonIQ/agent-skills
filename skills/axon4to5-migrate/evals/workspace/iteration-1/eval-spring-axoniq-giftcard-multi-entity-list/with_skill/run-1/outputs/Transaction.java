@@ -1,19 +1,18 @@
 package com.example.giftcard;
 
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.modelling.command.EntityId;
-import org.axonframework.modelling.command.TargetAggregateIdentifier;
-
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
+import org.axonframework.modelling.annotation.TargetEntityId;
 
 public class Transaction {
 
-    @EntityId
     private String txId;
     private int amount;
     private boolean settled;
 
+    @EntityCreator
     Transaction() {
     }
 
@@ -23,9 +22,9 @@ public class Transaction {
     }
 
     @CommandHandler
-    void handle(SettleTransactionCommand cmd) {
+    void handle(SettleTransactionCommand cmd, EventAppender eventAppender) {
         if (settled) throw new IllegalStateException("already settled");
-        apply(new TransactionSettledEvent(cmd.cardId(), cmd.txId()));
+        eventAppender.append(new TransactionSettledEvent(cmd.cardId(), cmd.txId()));
     }
 
     @EventSourcingHandler
@@ -35,6 +34,6 @@ public class Transaction {
         }
     }
 
-    public record SettleTransactionCommand(@TargetAggregateIdentifier String cardId, String txId) {}
+    public record SettleTransactionCommand(@TargetEntityId String cardId, String txId) {}
     public record TransactionSettledEvent(String cardId, String txId) {}
 }

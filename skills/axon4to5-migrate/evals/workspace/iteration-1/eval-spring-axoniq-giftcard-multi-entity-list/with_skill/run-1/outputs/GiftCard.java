@@ -1,30 +1,28 @@
 package com.example.giftcard;
 
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.modelling.command.AggregateIdentifier;
-import org.axonframework.modelling.command.AggregateMember;
-import org.axonframework.modelling.command.TargetAggregateIdentifier;
-import org.axonframework.spring.stereotype.Aggregate;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.extension.spring.stereotype.EventSourced;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
+import org.axonframework.modelling.annotation.TargetEntityId;
+import org.axonframework.modelling.entity.annotation.EntityMember;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
-@Aggregate
+@EventSourced(tagKey = "GiftCard", idType = String.class)
 public class GiftCard {
 
-    @AggregateIdentifier
     private String cardId;
     private int balance;
 
-    @AggregateMember
+    @EntityMember(routingKey = "txId")
     private List<Transaction> transactions = new ArrayList<>();
 
     @CommandHandler
-    public GiftCard(IssueCardCommand cmd) {
-        apply(new CardIssuedEvent(cmd.cardId(), cmd.amount()));
+    public GiftCard(IssueCardCommand cmd, EventAppender eventAppender) {
+        eventAppender.append(new CardIssuedEvent(cmd.cardId(), cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -34,9 +32,9 @@ public class GiftCard {
     }
 
     @CommandHandler
-    void handle(StartTransactionCommand cmd) {
+    void handle(StartTransactionCommand cmd, EventAppender eventAppender) {
         if (cmd.amount() > balance) throw new IllegalStateException("insufficient balance");
-        apply(new TransactionStartedEvent(cardId, cmd.txId(), cmd.amount()));
+        eventAppender.append(new TransactionStartedEvent(cardId, cmd.txId(), cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -45,11 +43,12 @@ public class GiftCard {
         this.transactions.add(new Transaction(e.txId(), e.amount()));
     }
 
+    @EntityCreator
     GiftCard() {
     }
 
-    public record IssueCardCommand(@TargetAggregateIdentifier String cardId, int amount) {}
-    public record StartTransactionCommand(@TargetAggregateIdentifier String cardId, String txId, int amount) {}
+    public record IssueCardCommand(@TargetEntityId String cardId, int amount) {}
+    public record StartTransactionCommand(@TargetEntityId String cardId, String txId, int amount) {}
     public record CardIssuedEvent(String cardId, int amount) {}
     public record TransactionStartedEvent(String cardId, String txId, int amount) {}
 }

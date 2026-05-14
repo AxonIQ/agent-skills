@@ -2,18 +2,18 @@
   "expectations": [
     {
       "text": "Rejected outcome emoji (\u23ed\ufe0f)",
-      "passed": false,
-      "evidence": "missing required substring `Result:** \u23ed` in result.md"
+      "passed": true,
+      "evidence": "found `Result:** \u23ed` in result.md"
     },
     {
       "text": "Rejected text present",
-      "passed": false,
-      "evidence": "missing required substring `Rejected` in result.md"
+      "passed": true,
+      "evidence": "found `Rejected` in result.md"
     },
     {
       "text": "Recipe identifier present",
-      "passed": false,
-      "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+      "passed": true,
+      "evidence": "found `axon4to5-aggregate` in result.md"
     },
     {
       "text": "Source untouched: original @ProcessingGroup intact",
@@ -37,9 +37,9 @@
     }
   ],
   "summary": {
-    "passed": 4,
-    "failed": 3,
+    "passed": 7,
+    "failed": 0,
     "total": 7,
-    "pass_rate": 0.5714
+    "pass_rate": 1.0
   }
 }

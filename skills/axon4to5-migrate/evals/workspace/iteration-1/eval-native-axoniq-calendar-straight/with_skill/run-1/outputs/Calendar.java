@@ -6,31 +6,26 @@ import com.dddheroes.heroesofddd.calendar.write.finishday.FinishDay;
 import com.dddheroes.heroesofddd.calendar.write.startday.CannotSkipDays;
 import com.dddheroes.heroesofddd.calendar.events.DayStarted;
 import com.dddheroes.heroesofddd.calendar.write.startday.StartDay;
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.modelling.command.AggregateCreationPolicy;
-import org.axonframework.modelling.command.AggregateIdentifier;
-import org.axonframework.modelling.command.CreationPolicy;
-import org.axonframework.spring.stereotype.Aggregate;
+import org.axonframework.eventsourcing.annotation.EventSourcedEntity;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
-@Aggregate
+@EventSourcedEntity(tagKey = "Calendar", idType = CalendarId.class)
 class Calendar {
 
-    @AggregateIdentifier
     private CalendarId calendarId;
     private Month currentMonth;
     private Week currentWeek;
     private Day currentDay;
 
     @CommandHandler
-    @CreationPolicy(AggregateCreationPolicy.CREATE_IF_MISSING)
         // performance downside in comparison to constructor
-    void decide(StartDay command) {
+    void decide(StartDay command, EventAppender eventAppender) {
         new CannotSkipDays(command, currentMonth, currentWeek, currentDay).verify();
 
-        apply(
+        eventAppender.append(
                 DayStarted.event(
                         command.calendarId(),
                         command.month(),
@@ -49,10 +44,10 @@ class Calendar {
     }
 
     @CommandHandler
-    void decide(FinishDay command) {
+    void decide(FinishDay command, EventAppender eventAppender) {
         new CanOnlyFinishCurrentDay(command, currentMonth, currentWeek, currentDay).verify();
 
-        apply(
+        eventAppender.append(
                 DayFinished.event(
                         command.calendarId(),
                         command.month(),
@@ -62,6 +57,7 @@ class Calendar {
         );
     }
 
+    @EntityCreator
     Calendar() {
         // required by Axon
     }

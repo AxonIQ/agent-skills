@@ -1,17 +1,15 @@
 package com.example.poly;
 
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.spring.stereotype.Aggregate;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
-@Aggregate
 public class RechargeableGiftCard extends Card {
 
     @CommandHandler
-    public RechargeableGiftCard(IssueRechargeableCommand cmd) {
-        apply(new RechargeableCardIssuedEvent(cmd.cardId(), cmd.amount()));
+    public static void handle(IssueRechargeableCommand cmd, EventAppender appender) {
+        appender.append(new RechargeableCardIssuedEvent(cmd.cardId(), cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -21,8 +19,8 @@ public class RechargeableGiftCard extends Card {
     }
 
     @CommandHandler
-    void handle(RechargeCommand cmd) {
-        apply(new CardRechargedEvent(cardId, cmd.amount()));
+    void handle(RechargeCommand cmd, EventAppender appender) {
+        appender.append(new CardRechargedEvent(cardId, cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -30,7 +28,8 @@ public class RechargeableGiftCard extends Card {
         this.balance += e.amount();
     }
 
-    RechargeableGiftCard() {
+    @EntityCreator
+    public RechargeableGiftCard() {
     }
 
     public record IssueRechargeableCommand(String cardId, int amount) {}

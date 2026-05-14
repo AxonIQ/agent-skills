@@ -2,43 +2,43 @@
   "expectations": [
     {
       "text": "@EventSourcedEntity on abstract base Card",
-      "passed": false,
-      "evidence": "missing required substring `@EventSourcedEntity` in Card.java"
+      "passed": true,
+      "evidence": "found `@EventSourcedEntity` in Card.java"
     },
     {
       "text": "concreteTypes attribute lists subtypes",
-      "passed": false,
-      "evidence": "missing required substring `concreteTypes` in Card.java"
+      "passed": true,
+      "evidence": "found `concreteTypes` in Card.java"
     },
     {
       "text": "OpenLoopGiftCard.class enumerated in concreteTypes",
-      "passed": false,
-      "evidence": "missing required substring `OpenLoopGiftCard.class` in Card.java"
+      "passed": true,
+      "evidence": "found `OpenLoopGiftCard.class` in Card.java"
     },
     {
       "text": "RechargeableGiftCard.class enumerated in concreteTypes",
-      "passed": false,
-      "evidence": "missing required substring `RechargeableGiftCard.class` in Card.java"
+      "passed": true,
+      "evidence": "found `RechargeableGiftCard.class` in Card.java"
     },
     {
       "text": "AF4 @AggregateRoot removed from base",
-      "passed": false,
-      "evidence": "forbidden substring `@AggregateRoot` STILL present in Card.java"
+      "passed": true,
+      "evidence": "forbidden `@AggregateRoot` absent from Card.java \u2014 good"
     },
     {
       "text": "@AggregateIdentifier removed",
-      "passed": false,
-      "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Card.java"
+      "passed": true,
+      "evidence": "forbidden `@AggregateIdentifier` absent from Card.java \u2014 good"
     },
     {
       "text": "@EntityCreator on OpenLoopGiftCard constructor",
-      "passed": false,
-      "evidence": "missing required substring `@EntityCreator` in OpenLoopGiftCard.java"
+      "passed": true,
+      "evidence": "found `@EntityCreator` in OpenLoopGiftCard.java"
     },
     {
       "text": "OpenLoopGiftCard handlers use EventAppender",
-      "passed": false,
-      "evidence": "missing required substring `EventAppender` in OpenLoopGiftCard.java"
+      "passed": true,
+      "evidence": "found `EventAppender` in OpenLoopGiftCard.java"
     },
     {
       "text": "Subtype NOT annotated @EventSourcedEntity (discovered via base)",
@@ -47,18 +47,18 @@
     },
     {
       "text": "AF4 @Aggregate gone from subtype",
-      "passed": false,
-      "evidence": "forbidden substring `@Aggregate` STILL present in OpenLoopGiftCard.java"
+      "passed": true,
+      "evidence": "forbidden `@Aggregate` absent from OpenLoopGiftCard.java \u2014 good"
     },
     {
       "text": "@EntityCreator on RechargeableGiftCard constructor",
-      "passed": false,
-      "evidence": "missing required substring `@EntityCreator` in RechargeableGiftCard.java"
+      "passed": true,
+      "evidence": "found `@EntityCreator` in RechargeableGiftCard.java"
     },
     {
       "text": "RechargeableGiftCard handlers use EventAppender",
-      "passed": false,
-      "evidence": "missing required substring `EventAppender` in RechargeableGiftCard.java"
+      "passed": true,
+      "evidence": "found `EventAppender` in RechargeableGiftCard.java"
     },
     {
       "text": "Subtype NOT annotated @EventSourcedEntity",
@@ -67,19 +67,19 @@
     },
     {
       "text": "AF4 @Aggregate gone from subtype",
-      "passed": false,
-      "evidence": "forbidden substring `@Aggregate` STILL present in RechargeableGiftCard.java"
+      "passed": true,
+      "evidence": "forbidden `@Aggregate` absent from RechargeableGiftCard.java \u2014 good"
     },
     {
       "text": "Success result",
-      "passed": false,
-      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+      "passed": true,
+      "evidence": "found `Result:** \u2705 Success` in result.md"
     }
   ],
   "summary": {
-    "passed": 2,
-    "failed": 13,
+    "passed": 15,
+    "failed": 0,
     "total": 15,
-    "pass_rate": 0.1333
+    "pass_rate": 1.0
   }
 }

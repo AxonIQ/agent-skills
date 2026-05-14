@@ -1,0 +1,5 @@
+**Result:** ✅ Success
+**Source:** `/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-final/skills/axon4to5-migrate/evals/workspace/iteration-1/eval-spring-axoniq-calendar-straight/with_skill/run-1/outputs/Calendar.java`
+**Recipe:** axon4to5-aggregate
+
+**Notes:** Path A (Spring Boot) straight-line migration matching use-case 01. `@Aggregate` → `@EventSourced(tagKey = "Calendar", idType = CalendarId.class)`; `@AggregateIdentifier` field annotation dropped; `@CreationPolicy(CREATE_IF_MISSING)` removed (instance handler + no-arg `@EntityCreator` is the AF5 default); both `@CommandHandler` methods now take `EventAppender` and call `eventAppender.append(...)`; AF4 imports + `AggregateLifecycle.apply` static import removed; AF5 imports added with mandatory `.extension.spring.` / `.messaging.` / `.reflection.` infixes. Only Calendar.java in scope — command/event classes not edited per task instructions. Isolated-test verification skipped (only this file accessible in eval workspace).

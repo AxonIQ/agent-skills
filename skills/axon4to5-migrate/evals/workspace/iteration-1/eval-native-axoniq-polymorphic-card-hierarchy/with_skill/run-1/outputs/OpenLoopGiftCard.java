@@ -1,19 +1,17 @@
 package com.example.poly;
 
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.spring.stereotype.Aggregate;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
-@Aggregate
 public class OpenLoopGiftCard extends Card {
 
     private boolean activated;
 
     @CommandHandler
-    public OpenLoopGiftCard(IssueOpenLoopCommand cmd) {
-        apply(new OpenLoopCardIssuedEvent(cmd.cardId(), cmd.amount()));
+    public static void handle(IssueOpenLoopCommand cmd, EventAppender appender) {
+        appender.append(new OpenLoopCardIssuedEvent(cmd.cardId(), cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -23,7 +21,8 @@ public class OpenLoopGiftCard extends Card {
         this.activated = true;
     }
 
-    OpenLoopGiftCard() {
+    @EntityCreator
+    public OpenLoopGiftCard() {
     }
 
     public record IssueOpenLoopCommand(String cardId, int amount) {}

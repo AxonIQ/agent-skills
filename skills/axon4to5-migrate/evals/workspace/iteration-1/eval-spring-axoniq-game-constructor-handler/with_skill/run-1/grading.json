@@ -2,13 +2,13 @@
   "expectations": [
     {
       "text": "Path A annotation @EventSourced applied",
-      "passed": false,
-      "evidence": "missing required substring `@EventSourced` in Game.java"
+      "passed": true,
+      "evidence": "found `@EventSourced` in Game.java"
     },
     {
       "text": "tagKey explicit on @EventSourced",
-      "passed": false,
-      "evidence": "missing required substring `tagKey` in Game.java"
+      "passed": true,
+      "evidence": "found `tagKey` in Game.java"
     },
     {
       "text": "Spring @Profile preserved (non-Axon annotation)",
@@ -17,44 +17,44 @@
     },
     {
       "text": "@EntityCreator on constructor (likely on the RegisterGame factory or no-arg one)",
-      "passed": false,
-      "evidence": "missing required substring `@EntityCreator` in Game.java"
+      "passed": true,
+      "evidence": "found `@EntityCreator` in Game.java"
     },
     {
       "text": "EventAppender used in @CommandHandler methods",
-      "passed": false,
-      "evidence": "missing required substring `EventAppender` in Game.java"
+      "passed": true,
+      "evidence": "found `EventAppender` in Game.java"
     },
     {
       "text": "EventAppender.append(...) invoked",
-      "passed": false,
-      "evidence": "missing required substring `.append(` in Game.java"
+      "passed": true,
+      "evidence": "found `.append(` in Game.java"
     },
     {
       "text": "@AggregateIdentifier removed",
-      "passed": false,
-      "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Game.java"
+      "passed": true,
+      "evidence": "forbidden `@AggregateIdentifier` absent from Game.java \u2014 good"
     },
     {
       "text": "AggregateLifecycle removed",
-      "passed": false,
-      "evidence": "forbidden substring `AggregateLifecycle` STILL present in Game.java"
+      "passed": true,
+      "evidence": "forbidden `AggregateLifecycle` absent from Game.java \u2014 good"
     },
     {
       "text": "AF4 @Aggregate import removed",
-      "passed": false,
-      "evidence": "forbidden substring `org.axonframework.spring.stereotype.Aggregate` STILL present in Game.java"
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.spring.stereotype.Aggregate` absent from Game.java \u2014 good"
     },
     {
       "text": "Success result",
-      "passed": false,
-      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+      "passed": true,
+      "evidence": "found `Result:** \u2705 Success` in result.md"
     }
   ],
   "summary": {
-    "passed": 1,
-    "failed": 9,
+    "passed": 10,
+    "failed": 0,
     "total": 10,
-    "pass_rate": 0.1
+    "pass_rate": 1.0
   }
 }

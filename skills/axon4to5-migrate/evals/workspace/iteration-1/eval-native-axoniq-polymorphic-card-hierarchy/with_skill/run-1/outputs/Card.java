@@ -1,23 +1,25 @@
 package com.example.poly;
 
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
-import org.axonframework.modelling.command.AggregateIdentifier;
-import org.axonframework.modelling.command.AggregateRoot;
+import org.axonframework.eventsourcing.annotation.EventSourcedEntity;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
-@AggregateRoot
+@EventSourcedEntity(
+        tagKey = "Card",
+        idType = String.class,
+        concreteTypes = { OpenLoopGiftCard.class, RechargeableGiftCard.class }
+)
 public abstract class Card {
 
-    @AggregateIdentifier
     protected String cardId;
     protected int balance;
 
     @CommandHandler
-    void handle(DebitCardCommand cmd) {
+    void handle(DebitCardCommand cmd, EventAppender appender) {
         if (cmd.amount() > balance) throw new IllegalStateException("insufficient balance");
-        apply(new CardDebitedEvent(cardId, cmd.amount()));
+        appender.append(new CardDebitedEvent(cardId, cmd.amount()));
     }
 
     @EventSourcingHandler
@@ -25,7 +27,8 @@ public abstract class Card {
         this.balance -= e.amount();
     }
 
-    Card() {
+    @EntityCreator
+    protected Card() {
     }
 
     public record DebitCardCommand(String cardId, int amount) {}

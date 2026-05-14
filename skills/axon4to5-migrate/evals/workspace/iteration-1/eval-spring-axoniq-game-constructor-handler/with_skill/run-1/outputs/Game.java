@@ -8,41 +8,47 @@ import io.axoniq.demo.gamerental.coreapi.RegisterGameCommand;
 import io.axoniq.demo.gamerental.coreapi.RentGameCommand;
 import io.axoniq.demo.gamerental.coreapi.RentalCommandException;
 import io.axoniq.demo.gamerental.coreapi.ReturnGameCommand;
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventsourcing.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
+import org.axonframework.extension.spring.stereotype.EventSourced;
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 import org.axonframework.messaging.interceptors.ExceptionHandler;
-import org.axonframework.modelling.command.AggregateIdentifier;
-import org.axonframework.spring.stereotype.Aggregate;
 import org.springframework.context.annotation.Profile;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.axonframework.modelling.command.AggregateLifecycle.apply;
-
 @Profile("command")
-@Aggregate
+@EventSourced(tagKey = "Game", idType = String.class)
 class Game {
 
-    @AggregateIdentifier
     private String gameIdentifier;
     private int stock;
     private Instant releaseDate;
     private Set<String> renters;
 
-    @CommandHandler
-    public Game(RegisterGameCommand command) {
-        apply(new GameRegisteredEvent(command.getGameIdentifier(),
-                                      command.getTitle(),
-                                      command.getReleaseDate(),
-                                      command.getDescription(),
-                                      command.isSingleplayer(),
-                                      command.isMultiplayer()));
+    @EntityCreator
+    public Game(GameRegisteredEvent event) {
+        this.gameIdentifier = event.getGameIdentifier();
+        this.stock = 1;
+        this.releaseDate = event.getReleaseDate();
+        this.renters = new HashSet<>();
     }
 
     @CommandHandler
-    public void handle(RentGameCommand command) {
+    public static void handle(RegisterGameCommand command, EventAppender appender) {
+        appender.append(new GameRegisteredEvent(command.getGameIdentifier(),
+                                                command.getTitle(),
+                                                command.getReleaseDate(),
+                                                command.getDescription(),
+                                                command.isSingleplayer(),
+                                                command.isMultiplayer()));
+    }
+
+    @CommandHandler
+    public void handle(RentGameCommand command, EventAppender appender) {
         if (stock <= 0) {
             throw new IllegalStateException(
                     "Insufficient items in stock for game with identifier [" + gameIdentifier + "]"
@@ -53,23 +59,15 @@ class Game {
                     "Game with identifier [" + gameIdentifier + "] cannot be rented out as it has not been released yet"
             );
         }
-        apply(new GameRentedEvent(gameIdentifier, command.getRenter()));
+        appender.append(new GameRentedEvent(gameIdentifier, command.getRenter()));
     }
 
     @CommandHandler
-    public void handle(ReturnGameCommand command) {
+    public void handle(ReturnGameCommand command, EventAppender appender) {
         if (!renters.contains(command.getReturner())) {
             throw new IllegalStateException("A game should be returned by someone who has actually rented it");
         }
-        apply(new GameReturnedEvent(gameIdentifier, command.getReturner()));
-    }
-
-    @EventSourcingHandler
-    public void on(GameRegisteredEvent event) {
-        this.gameIdentifier = event.getGameIdentifier();
-        this.stock = 1;
-        this.releaseDate = event.getReleaseDate();
-        this.renters = new HashSet<>();
+        appender.append(new GameReturnedEvent(gameIdentifier, command.getReturner()));
     }
 
     @EventSourcingHandler
@@ -97,9 +95,5 @@ class Game {
             statusCode = ExceptionStatusCode.UNKNOWN_EXCEPTION;
         }
         throw new RentalCommandException(exception.getMessage(), exception, statusCode);
-    }
-
-    public Game() {
-        // Required by Axon
     }
 }

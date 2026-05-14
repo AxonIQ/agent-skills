@@ -2,13 +2,13 @@
   "expectations": [
     {
       "text": "Stop message names `framework`",
-      "passed": false,
-      "evidence": "missing required substring `framework` in result.md"
+      "passed": true,
+      "evidence": "found `framework` in result.md"
     },
     {
       "text": "Stop wording present",
-      "passed": false,
-      "evidence": "none of ['unsupported', 'STOP', 'invalid', 'Unsupported'] found in result.md"
+      "passed": true,
+      "evidence": "found `unsupported` in result.md"
     },
     {
       "text": "Source untouched: no @EventSourced added",
@@ -27,9 +27,9 @@
     }
   ],
   "summary": {
-    "passed": 3,
-    "failed": 2,
+    "passed": 5,
+    "failed": 0,
     "total": 5,
-    "pass_rate": 0.6
+    "pass_rate": 1.0
   }
 }
