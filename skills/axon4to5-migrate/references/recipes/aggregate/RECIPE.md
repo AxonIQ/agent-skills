@@ -47,9 +47,25 @@ Constructs the recipe cannot migrate on its own. Each entry: what it is + how to
 
 ### B1 — `snapshotTriggerDefinition` on `@Aggregate`
 
-`@Aggregate(snapshotTriggerDefinition = "...")`. AF5's `@EventSourced` / `@EventSourcedEntity` has no portable replacement attribute (see [configuration-migration.adoc](../../docs/paths/aggregates/configuration-migration.adoc) IMPORTANT note: "attributes you may have used in AF4 (like caching, snapshotting, …) are no longer supported"). Detect by grepping the `@Aggregate` annotation on `$SOURCE` for `snapshotTriggerDefinition`; also check for the post-OpenRewrite marker `// TODO #LLM: reconfigure snapshot trigger`.
+`@Aggregate(snapshotTriggerDefinition = "...")`. AF5's `@EventSourced` / `@EventSourcedEntity` has no portable replacement attribute (see [configuration-migration.adoc](../../docs/paths/aggregates/configuration-migration.adoc) IMPORTANT note). Detect by grepping the `@Aggregate` annotation on `$SOURCE` for `snapshotTriggerDefinition`; also check for the post-OpenRewrite marker `// TODO #LLM: reconfigure snapshot trigger`.
 
-The recipe halts because dropping the attribute has runtime consequences (snapshot rows in event storage become orphans, future loads replay the full event stream) and the snapshot-trigger bean wiring lives outside this recipe's scope. The caller decides.
+**Auto-migration** (do NOT halt if the companion bean is in scope and translatable):
+
+1. Locate the companion bean class: grep for `@Component("<beanName>")` or `@Bean` returning a class that extends `EventCountSnapshotTriggerDefinition` or `AggregateLoadTimeSnapshotTriggerDefinition`. Look in the same package first, then the configured scope.
+2. If found and translatable, extract the threshold from the `super(snapshotter, N)` / `super(snapshotter, Duration)` constructor call. Use the translation table:
+   - `EventCountSnapshotTriggerDefinition(snapshotter, N)` → `SnapshotPolicy.afterEvents(N)`
+   - `AggregateLoadTimeSnapshotTriggerDefinition(snapshotter, Duration)` → `SnapshotPolicy.whenSourcingTimeExceeds(Duration)`
+3. Apply per path:
+   - **`configuration=native`** — emit `@EventSourcedEntity` (or `@EventSourced`) on the entity class (no `snapshotTriggerDefinition` attribute). In the Configurer wiring file, register: `EventSourcedEntityModule.declarative(<IdType>.class, <Entity>.class).snapshotPolicy(c -> SnapshotPolicy.afterEvents(N)).build()`. Register `SnapshotStore` component: `configurer.componentRegistry(cr -> cr.registerComponent(SnapshotStore.class, c -> new InMemorySnapshotStore()))`.
+   - **`configuration=spring`** — entity drops `@EventSourced` (registration moves to the bean). Create (or augment) a `@Configuration` class: `@Bean EventSourcedEntityModule<IdType, Entity> entityModule() { return EventSourcedEntityModule.declarative(...).snapshotPolicy(...).build(); }` plus `@Bean SnapshotStore snapshotStore() { return new InMemorySnapshotStore(); }`.
+4. Mark companion bean class as dead code in LEARNINGS ("BikeSnapshotDefinition is now dead code — delete it"). Do NOT delete it from disk (out of scope).
+5. B1 does NOT fire → recipe continues normally.
+
+If companion bean is a **custom subclass** or **not found in scope** → B1 fires (Blocker), same as before.
+
+Recipe-specific Option offered alongside the three defaults (only when B1 fires):
+
+- `migrate-snapshotting` — pause; caller manually creates `EventSourcedEntityModule.declarative(...)` registration with the correct `SnapshotPolicy`, removes the companion bean, then re-invokes. See [04-snapshot-blocker.md](use-cases/04-snapshot-blocker.md) for the full worked example.
 
 ### B2 — Map-typed `@AggregateMember`
 
@@ -153,7 +169,7 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
    ```
    - `tagKey` — convey the *entity type*, e.g. `"Bike"`, not the field name `"bikeId"`. Always written even if it equals the framework default (simple class name) — renames otherwise break routing silently.
    - `idType` — set to the type of the AF4 `@AggregateIdentifier` field. Default is `String.class`; mismatched type → silent identifier-resolution failure.
-   - If `snapshotTriggerDefinition` was present, Blocker B1 already fired earlier in Research and the recipe never reached this step. If the caller `solve-manually`-resolved by removing the attribute and re-invoked, the attribute is gone from the source and this step has nothing to drop.
+   - If `snapshotTriggerDefinition` was present AND the companion bean was translatable, the B1 auto-migration path in Research already handled the annotation change and module registration — this step has nothing extra to do for the attribute. If the companion bean was NOT translatable, B1 fired as Blocker and the recipe never reached this step; after the caller resolves and re-invokes, the attribute is gone and this step proceeds normally.
 
 ### Path B — Native Configurer (`configuration=native`)
 
@@ -286,9 +302,10 @@ return BLOCKER
 > **Options:**
 >
 > _For B1 (snapshot):_
+> - [ ] **migrate-snapshotting** — pause; manually create `EventSourcedEntityModule.declarative(...)` registration with `SnapshotPolicy`, remove companion bean, then re-invoke. See [04-snapshot-blocker.md](use-cases/04-snapshot-blocker.md).
 > - [ ] **skip** — leave `Dwelling` in its current partial state; queue moves on.
 > - [ ] **revert** — undo this recipe's edits; restore the pre-recipe `@Aggregate(snapshotTriggerDefinition = "...")` form.
-> - [ ] **solve-manually** — pause; caller removes the `snapshotTriggerDefinition` attribute (and the matching bean) and re-invokes.
+> - [ ] **solve-manually** — pause; caller removes the `snapshotTriggerDefinition` attribute (and the matching bean) without replacing it, then re-invokes.
 ```
 
 Example — multiple blockers (B1 + B4 detected together):
@@ -308,9 +325,10 @@ return BLOCKER
 > **Options:**
 >
 > _For B1 (snapshot):_
+> - [ ] **migrate-snapshotting** — pause; manually create `EventSourcedEntityModule.declarative(...)` with `SnapshotPolicy`, remove companion bean, re-invoke.
 > - [ ] **skip** — keep partial state; queue moves on.
 > - [ ] **revert** — restore the pre-recipe `@Aggregate(snapshotTriggerDefinition = "...")` form.
-> - [ ] **solve-manually** — pause; caller drops the attribute (and bean) and re-invokes.
+> - [ ] **solve-manually** — pause; caller drops the attribute (and bean) without replacing it, re-invokes.
 >
 > _For B4 (deadline):_
 > - [ ] **skip** — same.

@@ -38,6 +38,7 @@ disable-model-invocation: true
     - `subagent` — orchestrator MAY dispatch via the `Agent` tool: discovery → `Explore` subagent, recipe sub-flow per
       item → `general-purpose` subagent (parallel batches). Useful for `project` mode on large codebases.
 - `source` (required for `mode=single`): hint identifying the thing to migrate (class name, file path, FQN).
+- `skip-openrewrite` (optional, default `false`): when `true`, the orchestrator SKIPS Pre-step 2 (the OpenRewrite bulk pass) and goes straight to the mode-specific producer. Use this when (a) OpenRewrite Phase 1 has already been run separately on the tree, (b) the caller is exercising a recipe in isolation (e.g. evals — subagents cannot recursively invoke another Skill), or (c) the project is not built with Maven/Gradle so the OpenRewrite plugin is unreachable. Values: `true` / `false`. Any other value → STOP. The downstream recipe must still tolerate both AF4-shaped and partially-migrated sources (see each recipe's `# Applicable` predicates).
 
 ## Durability
 
@@ -47,15 +48,19 @@ disable-model-invocation: true
 
 These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
 
-1. **Parse** — read `framework`, `configuration`, `mode`, `execution` from `$ARGUMENTS`.
+1. **Parse** — read `framework`, `configuration`, `mode`, `execution`, `skip-openrewrite` from `$ARGUMENTS`.
     - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
     - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
     - If `mode` is missing or ∉ {`single`, `project`} → STOP and report unsupported mode.
     - `execution` defaults to `inline` if missing. If present and ∉ {`inline`, `subagent`} → STOP and report unsupported
       execution.
-2. **OpenRewrite** — internally invoke `axon4to5-openrewrite` via the `Skill` tool, passing
-   `framework=$framework`. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a
-   partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass).
+    - `skip-openrewrite` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP and report unsupported value.
+2. **OpenRewrite** — **skipped entirely when `skip-openrewrite=true`.** Otherwise, internally invoke
+   `axon4to5-openrewrite` via the `Skill` tool, passing `framework=$framework`. This is a step of this orchestrator, not
+   a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure
+   (no gap-filling on a broken bulk pass). When skipped, surface that fact in the eventual report (Notes or Learnings)
+   so the caller knows the queue ran against unprocessed AF4 (or already-partially-migrated) sources and the recipes did
+   all the work themselves.
 
 Only after pre-steps complete does the mode-specific producer below run.
 
