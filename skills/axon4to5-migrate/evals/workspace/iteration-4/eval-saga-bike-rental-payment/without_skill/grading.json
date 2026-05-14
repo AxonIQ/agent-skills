@@ -1,0 +1,91 @@
+{
+  "eval_id": 11,
+  "eval_name": "saga-bike-rental-payment",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-4/eval-saga-bike-rental-payment/without_skill/outputs/PaymentSaga.java",
+  "output_exists": false,
+  "passed": 0,
+  "total": 16,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "Spring @Component instead of @Saga",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @Component` not evaluable"
+    },
+    {
+      "text": "@DisallowReplay applied",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @DisallowReplay` not evaluable"
+    },
+    {
+      "text": "@EventHandler methods",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @EventHandler` not evaluable"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: CommandDispatcher commandDispatcher` not evaluable"
+    },
+    {
+      "text": "PaymentStateRepository wired",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: PaymentStateRepository` not evaluable"
+    },
+    {
+      "text": "@Scheduled replaces @DeadlineHandler",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @Scheduled` not evaluable"
+    },
+    {
+      "text": "AF5 EventHandler import landed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.messaging.eventhandling.annotation.EventHandler` not evaluable"
+    },
+    {
+      "text": "AF5 DisallowReplay import landed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` not evaluable"
+    },
+    {
+      "text": "AF5 CommandDispatcher import landed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` not evaluable"
+    },
+    {
+      "text": "AF4 @Saga annotation gone",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @Saga` not evaluable"
+    },
+    {
+      "text": "AF4 @SagaEventHandler gone",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @SagaEventHandler` not evaluable"
+    },
+    {
+      "text": "AF4 @StartSaga gone",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @StartSaga` not evaluable"
+    },
+    {
+      "text": "AF4 @EndSaga gone",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @EndSaga` not evaluable"
+    },
+    {
+      "text": "SagaLifecycle gone",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: SagaLifecycle` not evaluable"
+    },
+    {
+      "text": "AF4 saga packages gone (catches functional usage at import level)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: org.axonframework.modelling.saga` not evaluable"
+    },
+    {
+      "text": "AF4 deadline packages gone (catches functional usage at import level \u2014 javadoc references allowed)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: org.axonframework.deadline` not evaluable"
+    }
+  ]
+}

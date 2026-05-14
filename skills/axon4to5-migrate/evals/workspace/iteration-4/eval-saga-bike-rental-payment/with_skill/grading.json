@@ -1,11 +1,11 @@
 {
   "eval_id": 11,
   "eval_name": "saga-bike-rental-payment",
-  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-saga-bike-rental-payment/with_skill/outputs/PaymentSaga.java",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-4/eval-saga-bike-rental-payment/with_skill/outputs/PaymentSaga.java",
   "output_exists": true,
-  "passed": 14,
+  "passed": 16,
   "total": 16,
-  "all_pass": false,
+  "all_pass": true,
   "expectations": [
     {
       "text": "Spring @Component instead of @Saga",
@@ -39,13 +39,13 @@
     },
     {
       "text": "AF5 EventHandler import landed",
-      "passed": false,
-      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in output"
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler`"
     },
     {
       "text": "AF5 DisallowReplay import landed",
-      "passed": false,
-      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in output"
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay`"
     },
     {
       "text": "AF5 CommandDispatcher import landed",

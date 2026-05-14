@@ -109,6 +109,31 @@ This recipe **never edits saga code**. It surfaces decisions and emits a `blocke
 3. Append dated entry to `learnings.md`: decision + FQN + reason + shape (if applicable).
 4. Emit `output { result: blocked, ... }`. Orchestrator commits a decision-only record (no `files_touched`).
 
+## AF5 imports — exact FQNs (copy-paste, do NOT shorten)
+
+These FQNs are **non-obvious** — every AF5 messaging package has a `.messaging.` or `.annotation` infix that agents working from "general AF5 knowledge" routinely drop because the AF4 package didn't have it. Match the strings literally for both Worked examples below.
+
+```java
+// Used by every migrated saga component (both shapes):
+import org.axonframework.messaging.eventhandling.annotation.EventHandler;             // ⚠ note .messaging. — NOT eventhandling.annotation.EventHandler
+import org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay;    // ⚠ note .messaging. AND .replay.annotation
+import org.axonframework.messaging.commandhandling.gateway.CommandDispatcher;          // ⚠ note .messaging. — NOT commandhandling.gateway.CommandDispatcher
+
+// Shape A only — entity injection and state class:
+import org.axonframework.modelling.annotation.InjectEntity;
+import org.axonframework.extension.spring.stereotype.EventSourced;                     // for the nested state class — NOT spring.stereotype.EventSourced
+import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;            // ⚠ note .reflection.
+import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
+
+// Shape B only — JPA state + Spring @Scheduled:
+import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+```
+
+The 3 ⚠-flagged paths under "every migrated saga component" are the most-missed. **Always include the `.messaging.` infix on `EventHandler` / `DisallowReplay` / `CommandDispatcher` imports.** Recipe author confirmed via eval: subagents working from memory drop the infix 100% of the time.
+
 ## Worked example A — `@InjectEntity` + event-sourced state
 
 `@InjectEntity SomeState` parameter: AF5 resolves the entity id from the event payload (`@InjectEntity(idProperty = "x")`, custom `EntityIdResolver`, or default `@TargetEntityId`), loads the entity via `StateManager` (opens its event stream, calls `@EntityCreator`, replays past `@EventSourcingHandler` events), then invokes the handler. **Single-context only** — `@InjectEntity` loads one entity by one id, no cross-stream merge.

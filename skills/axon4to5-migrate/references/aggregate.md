@@ -204,16 +204,28 @@ Variants combine; apply both addenda if both fire.
 
 A.1. `@Aggregate` (`org.axonframework.spring.stereotype.Aggregate`) → `@EventSourced` (`org.axonframework.extension.spring.stereotype.EventSourced`). If `decisions.snapshotting == "accept-drop"` (always — other values exited at Preflight), do NOT carry the `snapshotTriggerDefinition` attribute over.
 
-A.2. Configure `@EventSourced`:
-- `tagKey` — equals `@EventTag(key = ...)` on events; default = entity simple class name (omit if matching).
-- `idType` — set when AF4 `@AggregateIdentifier` field is NOT `String`. Default `String.class`. Mismatched type → silent identifier failure.
+A.2. Configure `@EventSourced` — **always set `tagKey` and `idType` explicitly. Do NOT rely on defaults**:
+- `tagKey` — **REQUIRED explicit attribute.** Must equal `@EventTag(key = ...)` on events. The framework defaults `tagKey` to the entity's simple class name, but agents routinely forget to write it when names match — making the contract invisible. Always emit `tagKey = "<EntityName>"` literally on `@EventSourced`, even if it would coincide with the default. Future renames don't silently break routing.
+- `idType` — **set when AF4 `@AggregateIdentifier` field is NOT `String`.** Default is `String.class`; mismatched type → silent identifier-resolution failure. Always emit explicitly when non-String (e.g. `idType = DwellingId.class`).
 - `concreteTypes` — only for polymorphism (Step P).
+
+Required form (literal — do NOT shorten or rely on defaults):
+```java
+@EventSourced(tagKey = "<EntityName>", idType = <IdType>.class)
+public class <EntityName> { ... }
+```
 
 ### Path B — framework Configurer (`wiring == framework-config`)
 
 B.1. `@Aggregate`/`@AggregateRoot` (AF4) → `@EventSourcedEntity` (`org.axonframework.eventsourcing.annotation.EventSourcedEntity`). Remove the AF4 import. Same `snapshotTriggerDefinition` drop as Path A.
 
-B.2. Configure attributes — same `tagKey` / `idType` / `concreteTypes` semantics as Path A.
+B.2. Configure attributes — same rules as Path A: **always emit `tagKey` and `idType` explicitly** (the framework defaults `tagKey` to the simple class name, but writing it literally is mandatory — otherwise renames break routing silently).
+
+Required form (literal):
+```java
+@EventSourcedEntity(tagKey = "<EntityName>", idType = <IdType>.class)
+public class <EntityName> { ... }
+```
 
 B.3. Register the entity in the project's `Configurer` setup. Typical file names: `*Configuration.java`, `*Application.java`, `*Bootstrap.java`, or per-slice `<Slice>Configuration.java`.
 

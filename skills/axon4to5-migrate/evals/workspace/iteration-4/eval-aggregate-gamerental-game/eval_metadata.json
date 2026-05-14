@@ -1,0 +1,80 @@
+{
+  "eval_id": 12,
+  "eval_name": "aggregate-gamerental-game",
+  "recipe": "aggregate",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate the AF4 aggregate at INPUT_PATH to AF5 per references/aggregate.md. Pinned decisions: license=axoniq-commercial, wiring=framework-config (this project uses the framework Configurer API, NOT Spring Boot stereotypes \u2014 Path B), build-tool=maven. No blockers fire on this aggregate (no snapshotTriggerDefinition, no DeadlineHandler, no Map-typed AggregateMember). Save the migrated Java to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/gamerental/Game.java",
+  "output_filename": "Game.java",
+  "assertions": [
+    {
+      "text": "Path B core annotation @EventSourcedEntity applied",
+      "type": "grep_require",
+      "pattern": "@EventSourcedEntity"
+    },
+    {
+      "text": "tagKey set on @EventSourcedEntity",
+      "type": "grep_require",
+      "pattern": "tagKey"
+    },
+    {
+      "text": "AF5 EventSourcedEntity import",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.EventSourcedEntity"
+    },
+    {
+      "text": "AF5 EventSourcingHandler import",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.EventSourcingHandler"
+    },
+    {
+      "text": "AF5 EntityCreator import (.reflection. infix mandatory)",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.reflection.EntityCreator"
+    },
+    {
+      "text": "AF5 CommandHandler import (.messaging. infix mandatory)",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.annotation.CommandHandler"
+    },
+    {
+      "text": "AF5 EventAppender import (.messaging. infix mandatory)",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.gateway.EventAppender"
+    },
+    {
+      "text": "EventAppender used as command-handler parameter (any local name)",
+      "type": "grep_require",
+      "pattern": "EventAppender "
+    },
+    {
+      "text": "EventAppender .append() invoked (any local name)",
+      "type": "grep_require",
+      "pattern": ".append("
+    },
+    {
+      "text": "@EntityCreator on no-arg constructor",
+      "type": "grep_require",
+      "pattern": "@EntityCreator"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle"
+    },
+    {
+      "text": "AF4 @CreationPolicy removed",
+      "type": "grep_forbid",
+      "pattern": "@CreationPolicy"
+    },
+    {
+      "text": "Path A Spring annotation NOT used (this is Path B)",
+      "type": "grep_forbid",
+      "pattern": "@EventSourced(tagKey"
+    }
+  ]
+}

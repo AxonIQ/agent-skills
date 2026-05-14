@@ -1,0 +1,81 @@
+{
+  "eval_id": 12,
+  "eval_name": "aggregate-gamerental-game",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-4/eval-aggregate-gamerental-game/with_skill/outputs/Game.java",
+  "output_exists": true,
+  "passed": 14,
+  "total": 14,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "Path B core annotation @EventSourcedEntity applied",
+      "passed": true,
+      "evidence": "found `@EventSourcedEntity`"
+    },
+    {
+      "text": "tagKey set on @EventSourcedEntity",
+      "passed": true,
+      "evidence": "found `tagKey`"
+    },
+    {
+      "text": "AF5 EventSourcedEntity import",
+      "passed": true,
+      "evidence": "found `org.axonframework.eventsourcing.annotation.EventSourcedEntity`"
+    },
+    {
+      "text": "AF5 EventSourcingHandler import",
+      "passed": true,
+      "evidence": "found `org.axonframework.eventsourcing.annotation.EventSourcingHandler`"
+    },
+    {
+      "text": "AF5 EntityCreator import (.reflection. infix mandatory)",
+      "passed": true,
+      "evidence": "found `org.axonframework.eventsourcing.annotation.reflection.EntityCreator`"
+    },
+    {
+      "text": "AF5 CommandHandler import (.messaging. infix mandatory)",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.commandhandling.annotation.CommandHandler`"
+    },
+    {
+      "text": "AF5 EventAppender import (.messaging. infix mandatory)",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.gateway.EventAppender`"
+    },
+    {
+      "text": "EventAppender used as command-handler parameter (any local name)",
+      "passed": true,
+      "evidence": "found `EventAppender `"
+    },
+    {
+      "text": "EventAppender .append() invoked (any local name)",
+      "passed": true,
+      "evidence": "found `.append(`"
+    },
+    {
+      "text": "@EntityCreator on no-arg constructor",
+      "passed": true,
+      "evidence": "found `@EntityCreator`"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "passed": true,
+      "evidence": "forbidden substring `@AggregateIdentifier` absent \u2014 good"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "passed": true,
+      "evidence": "forbidden substring `AggregateLifecycle` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @CreationPolicy removed",
+      "passed": true,
+      "evidence": "forbidden substring `@CreationPolicy` absent \u2014 good"
+    },
+    {
+      "text": "Path A Spring annotation NOT used (this is Path B)",
+      "passed": true,
+      "evidence": "forbidden substring `@EventSourced(tagKey` absent \u2014 good"
+    }
+  ]
+}

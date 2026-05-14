@@ -1,0 +1,81 @@
+{
+  "eval_id": 12,
+  "eval_name": "aggregate-gamerental-game",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-4/eval-aggregate-gamerental-game/without_skill/outputs/Game.java",
+  "output_exists": false,
+  "passed": 0,
+  "total": 14,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "Path B core annotation @EventSourcedEntity applied",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @EventSourcedEntity` not evaluable"
+    },
+    {
+      "text": "tagKey set on @EventSourcedEntity",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: tagKey` not evaluable"
+    },
+    {
+      "text": "AF5 EventSourcedEntity import",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.eventsourcing.annotation.EventSourcedEntity` not evaluable"
+    },
+    {
+      "text": "AF5 EventSourcingHandler import",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.eventsourcing.annotation.EventSourcingHandler` not evaluable"
+    },
+    {
+      "text": "AF5 EntityCreator import (.reflection. infix mandatory)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.eventsourcing.annotation.reflection.EntityCreator` not evaluable"
+    },
+    {
+      "text": "AF5 CommandHandler import (.messaging. infix mandatory)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.messaging.commandhandling.annotation.CommandHandler` not evaluable"
+    },
+    {
+      "text": "AF5 EventAppender import (.messaging. infix mandatory)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: org.axonframework.messaging.eventhandling.gateway.EventAppender` not evaluable"
+    },
+    {
+      "text": "EventAppender used as command-handler parameter (any local name)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: EventAppender ` not evaluable"
+    },
+    {
+      "text": "EventAppender .append() invoked (any local name)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: .append(` not evaluable"
+    },
+    {
+      "text": "@EntityCreator on no-arg constructor",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_require: @EntityCreator` not evaluable"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @AggregateIdentifier` not evaluable"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: AggregateLifecycle` not evaluable"
+    },
+    {
+      "text": "AF4 @CreationPolicy removed",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @CreationPolicy` not evaluable"
+    },
+    {
+      "text": "Path A Spring annotation NOT used (this is Path B)",
+      "passed": false,
+      "evidence": "output file missing \u2014 assertion `grep_forbid: @EventSourced(tagKey` not evaluable"
+    }
+  ]
+}

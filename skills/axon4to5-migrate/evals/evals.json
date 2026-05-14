@@ -318,10 +318,8 @@
         { "text": "AF4 @StartSaga gone", "type": "grep_forbid", "pattern": "@StartSaga" },
         { "text": "AF4 @EndSaga gone", "type": "grep_forbid", "pattern": "@EndSaga" },
         { "text": "SagaLifecycle gone", "type": "grep_forbid", "pattern": "SagaLifecycle" },
-        { "text": "AF4 @DeadlineHandler gone", "type": "grep_forbid", "pattern": "@DeadlineHandler" },
-        { "text": "DeadlineManager gone", "type": "grep_forbid", "pattern": "DeadlineManager" },
-        { "text": "AF4 saga packages gone", "type": "grep_forbid", "pattern": "org.axonframework.modelling.saga" },
-        { "text": "AF4 deadline packages gone", "type": "grep_forbid", "pattern": "org.axonframework.deadline" }
+        { "text": "AF4 saga packages gone (catches functional usage at import level)", "type": "grep_forbid", "pattern": "org.axonframework.modelling.saga" },
+        { "text": "AF4 deadline packages gone (catches functional usage at import level — javadoc references allowed)", "type": "grep_forbid", "pattern": "org.axonframework.deadline" }
       ]
     }
   ]

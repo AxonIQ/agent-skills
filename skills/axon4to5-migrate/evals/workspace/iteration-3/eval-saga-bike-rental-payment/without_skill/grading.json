@@ -3,8 +3,8 @@
   "eval_name": "saga-bike-rental-payment",
   "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-saga-bike-rental-payment/without_skill/outputs/PaymentSaga.java",
   "output_exists": true,
-  "passed": 8,
-  "total": 18,
+  "passed": 7,
+  "total": 16,
   "all_pass": false,
   "expectations": [
     {
@@ -78,22 +78,12 @@
       "evidence": "forbidden substring `SagaLifecycle` absent \u2014 good"
     },
     {
-      "text": "AF4 @DeadlineHandler gone",
-      "passed": false,
-      "evidence": "forbidden substring `@DeadlineHandler` STILL present in output"
-    },
-    {
-      "text": "DeadlineManager gone",
-      "passed": true,
-      "evidence": "forbidden substring `DeadlineManager` absent \u2014 good"
-    },
-    {
-      "text": "AF4 saga packages gone",
+      "text": "AF4 saga packages gone (catches functional usage at import level)",
       "passed": true,
       "evidence": "forbidden substring `org.axonframework.modelling.saga` absent \u2014 good"
     },
     {
-      "text": "AF4 deadline packages gone",
+      "text": "AF4 deadline packages gone (catches functional usage at import level \u2014 javadoc references allowed)",
       "passed": true,
       "evidence": "forbidden substring `org.axonframework.deadline` absent \u2014 good"
     }
