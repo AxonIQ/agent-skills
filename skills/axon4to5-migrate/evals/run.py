@@ -106,6 +106,44 @@ def prep(args: argparse.Namespace) -> int:
         print(f"no evals match filter `{args.filter}`")
         return 1
 
+    # If --resolver=automatic, validate every eval's recipe auto-resolves before prepping
+    if getattr(args, "resolver", "interactive") == "automatic":
+        from resolver import resolve_recipe, _parse_kv
+
+        pinned = _parse_kv(getattr(args, "pinned", []) or [])
+        pre = _parse_kv(getattr(args, "decision", []) or [])
+        if not pinned:
+            print("ERROR: --resolver=automatic requires --pinned key=value ... (CI guardrail)",
+                  file=sys.stderr)
+            return 2
+
+        print(f"# Resolver mode: automatic\n# Pinned state: {pinned}\n")
+        any_unresolved = False
+        for ev in evals:
+            recipe_path = SKILL_DIR / "references" / f"{ev['recipe']}.md"
+            if not recipe_path.is_file():
+                print(f"WARN  {ev['name']} :: recipe file not found ({recipe_path}) — skipping resolution",
+                      file=sys.stderr)
+                continue
+            report = resolve_recipe(recipe_path, pinned, pre)
+            if report.unresolved or report.fail_decisions:
+                any_unresolved = True
+                print(f"❌ {ev['name']} ({ev['recipe']}): "
+                      f"{len(report.unresolved)} unresolved · {len(report.fail_decisions)} failed")
+                for k in report.unresolved:
+                    print(f"      ⚠️  {k} → fallback: ask-user (cannot resolve in automatic mode)")
+                for k in report.fail_decisions:
+                    print(f"      ❌ {k} → fallback: fail")
+            else:
+                resolved_names = ", ".join(f"{k}={v}" for k, v in report.decisions.items())
+                print(f"✅ {ev['name']} ({ev['recipe']}): all decisions resolved — {resolved_names}")
+        if any_unresolved:
+            print("\nERROR: automatic mode cannot proceed — some decisions need user input.\n"
+                  "      Either pre-pin them via --decision key=value, or run with --resolver=interactive.",
+                  file=sys.stderr)
+            return 1
+        print()
+
     print(f"# Workspace: {relpath_from_repo(it)}\n")
     for ev in evals:
         ed = eval_dir(it, ev["name"])
@@ -335,16 +373,53 @@ def status(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# resolve  (uses resolver.py — Decision-points / Auto-policy DSL)
+
+
+def resolve(args: argparse.Namespace) -> int:
+    """Print the auto-policy resolution for a recipe given a pinned state.
+
+    Useful as a CI guardrail: `run.py resolve <recipe> --pinned ...` returns exit 0
+    iff every decision auto-resolves (i.e. resolver_mode=automatic would succeed
+    on this recipe without any AskUserQuestion).
+    """
+    from resolver import resolve_recipe, _parse_kv, _print_report
+
+    recipe_path = SKILL_DIR / "references" / f"{args.recipe}.md"
+    if not recipe_path.is_file():
+        print(f"ERROR: recipe not found at {recipe_path}", file=sys.stderr)
+        return 2
+
+    pinned = _parse_kv(args.pinned)
+    pre = _parse_kv(args.decision)
+    report = resolve_recipe(recipe_path, pinned, pre)
+    _print_report(args.recipe, pinned, report)
+
+    return 1 if (report.unresolved or report.fail_decisions) else 0
+
+
+# ---------------------------------------------------------------------------
 # entrypoint
 
 
 def main() -> int:
+    # resolver.py lives in the same dir — make its module importable
+    sys.path.insert(0, str(EVALS_DIR))
+
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_prep = sub.add_parser("prep")
     p_prep.add_argument("--iteration", type=int, default=None)
     p_prep.add_argument("--filter", type=str, default=None)
+    p_prep.add_argument("--resolver", choices=["interactive", "automatic"], default="interactive",
+                        help="If 'automatic', validate every eval's recipe auto-resolves all decisions "
+                             "against the given --pinned state before prepping. Fail prep if any decision "
+                             "would need AskUserQuestion (CI guardrail).")
+    p_prep.add_argument("--pinned", action="append", default=[],
+                        help="Pinned project state key=value (repeatable). Required when --resolver=automatic.")
+    p_prep.add_argument("--decision", action="append", default=[],
+                        help="Pre-pinned decision answer key=value (repeatable). Used to bypass interactive prompts.")
 
     p_grade = sub.add_parser("grade")
     p_grade.add_argument("--iteration", type=int, default=None)
@@ -356,8 +431,22 @@ def main() -> int:
     p_status = sub.add_parser("status")
     p_status.add_argument("--iteration", type=int, default=None)
 
+    p_resolve = sub.add_parser("resolve",
+                                help="Resolve a recipe's Decision points via auto-policy + pinned state.")
+    p_resolve.add_argument("recipe", help="Recipe name (matches references/<name>.md)")
+    p_resolve.add_argument("--pinned", action="append", default=[],
+                            help="Pinned project state key=value (repeatable).")
+    p_resolve.add_argument("--decision", action="append", default=[],
+                            help="Pre-pinned decision answer key=value (repeatable).")
+
     args = ap.parse_args()
-    return {"prep": prep, "grade": grade, "aggregate": aggregate, "status": status}[args.cmd](args)
+    return {
+        "prep": prep,
+        "grade": grade,
+        "aggregate": aggregate,
+        "status": status,
+        "resolve": resolve,
+    }[args.cmd](args)
 
 
 if __name__ == "__main__":
