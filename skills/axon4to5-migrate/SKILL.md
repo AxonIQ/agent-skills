@@ -3,7 +3,6 @@ name: axon4to5-migrate
 description: >-
   Migrate Axon Framework 4 project to Axon(iq) Framework 5.
 argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>]"
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/list-recipes.sh)
 disable-model-invocation: true
 ---
 
@@ -21,7 +20,16 @@ disable-model-invocation: true
 
 ## Available recipes (auto-listed)
 
-!`${CLAUDE_SKILL_DIR}/scripts/list-recipes.sh`
+Use Glob to find all `references/recipes/*/RECIPE.md` (skip dirs starting with `_`). For each file, read YAML frontmatter to extract `id`, `title`, `description`, and the `## Applicable` section body. Format output as:
+
+```
+- file: references/recipes/<dir>/RECIPE.md
+  id: <id>
+  title: <title>
+  description: <description>
+  applicable: |
+    <applicable section content, or "(none)" if missing>
+```
 
 ## Inputs
 
