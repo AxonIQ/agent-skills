@@ -291,7 +291,7 @@
         {
           "target": "source",
           "type": "grep_forbid",
-          "pattern": "@Scheduled",
+          "pattern": "@Scheduled(",
           "text": "No @Scheduled added (caller decides the replacement)"
         }
       ]

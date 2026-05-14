@@ -132,48 +132,122 @@ MUST NOT:
 ## Queue flow
 
 `$SOURCE` is referenced throughout the recipe sub-flow as the argument passed to the skill from `source`.
-Every mode produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty
-queue depends on the mode.
+
+> `[[Execute recipe sub-flow]]` = [`references/recipes/FLOW.md`](references/recipes/FLOW.md), loaded at skill start. `[[Resolve blocker]]` = [`references/recipes/BLOCKER_RESOLUTION.md`](references/recipes/BLOCKER_RESOLUTION.md), budget = 1 attempt per item; on exhaustion item is marked blocked and drain continues.
+
+### Single mode flow
 
 ```mermaid
 flowchart TD
-    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration,<br/>mode, execution"]
-    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal: Skill axon4to5-openrewrite,<br/>framework=$framework, idempotent)"]]
+    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration, source"]
+    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
     ORW -- fail --> XORW[STOP: bulk-rewrite failed]
-    ORW -- ok --> B["! list-recipes.sh<br/>(recipes catalog)"]
-    B --> C{mode}
-%% mode-specific producers — all feed the same queue
-    C -- single --> P1["<b>Match</b><br/>request+source<br/>→ enqueue 1 item"]
-    C -- project --> P2["<b>Discover</b><br/>execution=inline: Grep/Glob inline<br/>execution=subagent: 1 Explore agent<br/>per recipe (parallel batch)<br/>scan project per applicable<br/>→ <b>Enqueue</b> N items"]
-    C -- other --> X[STOP: unsupported mode]
-    P1 --> Q[(Migration queue)]
-    P2 --> Q
-%% shared processing loop — items stay in the queue, state transitions write back to it
-    Q --> L{<b>Drain</b><br/>any pending<br/>items in queue?}
-    L -- yes --> INP["pick next pending →<br/>mark in-progress in queue"]
-    INP --> W[["<b>Execute</b> recipe sub-flow on item<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
-    W --> R{<b>RESULT?</b>}
-    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>per BLOCKER_RESOLUTION.md<br/>(orchestrator-side fixup<br/>using the recipe's NOTES)"]]
-    BR --> BRQ{<b>Resolved?</b><br/>budget = 1<br/>attempt per item}
-    BRQ -- yes --> W
-    BRQ -- "no / budget exhausted" --> BLK["mark item → blocked<br/>attach RESULT=Blocker + NOTES<br/>(🚧 caller must resolve)"]
+    ORW -- ok --> B["list-recipes (catalog)"]
+    B --> MATCH{"<b>Match</b><br/>request + source → recipe"}
+    MATCH -- ambiguous --> ASK["AskUserQuestion<br/>(show titles, dispatch by id)"]
+    ASK --> EXEC
+    MATCH -- "no match" --> XNOMATCH[STOP: no applicable recipe]
+    MATCH -- matched --> EXEC[["<b>Execute</b> recipe sub-flow<br/>(FLOW.md)"]]
+    EXEC --> R{<b>RESULT?</b>}
+    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>(BLOCKER_RESOLUTION.md)"]]
+    BR --> BRQ{"Resolved?<br/>budget = 1"}
+    BRQ -- yes --> EXEC
+    BRQ -- "no / exhausted" --> BLK["mark blocked<br/>(🚧 caller must resolve)"]
     R -- "Blocker (already retried)" --> BLK
-    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>(no DCB, keep AggregateBased<br/>EventStorageEngine)"]
-    VER --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⏭ Rejected | ❌ Failure)"]
-    DONE --> Q
-    BLK --> Q
-    L -- no --> RPT["<b>Report</b> &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
+    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>same architecture as AF4"]
+    VER --> RPT["<b>Report</b> &amp; END"]
+    BLK --> RPT
 ```
 
-> The `[[Execute recipe sub-flow]]` node is the **nested** sub-flow defined in
-> [`references/recipes/FLOW.md`](references/recipes/FLOW.md) (loaded at skill start). The queue only reacts to the
-> recipe's emitted result.
->
-> The `[[Resolve blocker]]` node executes the orchestrator-side blocker-fixup playbook in
-> [`references/recipes/BLOCKER_RESOLUTION.md`](references/recipes/BLOCKER_RESOLUTION.md). Budget is **one** resolution
-> attempt per item: if it succeeds, the same item re-enters the recipe sub-flow once; if it fails or a second Blocker
-> comes back from the re-attempt, the item is marked blocked and the queue moves on (the queue never halts on a single
-> blocker — caller resolves and re-invokes the skill).
+### Project mode flow
+
+```mermaid
+flowchart TD
+    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration, execution"]
+    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
+    ORW -- fail --> XORW[STOP: bulk-rewrite failed]
+    ORW -- ok --> B["list-recipes (catalog)"]
+    B --> DISC["<b>Discover</b> (in order — see below)<br/>execution=inline: Grep/Glob<br/>execution=subagent: 1 Explore per recipe (parallel)<br/>→ <b>Enqueue</b> N items"]
+    DISC --> Q[(Migration queue)]
+    Q --> L{"<b>Drain</b><br/>pending?"}
+    L -- yes --> INP["pick next → in-progress"]
+    INP --> W[["<b>Execute</b> recipe sub-flow<br/>execution=inline: main session<br/>execution=subagent: general-purpose (parallel batch)"]]
+    W --> R{<b>RESULT?</b>}
+    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>(BLOCKER_RESOLUTION.md)"]]
+    BR --> BRQ{"Resolved?<br/>budget = 1"}
+    BRQ -- yes --> W
+    BRQ -- "no / exhausted" --> BLK["mark blocked<br/>(🚧 caller must resolve)"]
+    R -- "Blocker (already retried)" --> BLK
+    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>same architecture as AF4"]
+    VER --> DONE["mark done in queue"]
+    DONE --> Q
+    BLK --> Q
+    L -- no --> DBG_COMP
+
+    subgraph DEBUG ["🔍 Debugging — all recipes applied, build still red"]
+        direction TB
+        DBG_COMP["<b>Full compile</b><br/>mvn compile / gradle classes"]
+        DBG_REDISC["<b>Re-discover</b><br/>re-scan applicable predicates<br/>any recipe match remaining errors?"]
+        DBG_COMP -- "⚠️ errors" --> DBG_REDISC
+    end
+
+    DBG_COMP -- "✅ green" --> FIN["<b>Finalize</b><br/>remove isolated-* scaffolding<br/>final compile · count by recipe"]
+    DBG_REDISC -- "new candidates" --> REENQ["re-enqueue as pending"]
+    REENQ --> Q
+    DBG_REDISC -- "nothing new<br/>recipes exhausted" --> FIN
+    FIN --> RPT["<b>Report</b> &amp; END"]
+```
+
+**Discovery order** — Discover scans recipes in this fixed sequence. Aggregates first: they define the events and commands consumed by downstream types.
+
+| # | Recipe |
+|---|--------|
+| 1 | `aggregate` |
+| 2 | `event-processor` |
+| 3 | `command-gateway` |
+| 4 | `query-gateway` |
+| 5 | `interceptor` |
+| 6 | `saga` |
+
+## Debugging loop (project mode only)
+
+Entered when drain empties but build is still red. All known recipes have been applied — this phase asks: "is there still something a recipe can fix?"
+
+1. **Full compile** — `mvn compile` / `gradle classes` (Java + Kotlin). Green → exit loop → Finalize.
+2. Errors remain:
+   - **Re-discover** — re-scan every recipe's `applicable` predicates against current codebase. Sources mutated during drain may now match recipes that rejected earlier.
+   - New `(recipe, source)` pairs not already terminal → re-enqueue as `pending`, resume drain (loop repeats).
+   - Nothing new → all applicable recipes exhausted → Finalize.
+
+## Finalize (project mode only)
+
+1. **Cleanup scaffolding** — `Grep` all `pom.xml` / `build.gradle(.kts)` for `isolated-*` Maven profiles and `isolated*` Gradle source-sets added by `axon4to5-isolatedtest`. `Edit` each build file to remove found blocks. Commit: `chore(af5): remove isolated-test scaffolding`. Skip if none found.
+2. **Final compile** — full compile; record pass/fail + error count in `progress.md`. Commit: `chore(af5): record final compile status`.
+3. **Count results** — group queue rows by recipe type × status (Success / Rejected / Failure / Blocked).
+4. → Render report.
+
+## Report format (project mode)
+
+Emit this block to the user on `on:session-end`:
+
+```
+🏁 Migration complete — all applicable recipes exhausted.
+
+| Recipe type     | ✅ Success | ⏭ Rejected | ❌ Failure | 🚧 Blocked |
+|-----------------|-----------|------------|-----------|-----------|
+| aggregate       |     N     |     N      |     N     |     N     |
+| event-processor |     N     |     N      |     N     |     N     |
+| …               |           |            |           |           |
+
+Compilation: ✅ green
+     — or —
+Compilation: ⚠️ N error(s) remain — manual intervention required.
+
+Blocked items (caller must resolve):
+- <recipe>/<source>: <blocker notes>
+
+See .axon4to5-migration/progress.md for full details.
+```
 
 ## Recipe sub-flow
 
