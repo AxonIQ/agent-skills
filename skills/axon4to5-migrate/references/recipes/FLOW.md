@@ -34,7 +34,7 @@ flowchart TD
 
     subgraph PLAN_APPLY ["Plan-Apply (re-entered per iteration)"]
         direction TB
-        S6["<b>Plan Migration</b><br/>(re)compute the plan each visit<br/>using # References + # Toolbox + # Examples + scope<br/>consult # Gotchas for past learnings<br/>edits sufficient to flip every<br/>mismatched criterion → match"]
+        S6["<b>Plan Migration</b><br/>(re)compute the plan each visit<br/>using # References + # Toolbox + # Use cases + scope<br/>(# Use cases = full before/after transformations,<br/>loaded when their apply-condition matches)<br/>consult # Gotchas for past learnings<br/>edits sufficient to flip every<br/>mismatched criterion → match"]
         S7["<b>Apply Migration Plan</b><br/>execute edits within scope only<br/>respect # Out of Scope<br/>no drive-by refactors"]
         S6 --> S7
     end

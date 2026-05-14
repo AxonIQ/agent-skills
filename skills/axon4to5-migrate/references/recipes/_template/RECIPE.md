@@ -106,25 +106,39 @@ Do NOT copy content from the catalog into the recipe — only the path and the a
 
 Recipe-specific scripts, prompts, pre-baked transformations, or step-by-step procedures consulted at FLOW.md S6 (Plan Migration) — anything NOT already covered by a migration path in `# References`. Each entry has an *apply-condition*. The baseline tool ("use migration paths to assemble the plan") is always in effect and does NOT need to be listed here (see `references/recipes/DEFAULT.md` § Toolbox baseline).
 
-<example>
-- name: Migration procedure
-  apply-condition: always
-  steps:
-    1. Rename the aggregate class from `*Aggregate` suffix to `*Entity` (Axon 5 naming).
-    2. Replace `@Aggregate` with `@EventSourcedEntity`.
-    3. For each `@CommandHandler` constructor → factory method returning the entity.
-    4. For each `@EventSourcingHandler` → keep signature, verify state mutation pattern matches Axon 5.
-    5. Re-wire repository injection points (Axon 5 uses `EventSourcingRepository<Entity, Id>` directly).
-    6. Run the isolated test via `axon4to5-isolatedtest` skill.
-</example>
+Toolbox is for **procedure-level snippets** — one transformation step, a small before/after fragment, a regex prompt. Full end-to-end transformations of a complete component belong in `# Use cases` instead.
 
-## Examples
+Format: one `###` subsection per procedure. First line under the heading states the apply-condition; body is plain markdown — numbered steps, prose, fenced before/after code blocks, whatever reads best. Reference `file:line` and Axon symbols (e.g. `@EventSourcedEntity`) inline as backtick code.
 
-Worked examples the LLM can imitate at FLOW.md S6 (Plan Migration). Each entry MUST declare an *apply-condition* — a fact about current scope that triggers loading the example.
+Example entries (not wrapped in `<example>` because the rich markdown breaks HTML-block parsing):
 
-<example>
-<!-- TODO: Fill during iterations. -->
-</example>
+### Migration procedure
+
+*Apply-condition:* always.
+
+1. Rename the aggregate class from `*Aggregate` suffix to `*Entity` (Axon 5 naming).
+2. Replace `@Aggregate` with `@EventSourcedEntity`.
+3. For each `@CommandHandler` constructor → factory method returning the entity.
+4. For each `@EventSourcingHandler` → keep signature, verify the state-mutation pattern matches Axon 5.
+5. Re-wire repository injection points (Axon 5 uses `EventSourcingRepository<Entity, Id>` directly).
+6. Run the isolated test via the `axon4to5-isolatedtest` Skill.
+
+## Use cases
+
+Pointers to full, real-world before/after transformations the LLM can read and imitate at FLOW.md S6 (Plan Migration). Each use case is its own markdown file under `references/recipes/<recipe>/use-cases/*.md` containing: a short "Why this case is interesting" intro, **Before (AF4)** and **After (AF5)** code blocks, **What changed** bullets, and **Caveats**. Use this section when a single end-to-end example clarifies the migration far better than a sequence of Toolbox procedures.
+
+Each entry MUST declare an *apply-condition* — a fact about current scope that triggers loading the file. Recipes do NOT inline the use-case content here; only the path + apply-condition.
+
+Format:
+
+```
+- path: use-cases/01-simple-aggregate.md
+  apply-condition: $SOURCE has no @AggregateMember children and no creation policy
+- path: use-cases/02-creation-policy.md
+  apply-condition: $SOURCE has @CreationPolicy on at least one command handler
+```
+
+Do NOT invent paths; only list files that exist under the recipe's `use-cases/` directory.
 
 ## Gotchas
 
