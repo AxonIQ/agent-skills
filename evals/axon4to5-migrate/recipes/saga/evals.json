@@ -1,0 +1,373 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "saga",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate skill with the saga recipe in single mode. Coverage: simple saga to @Component+JPA state (no deadline → Success), saga with DeadlineManager → Blocker B1 with partial migration (saga structure done, deadline code commented out — applies to both native and spring configs), and a rejected non-saga (aggregate). Fixtures live in evals/fixtures/synthetic/ and evals/fixtures/axon4/heroes/.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spring-simple-saga-to-component",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. PaymentSaga.java is an AF4 saga: @Saga, @StartSaga + @SagaEventHandler(associationProperty = \"paymentId\"), @EndSaga + @SagaEventHandler, field CommandGateway (transient @Autowired), field paymentId. Apply the saga recipe: (1) replace @Saga with @Component @DisallowReplay; (2) create PaymentState.java (@Entity with @Id String paymentId, Status enum PENDING/COMPLETED, long timestamp, no-arg + all-args constructors, accessors); (3) create PaymentStateRepository.java (JpaRepository<PaymentState, String>); (4) rewrite @SagaEventHandler methods to @EventHandler — start handler saves new PaymentState + dispatches via CommandDispatcher parameter, end handler updates state status; (5) remove @Autowired field CommandGateway (replace with CommandDispatcher method param); (6) remove all saga imports. Create the two new files next to PaymentSaga in the same outputs/ directory. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "PaymentSaga rewritten to @Component @DisallowReplay + @EventHandler; PaymentState.java and PaymentStateRepository.java created; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/PaymentSaga.java"
+      ],
+      "expectations": [
+        "@Component annotation on PaymentSaga",
+        "@DisallowReplay annotation on PaymentSaga",
+        "AF5 @EventHandler import",
+        "AF5 @DisallowReplay import",
+        "@Component import (Spring stereotype)",
+        "No @Saga annotation",
+        "No @SagaEventHandler annotation",
+        "No @StartSaga annotation",
+        "No @EndSaga annotation",
+        "No SagaLifecycle reference",
+        "No org.axonframework.modelling.saga import",
+        "No org.axonframework.spring.stereotype.Saga import",
+        "Result block marks Success with axon4to5-saga"
+      ],
+      "category": "spring-simple-saga",
+      "fixture": "synthetic/PaymentSaga.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@DisallowReplay",
+          "text": "@DisallowReplay annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler",
+          "text": "AF5 @EventHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay",
+          "text": "AF5 @DisallowReplay import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.springframework.stereotype.Component",
+          "text": "@Component import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@EventHandler",
+          "text": "@EventHandler annotation used"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Saga",
+          "text": "AF4 @Saga annotation removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@SagaEventHandler",
+          "text": "AF4 @SagaEventHandler removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@StartSaga",
+          "text": "AF4 @StartSaga removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@EndSaga",
+          "text": "AF4 @EndSaga removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "SagaLifecycle",
+          "text": "SagaLifecycle removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.modelling.saga",
+          "text": "AF4 saga package import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.spring.stereotype.Saga",
+          "text": "AF4 @Saga import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-saga",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "native-saga-deadline-blocker-partial",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE skip-openrewrite=true`. PaymentSagaWithDeadline.java is an AF4 saga with DeadlineManager + @DeadlineHandler. The saga recipe detects B1 (DeadlineManager present — applies to ALL configs including native). Apply partial migration first: (1) replace @Saga with @Component @DisallowReplay; (2) create PaymentSagaWithDeadlineState.java (@Entity) and PaymentSagaWithDeadlineStateRepository.java (JpaRepository) in outputs/; (3) rewrite @SagaEventHandler to @EventHandler with repository lookups; (4) COMMENT OUT the DeadlineManager field with 'TODO AF5: DeadlineManager removed'; (5) COMMENT OUT deadlineManager.schedule(...) call sites with TODO; (6) COMMENT OUT the entire @DeadlineHandler method with TODO; (7) keep DeadlineManager imports as comments. Then emit Blocker B1. Do NOT delete deadline code — comment it out. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Partial migration applied (@Component, @EventHandler done; deadline code commented out); Result: 🚧 Blocker B1.",
+      "files": [
+        "evals/fixtures/synthetic/PaymentSagaWithDeadline.java"
+      ],
+      "expectations": [
+        "Result block marks Blocker",
+        "Notes reference B1 or DeadlineManager",
+        "@Component added (partial migration done)",
+        "@DisallowReplay added (partial migration done)",
+        "No @Saga annotation (migrated)",
+        "No @SagaEventHandler annotation (migrated)",
+        "DeadlineManager still present as comment (not deleted)",
+        "Recipe identifier axon4to5-saga present"
+      ],
+      "category": "native-deadline-blocker",
+      "fixture": "synthetic/PaymentSagaWithDeadline.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "native",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Blocker",
+      "expected_blocker": "B1",
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-saga",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component present (partial migration applied)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@DisallowReplay",
+          "text": "@DisallowReplay present (partial migration applied)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "DeadlineManager",
+          "text": "DeadlineManager still in file (as comment)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Saga",
+          "text": "@Saga removed (migrated)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@SagaEventHandler",
+          "text": "@SagaEventHandler removed (migrated)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "spring-saga-deadline-blocker-partial",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. PaymentSagaWithDeadline.java is an AF4 saga with DeadlineManager + @DeadlineHandler. The saga recipe detects B1 (DeadlineManager present). Apply partial migration first: (1) replace @Saga with @Component @DisallowReplay; (2) create PaymentSagaWithDeadlineState.java and PaymentSagaWithDeadlineStateRepository.java in outputs/; (3) rewrite @SagaEventHandler to @EventHandler with repository lookups; (4) COMMENT OUT the DeadlineManager field with 'TODO AF5: DeadlineManager removed — design replacement (e.g. @Scheduled poller on state entity)'; (5) COMMENT OUT deadlineManager.schedule(...) call sites with TODO; (6) COMMENT OUT the entire @DeadlineHandler method block with TODO; (7) keep DeadlineManager imports as comments. Do NOT add @Scheduled — that is the caller's decision. Then emit Blocker B1 with Options (skip/revert/solve-manually). Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Partial migration applied (@Component, @EventHandler done; deadline code commented out); Result: 🚧 Blocker B1.",
+      "files": [
+        "evals/fixtures/synthetic/PaymentSagaWithDeadline.java"
+      ],
+      "expectations": [
+        "Result block marks Blocker B1",
+        "@Component added (partial migration done)",
+        "@DisallowReplay added",
+        "AF5 @EventHandler import present",
+        "No @Saga annotation (migrated)",
+        "No @SagaEventHandler annotation (migrated)",
+        "DeadlineManager still in file as comment (not deleted)",
+        "No @Scheduled added (caller's decision)",
+        "Recipe identifier axon4to5-saga present"
+      ],
+      "category": "spring-deadline-blocker",
+      "fixture": "synthetic/PaymentSagaWithDeadline.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Blocker",
+      "expected_blocker": "B1",
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-saga",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component present (partial migration applied)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@DisallowReplay",
+          "text": "@DisallowReplay present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler",
+          "text": "AF5 @EventHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "DeadlineManager",
+          "text": "DeadlineManager still in file (as comment)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Saga",
+          "text": "@Saga removed (migrated)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@SagaEventHandler",
+          "text": "@SagaEventHandler removed (migrated)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Scheduled",
+          "text": "No @Scheduled added (caller decides the replacement)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "aggregate-rejected",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. Calendar.java is an event-sourced aggregate (@Aggregate + @EventSourcingHandler). The saga recipe's Applicable predicate 1 must reject it. Source MUST stay byte-identical — no @Component, no @DisallowReplay, no @EventHandler AF5 import, no state entity created. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Aggregate rejected by predicate 1; source untouched; Result: ⏭️ Rejected with route to aggregate recipe.",
+      "files": [
+        "evals/fixtures/axon4/heroes/Calendar.java"
+      ],
+      "expectations": [
+        "Result block marks Rejected (⏭️)",
+        "Notes name aggregate as the routing target",
+        "Source untouched: @Aggregate still present",
+        "No @Component added",
+        "No @DisallowReplay added",
+        "Recipe identifier present"
+      ],
+      "category": "rejected-aggregate",
+      "fixture": "axon4/heroes/Calendar.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Rejected",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ⏭",
+          "text": "Rejected emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Rejected",
+          "text": "Rejected text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "aggregate",
+          "text": "Notes name aggregate as routing target"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-saga",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Aggregate",
+          "text": "Source untouched: @Aggregate present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Component",
+          "text": "No @Component added"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@DisallowReplay",
+          "text": "No @DisallowReplay added"
+        }
+      ]
+    }
+  ]
+}
