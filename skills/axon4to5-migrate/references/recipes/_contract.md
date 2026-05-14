@@ -27,19 +27,21 @@ flowchart TD
     S4 -- yes --> BL[/"RESULT: Blocker<br/>NOTES: construct + location"/]
     S4 -- "no (no edits yet)" --> S5
 
-    S5["<b>5. Check Success Criteria</b><br/>evaluate # Success Criteria<br/>using recipe's aggregation rule<br/>(all / subset / weighted)<br/>on mismatch: save error → last_failure"]
-    S5 --> S5Q{"Success Criteria met?<br/>(recipe-defined aggregation)"}
+    S5["<b>5. Check Success Criteria</b><br/>evaluate # Success Criteria<br/>using recipe's aggregation rule<br/>(all / subset / weighted)"]
+    S5 --> S5Q{"<b>Success Criteria met?</b><br/>retry budget = 1<br/>(max 2 Apply attempts)"}
     S5Q -- "match" --> SC[/"RESULT: Success<br/>NOTES: edits=none (idempotent)<br/>or files changed + follow-ups"/]
-    S5Q -- "mismatch — apply_count = 0" --> S6
-    S5Q -- "mismatch — apply_count = 1<br/>(retry available)" --> RC{"failure cause?<br/>read last_failure"}
-    S5Q -- "mismatch — apply_count = 2<br/>(retry exhausted)" --> FL[/"RESULT: Failure<br/>NOTES: failing criteria<br/>+ last error verbatim"/]
+    S5Q -- "mismatch, first attempt" --> S6
+    S5Q -- "mismatch, retry available" --> ADJ["<b>Adjust before re-Apply</b><br/>(AI decides; any subset)<br/>• extend scope — re-research # Scope<br/>• consult Axon 5 sources (classpath)<br/>&nbsp;&nbsp;+ context7 MCP if available<br/>• rethink approach with new info"]
+    S5Q -- "mismatch, budget exhausted" --> FL[/"RESULT: Failure<br/>NOTES: failing criteria<br/>+ last error verbatim"/]
 
-    RC -- "scope incomplete<br/>(unknown symbols,<br/>untouched related file)" --> S2
-    RC -- "knowledge gap<br/>(Axon 5 API misunderstood)" --> CTX["<b>Consult Axon 5</b><br/>fetch from classpath sources<br/>+ context7 MCP if available<br/>(extends loaded references)"]
-    CTX --> S6
+    ADJ --> S6
 
-    S6["<b>6. Build Migration Plan</b><br/>ordered edits derived from<br/># References + # Toolbox<br/>sufficient to flip each<br/>mismatched criterion → match"]
-    S6 --> S7["<b>7. Apply Migration Plan</b><br/>execute edits within scope only<br/>respect # Out of Scope<br/>no drive-by refactors<br/>apply_count++"]
+    subgraph PLAN_APPLY ["Plan-Apply (re-entered per iteration)"]
+        direction TB
+        S6["<b>6. Plan Migration</b><br/>(re)compute the plan each visit<br/>using # References + # Toolbox + scope<br/>edits sufficient to flip every<br/>mismatched criterion → match"]
+        S7["<b>7. Apply Migration Plan</b><br/>execute edits within scope only<br/>respect # Out of Scope<br/>no drive-by refactors"]
+        S6 --> S7
+    end
     S7 -- "(edits applied)" --> S5
 
     classDef result fill:#eef,stroke:#557,stroke-width:1px;
@@ -58,7 +60,6 @@ The orchestrator tracks the following state across steps. The recipe never track
 | `references` | set&lt;ref section&gt; | step 3 | step 3 (loop), CTX | playbook sections currently loaded |
 | `criteria_state` | match / mismatch | step 5 | step 5 | last check result |
 | `apply_count` | 0..2 | 0 | step 7 | bounds retry; budget = 1 retry ⇒ max 2 Applies |
-| `last_failure` | string | step 5 (mismatch) | step 5 | compile/test output used by RC for cause classification |
 
 Apply consumes the retry budget; **scope extension and CTX do not** — only the next Apply does.
 
