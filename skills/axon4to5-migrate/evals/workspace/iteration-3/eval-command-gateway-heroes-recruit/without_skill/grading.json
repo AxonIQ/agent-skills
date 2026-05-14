@@ -1,0 +1,51 @@
+{
+  "eval_id": 4,
+  "eval_name": "command-gateway-heroes-recruit",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-command-gateway-heroes-recruit/without_skill/outputs/RecruitCreatureRestApi.java",
+  "output_exists": true,
+  "passed": 7,
+  "total": 8,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "AF5 CommandGateway import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.commandhandling.gateway.CommandGateway` in output"
+    },
+    {
+      "text": "Gateway kept as class-level field (top-of-chain)",
+      "passed": true,
+      "evidence": "found `private final CommandGateway commandGateway`"
+    },
+    {
+      "text": "Controller method still returns CompletableFuture",
+      "passed": true,
+      "evidence": "found `CompletableFuture`"
+    },
+    {
+      "text": "commandGateway.send call present",
+      "passed": true,
+      "evidence": "found `commandGateway.send`"
+    },
+    {
+      "text": "@RestController preserved",
+      "passed": true,
+      "evidence": "found `@RestController`"
+    },
+    {
+      "text": "AF4 CommandGateway import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.commandhandling.gateway.CommandGateway` absent \u2014 good"
+    },
+    {
+      "text": "sendAndWait NOT introduced",
+      "passed": true,
+      "evidence": "forbidden substring `sendAndWait` absent \u2014 good"
+    },
+    {
+      "text": "Gateway NOT replaced with Dispatcher (this is top-of-chain)",
+      "passed": true,
+      "evidence": "forbidden substring `CommandDispatcher` absent \u2014 good"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "eval_id": 2,
+  "eval_name": "aggregate-heroes-calendar",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-aggregate-heroes-calendar/without_skill/outputs/Calendar.java",
+  "output_exists": true,
+  "passed": 6,
+  "total": 7,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "tagKey is set to Calendar",
+      "passed": false,
+      "evidence": "missing required substring `tagKey = \"Calendar\"` in output"
+    },
+    {
+      "text": "EventAppender parameter present on @CommandHandler",
+      "passed": true,
+      "evidence": "found `EventAppender eventAppender`"
+    },
+    {
+      "text": "@EntityCreator present",
+      "passed": true,
+      "evidence": "found `@EntityCreator`"
+    },
+    {
+      "text": "@CommandHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@CommandHandler`"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "passed": true,
+      "evidence": "forbidden substring `@AggregateIdentifier` absent \u2014 good"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "passed": true,
+      "evidence": "forbidden substring `AggregateLifecycle` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @CreationPolicy removed",
+      "passed": true,
+      "evidence": "forbidden substring `@CreationPolicy` absent \u2014 good"
+    }
+  ]
+}

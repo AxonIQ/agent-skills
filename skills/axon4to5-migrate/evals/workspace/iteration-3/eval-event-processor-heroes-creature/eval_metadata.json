@@ -1,0 +1,95 @@
+{
+  "eval_id": 3,
+  "eval_name": "event-processor-heroes-creature",
+  "recipe": "event-processor",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 event-handling component to AF5 per references/event-processor.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The class injects CommandGateway and dispatches commands in-handler. Apply @ProcessingGroup \u2192 @Namespace (Step 3), rewrite CommandGateway field to method-parameter CommandDispatcher (Step 5), convert sendAndWait to async send chained on getResultMessage (Step 6), update sibling annotations (Step 4). Also annotate with @SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY) \u2014 AF4 had a @Bean SequencingPolicy keyed by gameIdSequencingPolicy reading the same metadata key. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java",
+  "output_filename": "WhenCreatureRecruitedThenAddToArmyProcessor.java",
+  "assertions": [
+    {
+      "text": "@Namespace replaced @ProcessingGroup with same string",
+      "type": "grep_require",
+      "pattern": "@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")"
+    },
+    {
+      "text": "AF5 Namespace import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.annotation.Namespace"
+    },
+    {
+      "text": "@SequencingPolicy with MetadataSequencingPolicy applied",
+      "type": "grep_require",
+      "pattern": "MetadataSequencingPolicy"
+    },
+    {
+      "text": "AF5 @EventHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler"
+    },
+    {
+      "text": "AF5 @DisallowReplay import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay"
+    },
+    {
+      "text": "@MetadataValue (capital D dropped)",
+      "type": "grep_require",
+      "pattern": "@MetadataValue"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "type": "grep_require",
+      "pattern": "CommandDispatcher commandDispatcher"
+    },
+    {
+      "text": "CommandDispatcher AF5 import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher"
+    },
+    {
+      "text": "CompletableFuture imported (async dispatch)",
+      "type": "grep_require",
+      "pattern": "java.util.concurrent.CompletableFuture"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation gone",
+      "type": "grep_forbid",
+      "pattern": "@ProcessingGroup"
+    },
+    {
+      "text": "AF4 ProcessingGroup import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.config.ProcessingGroup"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.EventHandler"
+    },
+    {
+      "text": "AF4 @DisallowReplay import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.DisallowReplay"
+    },
+    {
+      "text": "AF4 CommandGateway import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.commandhandling.gateway.CommandGateway"
+    },
+    {
+      "text": "AF4 @MetaDataValue (capital D) gone",
+      "type": "grep_forbid",
+      "pattern": "@MetaDataValue("
+    },
+    {
+      "text": "AF4 sendAndWait() gone",
+      "type": "grep_forbid",
+      "pattern": "commandGateway.sendAndWait"
+    },
+    {
+      "text": "Class-level CommandGateway field gone",
+      "type": "grep_forbid",
+      "pattern": "private final CommandGateway commandGateway"
+    }
+  ]
+}

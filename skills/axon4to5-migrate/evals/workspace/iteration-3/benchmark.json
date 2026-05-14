@@ -1,18 +1,18 @@
 {
   "iteration": "iteration-3",
   "with_skill": {
-    "all_pass_count": 2,
-    "total_evals": 2,
-    "mean_assertion_pass_rate": 1.0,
-    "mean_total_tokens": 39801,
-    "mean_duration_ms": 26649
+    "all_pass_count": 14,
+    "total_evals": 16,
+    "mean_assertion_pass_rate": 0.9885912698412699,
+    "mean_total_tokens": 37686.3125,
+    "mean_duration_ms": 27074.1875
   },
   "without_skill": {
     "all_pass_count": 0,
-    "total_evals": 2,
-    "mean_assertion_pass_rate": 0.5921052631578947,
-    "mean_total_tokens": 29467.5,
-    "mean_duration_ms": 21781.5
+    "total_evals": 16,
+    "mean_assertion_pass_rate": 0.6013263267520234,
+    "mean_total_tokens": 28647.0625,
+    "mean_duration_ms": 21059.6875
   },
   "evals": [
     {
@@ -39,18 +39,18 @@
       "eval_name": "aggregate-heroes-calendar",
       "recipe": "aggregate",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 7,
+        "total": 7,
+        "all_pass": true,
+        "total_tokens": 37415,
+        "duration_ms": 16904
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 6,
+        "total": 7,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 27987,
+        "duration_ms": 15015
       }
     },
     {
@@ -58,18 +58,18 @@
       "eval_name": "event-processor-heroes-creature",
       "recipe": "event-processor",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 17,
+        "total": 17,
+        "all_pass": true,
+        "total_tokens": 41294,
+        "duration_ms": 36802
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 8,
+        "total": 17,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 28082,
+        "duration_ms": 18199
       }
     },
     {
@@ -77,18 +77,18 @@
       "eval_name": "command-gateway-heroes-recruit",
       "recipe": "command-gateway",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 8,
+        "total": 8,
+        "all_pass": true,
+        "total_tokens": 32988,
+        "duration_ms": 26006
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 7,
+        "total": 8,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 27590,
+        "duration_ms": 14033
       }
     },
     {
@@ -96,18 +96,18 @@
       "eval_name": "command-gateway-heroes-builddwelling-mcp",
       "recipe": "command-gateway",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 6,
+        "total": 6,
+        "all_pass": true,
+        "total_tokens": 36894,
+        "duration_ms": 39655
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 4,
+        "total": 6,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 29374,
+        "duration_ms": 22841
       }
     },
     {
@@ -115,18 +115,18 @@
       "eval_name": "query-gateway-heroes-mcp",
       "recipe": "query-gateway",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 7,
+        "total": 7,
+        "all_pass": true,
+        "total_tokens": 34893,
+        "duration_ms": 23483
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 2,
+        "total": 7,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 29836,
+        "duration_ms": 28848
       }
     },
     {
@@ -134,18 +134,18 @@
       "eval_name": "query-handler-heroes-getbyid",
       "recipe": "query-handler",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 6,
+        "total": 6,
+        "all_pass": true,
+        "total_tokens": 30293,
+        "duration_ms": 14618
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 5,
+        "total": 6,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 26900,
+        "duration_ms": 11385
       }
     },
     {
@@ -153,18 +153,18 @@
       "eval_name": "event-storage-engine-heroes-entityscan",
       "recipe": "event-storage-engine",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 5,
+        "total": 5,
+        "all_pass": true,
+        "total_tokens": 38041,
+        "duration_ms": 16476
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 4,
+        "total": 5,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 26995,
+        "duration_ms": 13204
       }
     },
     {
@@ -172,18 +172,18 @@
       "eval_name": "event-storage-engine-heroes-gameconfig",
       "recipe": "event-storage-engine",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 13,
+        "total": 13,
+        "all_pass": true,
+        "total_tokens": 38814,
+        "duration_ms": 21206
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 4,
+        "total": 13,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 27575,
+        "duration_ms": 16519
       }
     },
     {
@@ -191,18 +191,18 @@
       "eval_name": "event-storage-engine-heroes-yaml",
       "recipe": "event-storage-engine",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 5,
+        "total": 5,
+        "all_pass": true,
+        "total_tokens": 39686,
+        "duration_ms": 19911
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 1,
+        "total": 5,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 29455,
+        "duration_ms": 35599
       }
     },
     {
@@ -210,18 +210,18 @@
       "eval_name": "aggregate-gamerental-game",
       "recipe": "aggregate",
       "with_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 13,
+        "total": 14,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 39765,
+        "duration_ms": 35411
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 8,
+        "total": 14,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 29525,
+        "duration_ms": 23405
       }
     },
     {
@@ -248,18 +248,18 @@
       "eval_name": "query-handler-heroes-dual-role",
       "recipe": "query-handler",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 10,
+        "total": 10,
+        "all_pass": true,
+        "total_tokens": 45363,
+        "duration_ms": 34525
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 5,
+        "total": 10,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 28578,
+        "duration_ms": 16104
       }
     },
     {
@@ -267,18 +267,18 @@
       "eval_name": "query-gateway-heroes-getdwellingbyid-controller",
       "recipe": "query-gateway",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 8,
+        "total": 8,
+        "all_pass": true,
+        "total_tokens": 32567,
+        "duration_ms": 16853
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 7,
+        "total": 8,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 27127,
+        "duration_ms": 11870
       }
     },
     {
@@ -286,18 +286,18 @@
       "eval_name": "command-gateway-heroes-builddwelling-controller",
       "recipe": "command-gateway",
       "with_skill": {
-        "passed": null,
-        "total": null,
-        "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "passed": 8,
+        "total": 8,
+        "all_pass": true,
+        "total_tokens": 34583,
+        "duration_ms": 36901
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 6,
+        "total": 8,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 27521,
+        "duration_ms": 15220
       }
     },
     {
@@ -305,18 +305,18 @@
       "eval_name": "saga-bike-rental-payment",
       "recipe": "saga",
       "with_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 16,
+        "total": 18,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 40783,
+        "duration_ms": 41138
       },
       "without_skill": {
-        "passed": null,
-        "total": null,
+        "passed": 8,
+        "total": 18,
         "all_pass": false,
-        "total_tokens": null,
-        "duration_ms": null
+        "total_tokens": 32873,
+        "duration_ms": 51150
       }
     }
   ]

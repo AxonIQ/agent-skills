@@ -1,0 +1,100 @@
+{
+  "eval_id": 11,
+  "eval_name": "saga-bike-rental-payment",
+  "recipe": "saga",
+  "prompt": "You have the axon4to5-migrate skill loaded. The AF4 PaymentSaga at INPUT_PATH has @DeadlineHandler \u2014 blocker B4 (deadline-handler-in-saga: present). User picked migrate-to-event-handler-with-state + shape-b-jpa-state-with-scheduler. Per references/saga.md Shape B worked example, produce the AF5 migrated PaymentSaga.java: @Component + @DisallowReplay + @EventHandler methods receiving CommandDispatcher as parameter, JPA PaymentStateRepository dependency, @Scheduled(fixedDelay = \u2026) replacing @DeadlineHandler. Do NOT preserve the @Saga / @SagaEventHandler / @DeadlineHandler annotations or DeadlineManager. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/bike-rental-extended/PaymentSaga.java",
+  "output_filename": "PaymentSaga.java",
+  "assertions": [
+    {
+      "text": "Spring @Component instead of @Saga",
+      "type": "grep_require",
+      "pattern": "@Component"
+    },
+    {
+      "text": "@DisallowReplay applied",
+      "type": "grep_require",
+      "pattern": "@DisallowReplay"
+    },
+    {
+      "text": "@EventHandler methods",
+      "type": "grep_require",
+      "pattern": "@EventHandler"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "type": "grep_require",
+      "pattern": "CommandDispatcher commandDispatcher"
+    },
+    {
+      "text": "PaymentStateRepository wired",
+      "type": "grep_require",
+      "pattern": "PaymentStateRepository"
+    },
+    {
+      "text": "@Scheduled replaces @DeadlineHandler",
+      "type": "grep_require",
+      "pattern": "@Scheduled"
+    },
+    {
+      "text": "AF5 EventHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler"
+    },
+    {
+      "text": "AF5 DisallowReplay import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay"
+    },
+    {
+      "text": "AF5 CommandDispatcher import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher"
+    },
+    {
+      "text": "AF4 @Saga annotation gone",
+      "type": "grep_forbid",
+      "pattern": "@Saga"
+    },
+    {
+      "text": "AF4 @SagaEventHandler gone",
+      "type": "grep_forbid",
+      "pattern": "@SagaEventHandler"
+    },
+    {
+      "text": "AF4 @StartSaga gone",
+      "type": "grep_forbid",
+      "pattern": "@StartSaga"
+    },
+    {
+      "text": "AF4 @EndSaga gone",
+      "type": "grep_forbid",
+      "pattern": "@EndSaga"
+    },
+    {
+      "text": "SagaLifecycle gone",
+      "type": "grep_forbid",
+      "pattern": "SagaLifecycle"
+    },
+    {
+      "text": "AF4 @DeadlineHandler gone",
+      "type": "grep_forbid",
+      "pattern": "@DeadlineHandler"
+    },
+    {
+      "text": "DeadlineManager gone",
+      "type": "grep_forbid",
+      "pattern": "DeadlineManager"
+    },
+    {
+      "text": "AF4 saga packages gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.modelling.saga"
+    },
+    {
+      "text": "AF4 deadline packages gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.deadline"
+    }
+  ]
+}

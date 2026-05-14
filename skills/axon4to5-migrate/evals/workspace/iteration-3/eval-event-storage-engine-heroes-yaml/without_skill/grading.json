@@ -1,0 +1,36 @@
+{
+  "eval_id": 10,
+  "eval_name": "event-storage-engine-heroes-yaml",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-storage-engine-heroes-yaml/without_skill/outputs/application.yaml",
+  "output_exists": true,
+  "passed": 1,
+  "total": 5,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "axon.converter section present",
+      "passed": false,
+      "evidence": "missing required substring `converter:` in output"
+    },
+    {
+      "text": "Pooled processors still configured",
+      "passed": false,
+      "evidence": "missing required substring `mode: pooled` in output"
+    },
+    {
+      "text": "Subscribing processor still configured",
+      "passed": false,
+      "evidence": "missing required substring `mode: subscribing` in output"
+    },
+    {
+      "text": "AF4 axon.serializer.* key gone",
+      "passed": true,
+      "evidence": "forbidden substring `serializer:` absent \u2014 good"
+    },
+    {
+      "text": "Per-processor sequencing-policy keys gone",
+      "passed": false,
+      "evidence": "forbidden substring `sequencing-policy:` STILL present in output"
+    }
+  ]
+}

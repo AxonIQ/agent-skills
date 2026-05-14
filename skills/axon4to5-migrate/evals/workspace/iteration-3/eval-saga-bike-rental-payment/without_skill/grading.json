@@ -1,0 +1,101 @@
+{
+  "eval_id": 11,
+  "eval_name": "saga-bike-rental-payment",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-saga-bike-rental-payment/without_skill/outputs/PaymentSaga.java",
+  "output_exists": true,
+  "passed": 8,
+  "total": 18,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "Spring @Component instead of @Saga",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "@DisallowReplay applied",
+      "passed": false,
+      "evidence": "missing required substring `@DisallowReplay` in output"
+    },
+    {
+      "text": "@EventHandler methods",
+      "passed": true,
+      "evidence": "found `@EventHandler`"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "passed": false,
+      "evidence": "missing required substring `CommandDispatcher commandDispatcher` in output"
+    },
+    {
+      "text": "PaymentStateRepository wired",
+      "passed": true,
+      "evidence": "found `PaymentStateRepository`"
+    },
+    {
+      "text": "@Scheduled replaces @DeadlineHandler",
+      "passed": true,
+      "evidence": "found `@Scheduled`"
+    },
+    {
+      "text": "AF5 EventHandler import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in output"
+    },
+    {
+      "text": "AF5 DisallowReplay import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in output"
+    },
+    {
+      "text": "AF5 CommandDispatcher import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in output"
+    },
+    {
+      "text": "AF4 @Saga annotation gone",
+      "passed": false,
+      "evidence": "forbidden substring `@Saga` STILL present in output"
+    },
+    {
+      "text": "AF4 @SagaEventHandler gone",
+      "passed": false,
+      "evidence": "forbidden substring `@SagaEventHandler` STILL present in output"
+    },
+    {
+      "text": "AF4 @StartSaga gone",
+      "passed": false,
+      "evidence": "forbidden substring `@StartSaga` STILL present in output"
+    },
+    {
+      "text": "AF4 @EndSaga gone",
+      "passed": false,
+      "evidence": "forbidden substring `@EndSaga` STILL present in output"
+    },
+    {
+      "text": "SagaLifecycle gone",
+      "passed": true,
+      "evidence": "forbidden substring `SagaLifecycle` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @DeadlineHandler gone",
+      "passed": false,
+      "evidence": "forbidden substring `@DeadlineHandler` STILL present in output"
+    },
+    {
+      "text": "DeadlineManager gone",
+      "passed": true,
+      "evidence": "forbidden substring `DeadlineManager` absent \u2014 good"
+    },
+    {
+      "text": "AF4 saga packages gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.modelling.saga` absent \u2014 good"
+    },
+    {
+      "text": "AF4 deadline packages gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.deadline` absent \u2014 good"
+    }
+  ]
+}

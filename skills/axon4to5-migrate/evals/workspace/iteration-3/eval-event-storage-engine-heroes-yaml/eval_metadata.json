@@ -1,0 +1,35 @@
+{
+  "eval_id": 10,
+  "eval_name": "event-storage-engine-heroes-yaml",
+  "recipe": "event-storage-engine",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 application.yaml to AF5 per references/event-storage-engine.md Step W YAML changes. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Two changes: (1) rename axon.serializer.* \u2192 axon.converter.*; (2) remove every per-processor 'sequencing-policy:' key (these move to class-level @SequencingPolicy annotations in the event-processor recipe). Preserve everything else byte-for-byte. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/application.yaml",
+  "output_filename": "application.yaml",
+  "assertions": [
+    {
+      "text": "axon.converter section present",
+      "type": "grep_require",
+      "pattern": "converter:"
+    },
+    {
+      "text": "Pooled processors still configured",
+      "type": "grep_require",
+      "pattern": "mode: pooled"
+    },
+    {
+      "text": "Subscribing processor still configured",
+      "type": "grep_require",
+      "pattern": "mode: subscribing"
+    },
+    {
+      "text": "AF4 axon.serializer.* key gone",
+      "type": "grep_forbid",
+      "pattern": "serializer:"
+    },
+    {
+      "text": "Per-processor sequencing-policy keys gone",
+      "type": "grep_forbid",
+      "pattern": "sequencing-policy:"
+    }
+  ]
+}

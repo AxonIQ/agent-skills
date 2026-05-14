@@ -1,0 +1,46 @@
+{
+  "eval_id": 6,
+  "eval_name": "query-gateway-heroes-mcp",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-query-gateway-heroes-mcp/without_skill/outputs/GetAllDwellingsMcp.java",
+  "output_exists": true,
+  "passed": 2,
+  "total": 7,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "AF5 QueryGateway import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.queryhandling.gateway.QueryGateway` in output"
+    },
+    {
+      "text": "Query call chained with orTimeout",
+      "passed": false,
+      "evidence": "missing required substring `.orTimeout(` in output"
+    },
+    {
+      "text": "TimeUnit imported",
+      "passed": false,
+      "evidence": "missing required substring `java.util.concurrent.TimeUnit` in output"
+    },
+    {
+      "text": "QueryGateway kept as class-level dep",
+      "passed": true,
+      "evidence": "found `private final QueryGateway queryGateway`"
+    },
+    {
+      "text": "AF4 QueryGateway import gone",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryGateway` STILL present in output"
+    },
+    {
+      "text": "ResponseType not introduced",
+      "passed": true,
+      "evidence": "forbidden substring `ResponseType` absent \u2014 good"
+    },
+    {
+      "text": "Bare .get(); removed",
+      "passed": false,
+      "evidence": "forbidden substring `.get();` STILL present in output"
+    }
+  ]
+}

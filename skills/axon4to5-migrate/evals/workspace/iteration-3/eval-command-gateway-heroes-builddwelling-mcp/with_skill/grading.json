@@ -1,0 +1,41 @@
+{
+  "eval_id": 5,
+  "eval_name": "command-gateway-heroes-builddwelling-mcp",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-command-gateway-heroes-builddwelling-mcp/with_skill/outputs/BuildDwellingMcp.java",
+  "output_exists": true,
+  "passed": 6,
+  "total": 6,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "AF5 CommandGateway import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.commandhandling.gateway.CommandGateway`"
+    },
+    {
+      "text": "CompletableFuture chain preserved",
+      "passed": true,
+      "evidence": "found `CompletableFuture`"
+    },
+    {
+      "text": "commandGateway.send call present",
+      "passed": true,
+      "evidence": "found `commandGateway.send`"
+    },
+    {
+      "text": "AF4 import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.commandhandling.gateway.CommandGateway` absent \u2014 good"
+    },
+    {
+      "text": "No sendAndWait regression",
+      "passed": true,
+      "evidence": "forbidden substring `sendAndWait` absent \u2014 good"
+    },
+    {
+      "text": "Not replaced with Dispatcher",
+      "passed": true,
+      "evidence": "forbidden substring `CommandDispatcher` absent \u2014 good"
+    }
+  ]
+}

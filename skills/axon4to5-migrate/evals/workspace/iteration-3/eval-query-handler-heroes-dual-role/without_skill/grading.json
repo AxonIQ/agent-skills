@@ -1,0 +1,61 @@
+{
+  "eval_id": 14,
+  "eval_name": "query-handler-heroes-dual-role",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-query-handler-heroes-dual-role/without_skill/outputs/GetAllDwellingsQueryHandler.java",
+  "output_exists": true,
+  "passed": 5,
+  "total": 10,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "AF5 @QueryHandler import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in output"
+    },
+    {
+      "text": "AF5 @EventHandler import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in output"
+    },
+    {
+      "text": "@QueryHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@QueryHandler`"
+    },
+    {
+      "text": "@EventHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@EventHandler`"
+    },
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "passed": false,
+      "evidence": "missing required substring `@Namespace` in output"
+    },
+    {
+      "text": "@SequencingPolicy on class",
+      "passed": false,
+      "evidence": "missing required substring `@SequencingPolicy` in output"
+    },
+    {
+      "text": "@Component preserved",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "AF4 @QueryHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @ProcessingGroup gone",
+      "passed": false,
+      "evidence": "forbidden substring `@ProcessingGroup` STILL present in output"
+    }
+  ]
+}

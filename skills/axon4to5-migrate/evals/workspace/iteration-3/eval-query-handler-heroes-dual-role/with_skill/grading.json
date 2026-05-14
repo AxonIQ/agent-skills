@@ -1,0 +1,61 @@
+{
+  "eval_id": 14,
+  "eval_name": "query-handler-heroes-dual-role",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-query-handler-heroes-dual-role/with_skill/outputs/GetAllDwellingsQueryHandler.java",
+  "output_exists": true,
+  "passed": 10,
+  "total": 10,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "AF5 @QueryHandler import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.queryhandling.annotation.QueryHandler`"
+    },
+    {
+      "text": "AF5 @EventHandler import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler`"
+    },
+    {
+      "text": "@QueryHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@QueryHandler`"
+    },
+    {
+      "text": "@EventHandler annotation kept",
+      "passed": true,
+      "evidence": "found `@EventHandler`"
+    },
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "passed": true,
+      "evidence": "found `@Namespace`"
+    },
+    {
+      "text": "@SequencingPolicy on class",
+      "passed": true,
+      "evidence": "found `@SequencingPolicy`"
+    },
+    {
+      "text": "@Component preserved",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "AF4 @QueryHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @ProcessingGroup gone",
+      "passed": true,
+      "evidence": "forbidden substring `@ProcessingGroup` absent \u2014 good"
+    }
+  ]
+}

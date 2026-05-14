@@ -1,0 +1,50 @@
+{
+  "eval_id": 15,
+  "eval_name": "query-gateway-heroes-getdwellingbyid-controller",
+  "recipe": "query-gateway",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 Spring @RestController dispatching queries via QueryGateway to AF5 per references/query-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The controller method returns CompletableFuture<R> \u2014 future-returning shape; import-only change to QueryGateway. No ResponseType wrappers used in this file. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/GetDwellingByIdRestApi.java",
+  "output_filename": "GetDwellingByIdRestApi.java",
+  "assertions": [
+    {
+      "text": "AF5 QueryGateway import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway"
+    },
+    {
+      "text": "QueryGateway kept as class-level field",
+      "type": "grep_require",
+      "pattern": "private final QueryGateway queryGateway"
+    },
+    {
+      "text": "Controller still returns CompletableFuture",
+      "type": "grep_require",
+      "pattern": "CompletableFuture"
+    },
+    {
+      "text": "queryGateway.query call present",
+      "type": "grep_require",
+      "pattern": "queryGateway.query"
+    },
+    {
+      "text": "@RestController preserved",
+      "type": "grep_require",
+      "pattern": "@RestController"
+    },
+    {
+      "text": "AF4 QueryGateway import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.queryhandling.QueryGateway"
+    },
+    {
+      "text": "No ResponseType regression",
+      "type": "grep_forbid",
+      "pattern": "ResponseType"
+    },
+    {
+      "text": "No bare .get() / .join() at sync boundary",
+      "type": "grep_forbid",
+      "pattern": ".get();"
+    }
+  ]
+}

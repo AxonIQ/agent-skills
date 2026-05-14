@@ -1,0 +1,96 @@
+{
+  "eval_id": 3,
+  "eval_name": "event-processor-heroes-creature",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-processor-heroes-creature/with_skill/outputs/WhenCreatureRecruitedThenAddToArmyProcessor.java",
+  "output_exists": true,
+  "passed": 17,
+  "total": 17,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "@Namespace replaced @ProcessingGroup with same string",
+      "passed": true,
+      "evidence": "found `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")`"
+    },
+    {
+      "text": "AF5 Namespace import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.annotation.Namespace`"
+    },
+    {
+      "text": "@SequencingPolicy with MetadataSequencingPolicy applied",
+      "passed": true,
+      "evidence": "found `MetadataSequencingPolicy`"
+    },
+    {
+      "text": "AF5 @EventHandler import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler`"
+    },
+    {
+      "text": "AF5 @DisallowReplay import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay`"
+    },
+    {
+      "text": "@MetadataValue (capital D dropped)",
+      "passed": true,
+      "evidence": "found `@MetadataValue`"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "passed": true,
+      "evidence": "found `CommandDispatcher commandDispatcher`"
+    },
+    {
+      "text": "CommandDispatcher AF5 import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher`"
+    },
+    {
+      "text": "CompletableFuture imported (async dispatch)",
+      "passed": true,
+      "evidence": "found `java.util.concurrent.CompletableFuture`"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation gone",
+      "passed": true,
+      "evidence": "forbidden substring `@ProcessingGroup` absent \u2014 good"
+    },
+    {
+      "text": "AF4 ProcessingGroup import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @DisallowReplay import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.DisallowReplay` absent \u2014 good"
+    },
+    {
+      "text": "AF4 CommandGateway import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.commandhandling.gateway.CommandGateway` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @MetaDataValue (capital D) gone",
+      "passed": true,
+      "evidence": "forbidden substring `@MetaDataValue(` absent \u2014 good"
+    },
+    {
+      "text": "AF4 sendAndWait() gone",
+      "passed": true,
+      "evidence": "forbidden substring `commandGateway.sendAndWait` absent \u2014 good"
+    },
+    {
+      "text": "Class-level CommandGateway field gone",
+      "passed": true,
+      "evidence": "forbidden substring `private final CommandGateway commandGateway` absent \u2014 good"
+    }
+  ]
+}

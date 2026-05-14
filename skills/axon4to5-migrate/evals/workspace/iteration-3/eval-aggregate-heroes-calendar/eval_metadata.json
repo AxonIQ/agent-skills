@@ -1,0 +1,45 @@
+{
+  "eval_id": 2,
+  "eval_name": "aggregate-heroes-calendar",
+  "recipe": "aggregate",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate the AF4 aggregate at INPUT_PATH to AF5 per references/aggregate.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. No snapshot trigger on this one \u2014 straight migration. Steps 3-14 + Path A. Save the migrated Java to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/Calendar.java",
+  "output_filename": "Calendar.java",
+  "assertions": [
+    {
+      "text": "tagKey is set to Calendar",
+      "type": "grep_require",
+      "pattern": "tagKey = \"Calendar\""
+    },
+    {
+      "text": "EventAppender parameter present on @CommandHandler",
+      "type": "grep_require",
+      "pattern": "EventAppender eventAppender"
+    },
+    {
+      "text": "@EntityCreator present",
+      "type": "grep_require",
+      "pattern": "@EntityCreator"
+    },
+    {
+      "text": "@CommandHandler annotation kept",
+      "type": "grep_require",
+      "pattern": "@CommandHandler"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle"
+    },
+    {
+      "text": "AF4 @CreationPolicy removed",
+      "type": "grep_forbid",
+      "pattern": "@CreationPolicy"
+    }
+  ]
+}

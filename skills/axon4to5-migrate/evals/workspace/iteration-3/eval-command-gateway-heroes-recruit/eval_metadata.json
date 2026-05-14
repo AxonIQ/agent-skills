@@ -1,0 +1,50 @@
+{
+  "eval_id": 4,
+  "eval_name": "command-gateway-heroes-recruit",
+  "recipe": "command-gateway",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 Spring @RestController dispatching commands via CommandGateway to AF5 per references/command-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Top-of-chain caller \u2014 gateway stays, only import moves. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/RecruitCreatureRestApi.java",
+  "output_filename": "RecruitCreatureRestApi.java",
+  "assertions": [
+    {
+      "text": "AF5 CommandGateway import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway"
+    },
+    {
+      "text": "Gateway kept as class-level field (top-of-chain)",
+      "type": "grep_require",
+      "pattern": "private final CommandGateway commandGateway"
+    },
+    {
+      "text": "Controller method still returns CompletableFuture",
+      "type": "grep_require",
+      "pattern": "CompletableFuture"
+    },
+    {
+      "text": "commandGateway.send call present",
+      "type": "grep_require",
+      "pattern": "commandGateway.send"
+    },
+    {
+      "text": "@RestController preserved",
+      "type": "grep_require",
+      "pattern": "@RestController"
+    },
+    {
+      "text": "AF4 CommandGateway import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.commandhandling.gateway.CommandGateway"
+    },
+    {
+      "text": "sendAndWait NOT introduced",
+      "type": "grep_forbid",
+      "pattern": "sendAndWait"
+    },
+    {
+      "text": "Gateway NOT replaced with Dispatcher (this is top-of-chain)",
+      "type": "grep_forbid",
+      "pattern": "CommandDispatcher"
+    }
+  ]
+}

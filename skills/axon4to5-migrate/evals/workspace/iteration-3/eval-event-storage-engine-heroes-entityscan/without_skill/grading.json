@@ -1,0 +1,36 @@
+{
+  "eval_id": 8,
+  "eval_name": "event-storage-engine-heroes-entityscan",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-storage-engine-heroes-entityscan/without_skill/outputs/HeroesOfDDDApplication.java",
+  "output_exists": true,
+  "passed": 4,
+  "total": 5,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "@EntityScan import landed",
+      "passed": true,
+      "evidence": "found `org.springframework.boot.autoconfigure.domain.EntityScan`"
+    },
+    {
+      "text": "@EntityScan annotation applied",
+      "passed": true,
+      "evidence": "found `@EntityScan`"
+    },
+    {
+      "text": "Project root included",
+      "passed": true,
+      "evidence": "found `com.dddheroes.heroesofddd`"
+    },
+    {
+      "text": "org.axonframework root included",
+      "passed": true,
+      "evidence": "found `org.axonframework`"
+    },
+    {
+      "text": "io.axoniq.framework root included (commercial line)",
+      "passed": false,
+      "evidence": "missing required substring `io.axoniq.framework` in output"
+    }
+  ]
+}

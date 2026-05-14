@@ -1,0 +1,40 @@
+{
+  "eval_id": 7,
+  "eval_name": "query-handler-heroes-getbyid",
+  "recipe": "query-handler",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 @QueryHandler class to AF5 per references/query-handler.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Import-only rewrite \u2014 body, method signature, return type, @Component all preserved. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/GetDwellingByIdQueryHandler.java",
+  "output_filename": "GetDwellingByIdQueryHandler.java",
+  "assertions": [
+    {
+      "text": "AF5 @QueryHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler"
+    },
+    {
+      "text": "@QueryHandler annotation kept",
+      "type": "grep_require",
+      "pattern": "@QueryHandler"
+    },
+    {
+      "text": "@Component preserved (Path A auto-discovery)",
+      "type": "grep_require",
+      "pattern": "@Component"
+    },
+    {
+      "text": "AF4 @QueryHandler import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.queryhandling.QueryHandler"
+    },
+    {
+      "text": "No QueryHandlingModule registration added on Path A",
+      "type": "grep_forbid",
+      "pattern": "QueryHandlingModule"
+    },
+    {
+      "text": "No configurer.register call added",
+      "type": "grep_forbid",
+      "pattern": "configurer.register"
+    }
+  ]
+}

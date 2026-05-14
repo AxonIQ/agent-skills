@@ -1,0 +1,35 @@
+{
+  "eval_id": 8,
+  "eval_name": "event-storage-engine-heroes-entityscan",
+  "recipe": "event-storage-engine",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate the Spring Boot main class at INPUT_PATH to AF5 per references/event-storage-engine.md sub-path A.JPA.5 (mandatory @EntityScan when an explicit @Bean EventStorageEngine will be declared). Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Add @EntityScan(basePackages = {\"com.dddheroes.heroesofddd\", \"org.axonframework\", \"io.axoniq.framework\"}). Don't add the @Bean here \u2014 only the @EntityScan goes on the application class. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/HeroesOfDDDApplication.java",
+  "output_filename": "HeroesOfDDDApplication.java",
+  "assertions": [
+    {
+      "text": "@EntityScan import landed",
+      "type": "grep_require",
+      "pattern": "org.springframework.boot.autoconfigure.domain.EntityScan"
+    },
+    {
+      "text": "@EntityScan annotation applied",
+      "type": "grep_require",
+      "pattern": "@EntityScan"
+    },
+    {
+      "text": "Project root included",
+      "type": "grep_require",
+      "pattern": "com.dddheroes.heroesofddd"
+    },
+    {
+      "text": "org.axonframework root included",
+      "type": "grep_require",
+      "pattern": "org.axonframework"
+    },
+    {
+      "text": "io.axoniq.framework root included (commercial line)",
+      "type": "grep_require",
+      "pattern": "io.axoniq.framework"
+    }
+  ]
+}

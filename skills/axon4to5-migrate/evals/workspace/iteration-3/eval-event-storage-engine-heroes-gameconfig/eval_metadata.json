@@ -1,0 +1,75 @@
+{
+  "eval_id": 9,
+  "eval_name": "event-storage-engine-heroes-gameconfig",
+  "recipe": "event-storage-engine",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 @Configuration class to AF5 \u2014 it has a SequencingPolicy @Bean reading EventMessage metadata, plus CorrelationDataProvider beans. Per references/event-storage-engine.md Step W (bootstrap-layer sweep), rewrite imports for SequencingPolicy + EventMessage + correlation providers, and rewrite the SequencingPolicy lambda to AF5 signature (e, ctx) -> Optional.ofNullable(...) using AF5 record-style e.metadata(). Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/GameConfiguration.java",
+  "output_filename": "GameConfiguration.java",
+  "assertions": [
+    {
+      "text": "AF5 SequencingPolicy import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.sequencing.SequencingPolicy"
+    },
+    {
+      "text": "AF5 EventMessage import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.EventMessage"
+    },
+    {
+      "text": "AF5 CorrelationDataProvider import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.correlation.CorrelationDataProvider"
+    },
+    {
+      "text": "AF5 MessageOriginProvider import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.correlation.MessageOriginProvider"
+    },
+    {
+      "text": "AF5 SimpleCorrelationDataProvider import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.correlation.SimpleCorrelationDataProvider"
+    },
+    {
+      "text": "Optional imported (AF5 return wraps in Optional)",
+      "type": "grep_require",
+      "pattern": "java.util.Optional"
+    },
+    {
+      "text": "Optional.ofNullable in lambda",
+      "type": "grep_require",
+      "pattern": "Optional.ofNullable"
+    },
+    {
+      "text": "AF5 record-style metadata() accessor",
+      "type": "grep_require",
+      "pattern": ".metadata().get"
+    },
+    {
+      "text": "Spring @Bean wiring preserved",
+      "type": "grep_require",
+      "pattern": "@Bean"
+    },
+    {
+      "text": "AF4 SequencingPolicy import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.async.SequencingPolicy"
+    },
+    {
+      "text": "AF4 EventMessage import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.EventMessage"
+    },
+    {
+      "text": "AF4 correlation package gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.messaging.correlation"
+    },
+    {
+      "text": "AF4 getMetaData accessor gone",
+      "type": "grep_forbid",
+      "pattern": "e.getMetaData()"
+    }
+  ]
+}

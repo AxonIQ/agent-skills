@@ -1,0 +1,40 @@
+{
+  "eval_id": 5,
+  "eval_name": "command-gateway-heroes-builddwelling-mcp",
+  "recipe": "command-gateway",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 Spring AI MCP tool dispatching via CommandGateway to AF5 per references/command-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The tool method returns CompletableFuture<Map<String, Object>> \u2014 future-returning, NOT a sync callback. Import-only change; no .orTimeout().join() bridge needed. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/BuildDwellingMcp.java",
+  "output_filename": "BuildDwellingMcp.java",
+  "assertions": [
+    {
+      "text": "AF5 CommandGateway import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway"
+    },
+    {
+      "text": "CompletableFuture chain preserved",
+      "type": "grep_require",
+      "pattern": "CompletableFuture"
+    },
+    {
+      "text": "commandGateway.send call present",
+      "type": "grep_require",
+      "pattern": "commandGateway.send"
+    },
+    {
+      "text": "AF4 import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.commandhandling.gateway.CommandGateway"
+    },
+    {
+      "text": "No sendAndWait regression",
+      "type": "grep_forbid",
+      "pattern": "sendAndWait"
+    },
+    {
+      "text": "Not replaced with Dispatcher",
+      "type": "grep_forbid",
+      "pattern": "CommandDispatcher"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "eval_id": 9,
+  "eval_name": "event-storage-engine-heroes-gameconfig",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-storage-engine-heroes-gameconfig/with_skill/outputs/GameConfiguration.java",
+  "output_exists": true,
+  "passed": 13,
+  "total": 13,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "AF5 SequencingPolicy import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.sequencing.SequencingPolicy`"
+    },
+    {
+      "text": "AF5 EventMessage import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.EventMessage`"
+    },
+    {
+      "text": "AF5 CorrelationDataProvider import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.correlation.CorrelationDataProvider`"
+    },
+    {
+      "text": "AF5 MessageOriginProvider import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.correlation.MessageOriginProvider`"
+    },
+    {
+      "text": "AF5 SimpleCorrelationDataProvider import landed",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.correlation.SimpleCorrelationDataProvider`"
+    },
+    {
+      "text": "Optional imported (AF5 return wraps in Optional)",
+      "passed": true,
+      "evidence": "found `java.util.Optional`"
+    },
+    {
+      "text": "Optional.ofNullable in lambda",
+      "passed": true,
+      "evidence": "found `Optional.ofNullable`"
+    },
+    {
+      "text": "AF5 record-style metadata() accessor",
+      "passed": true,
+      "evidence": "found `.metadata().get`"
+    },
+    {
+      "text": "Spring @Bean wiring preserved",
+      "passed": true,
+      "evidence": "found `@Bean`"
+    },
+    {
+      "text": "AF4 SequencingPolicy import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.async.SequencingPolicy` absent \u2014 good"
+    },
+    {
+      "text": "AF4 EventMessage import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventMessage` absent \u2014 good"
+    },
+    {
+      "text": "AF4 correlation package gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.messaging.correlation` absent \u2014 good"
+    },
+    {
+      "text": "AF4 getMetaData accessor gone",
+      "passed": true,
+      "evidence": "forbidden substring `e.getMetaData()` absent \u2014 good"
+    }
+  ]
+}

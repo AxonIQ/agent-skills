@@ -1,0 +1,45 @@
+{
+  "eval_id": 6,
+  "eval_name": "query-gateway-heroes-mcp",
+  "recipe": "query-gateway",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 MCP resource handler dispatching queries via QueryGateway to AF5 per references/query-gateway.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. The lambda is a synchronous framework callback \u2014 must bridge the future via .orTimeout(30, TimeUnit.SECONDS).join() per Step 7 'Synchronous framework callback'. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/GetAllDwellingsMcp.java",
+  "output_filename": "GetAllDwellingsMcp.java",
+  "assertions": [
+    {
+      "text": "AF5 QueryGateway import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway"
+    },
+    {
+      "text": "Query call chained with orTimeout",
+      "type": "grep_require",
+      "pattern": ".orTimeout("
+    },
+    {
+      "text": "TimeUnit imported",
+      "type": "grep_require",
+      "pattern": "java.util.concurrent.TimeUnit"
+    },
+    {
+      "text": "QueryGateway kept as class-level dep",
+      "type": "grep_require",
+      "pattern": "private final QueryGateway queryGateway"
+    },
+    {
+      "text": "AF4 QueryGateway import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.queryhandling.QueryGateway"
+    },
+    {
+      "text": "ResponseType not introduced",
+      "type": "grep_forbid",
+      "pattern": "ResponseType"
+    },
+    {
+      "text": "Bare .get(); removed",
+      "type": "grep_forbid",
+      "pattern": ".get();"
+    }
+  ]
+}

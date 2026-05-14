@@ -1,0 +1,60 @@
+{
+  "eval_id": 14,
+  "eval_name": "query-handler-heroes-dual-role",
+  "recipe": "query-handler",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 class that has BOTH @QueryHandler AND @EventHandler methods (dual-role class \u2014 caches query results from event stream). Per references/query-handler.md AND references/event-processor.md, both sets of annotations need their AF5 imports. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Apply both: @QueryHandler \u2192 AF5 location; @EventHandler \u2192 AF5 location; @ProcessingGroup \u2192 @Namespace; add @SequencingPolicy(MetadataSequencingPolicy with parameters=GameMetaData.GAME_ID_KEY) per the @Bean SequencingPolicy in GameConfiguration. Keep @Component. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/GetAllDwellingsQueryHandler.java",
+  "output_filename": "GetAllDwellingsQueryHandler.java",
+  "assertions": [
+    {
+      "text": "AF5 @QueryHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler"
+    },
+    {
+      "text": "AF5 @EventHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler"
+    },
+    {
+      "text": "@QueryHandler annotation kept",
+      "type": "grep_require",
+      "pattern": "@QueryHandler"
+    },
+    {
+      "text": "@EventHandler annotation kept",
+      "type": "grep_require",
+      "pattern": "@EventHandler"
+    },
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "type": "grep_require",
+      "pattern": "@Namespace"
+    },
+    {
+      "text": "@SequencingPolicy on class",
+      "type": "grep_require",
+      "pattern": "@SequencingPolicy"
+    },
+    {
+      "text": "@Component preserved",
+      "type": "grep_require",
+      "pattern": "@Component"
+    },
+    {
+      "text": "AF4 @QueryHandler import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.queryhandling.QueryHandler"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.EventHandler"
+    },
+    {
+      "text": "AF4 @ProcessingGroup gone",
+      "type": "grep_forbid",
+      "pattern": "@ProcessingGroup"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "eval_id": 15,
+  "eval_name": "query-gateway-heroes-getdwellingbyid-controller",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-query-gateway-heroes-getdwellingbyid-controller/without_skill/outputs/GetDwellingByIdRestApi.java",
+  "output_exists": true,
+  "passed": 7,
+  "total": 8,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "AF5 QueryGateway import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.queryhandling.gateway.QueryGateway` in output"
+    },
+    {
+      "text": "QueryGateway kept as class-level field",
+      "passed": true,
+      "evidence": "found `private final QueryGateway queryGateway`"
+    },
+    {
+      "text": "Controller still returns CompletableFuture",
+      "passed": true,
+      "evidence": "found `CompletableFuture`"
+    },
+    {
+      "text": "queryGateway.query call present",
+      "passed": true,
+      "evidence": "found `queryGateway.query`"
+    },
+    {
+      "text": "@RestController preserved",
+      "passed": true,
+      "evidence": "found `@RestController`"
+    },
+    {
+      "text": "AF4 QueryGateway import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryGateway` absent \u2014 good"
+    },
+    {
+      "text": "No ResponseType regression",
+      "passed": true,
+      "evidence": "forbidden substring `ResponseType` absent \u2014 good"
+    },
+    {
+      "text": "No bare .get() / .join() at sync boundary",
+      "passed": true,
+      "evidence": "forbidden substring `.get();` absent \u2014 good"
+    }
+  ]
+}
