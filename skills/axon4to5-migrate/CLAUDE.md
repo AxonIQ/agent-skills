@@ -4,6 +4,36 @@ All-file content language: English.
 
 Be proactive, challenge me. If you think you have a better idea than what I wanted from you, propose other things.
 
+## How skill-creator drives evals
+
+When `/skill-creator:skill-creator` iterates on this skill it MUST use `run.py` — do not inline subagent dispatch or write custom HTML. The pipeline is fully automated via `claude -p`:
+
+```bash
+python3 evals/axon4to5-migrate/run.py prep      --recipe <recipe>
+python3 evals/axon4to5-migrate/run.py run       --recipe <recipe>   # claude -p per eval, parallel
+python3 evals/axon4to5-migrate/run.py grade     --recipe <recipe>
+python3 evals/axon4to5-migrate/run.py aggregate  --recipe <recipe>
+python3 evals/axon4to5-migrate/run.py dashboard  --recipe <recipe>   # writes dashboard.html + opens browser
+```
+
+Add `--serve` to `dashboard` for the live feedback server (skip `--static`). Default writes a static HTML file and opens it with `open`/`xdg-open`.
+
+**Iteration loop:**
+
+```
+improve RECIPE.md / use-cases → prep (new --iteration N) → run → grade → aggregate → dashboard → feedback.json → repeat
+```
+
+Key rules for skill-creator:
+- Increment `--iteration N` on each improvement pass to preserve history (pass `--previous-workspace` to `generate_review.py` for iteration ≥ 2)
+- Omit `--baseline` on `run` unless you need the `without_skill` delta (saves time)
+- Re-run only failing evals: add `--evals <id,id,…>` to `prep` + `run`
+- `run` writes `timing.json` per run dir automatically — no manual capture needed
+- After dashboard: collect "Submit All Reviews" → `feedback.json`, apply to `references/recipes/<recipe>/RECIPE.md` + `use-cases/`
+- Status check any time: `python3 evals/axon4to5-migrate/run.py status --recipe <recipe>`
+
+---
+
 ## Running evals
 
 Evals live at the **repo root**, not inside the skill: `evals/axon4to5-migrate/`. The skill itself stays under `skills/axon4to5-migrate/`. `run.py` derives `SKILL_DIR` from `<repo>/skills/<same basename as the eval dir>`.

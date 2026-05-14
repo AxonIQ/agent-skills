@@ -60,63 +60,84 @@ evals/axon4to5-migrate/
                 └── without_skill/run-1/…     # baseline (optional)
 ```
 
-`run.py` derives `SKILL_DIR` from `<repo>/skills/<same basename as this eval dir>`. The eval dir name is the source of truth.
+`run.py` derives `SKILL_DIR` from `<repo>/skills/<same basename as this eval dir>`. The eval dir name is the source of truth. `workspace/` is also updated to include `timing.json` per run:
+
+```
+└── with_skill/run-1/
+    ├── outputs/<File>.java
+    ├── outputs/result.md
+    ├── prompt.md
+    ├── grading.json          # written by grade.py
+    └── timing.json           # written by run.py run — {total_tokens, duration_ms, …}
+```
 
 ## Running
 
-`run.py` does NOT invoke Claude. Subagents dispatched from a driver session do the migrations. Pipeline:
+### Via skill-creator (recommended for iterating on the skill)
 
-```
-prep → [dispatch subagents via Agent tool] → grade → aggregate
-```
+Paste [`RUN_EVALS_PROMPT.md`](RUN_EVALS_PROMPT.md) into a fresh Claude Code session (fill in `<RECIPE>`). Skill-creator drives the full loop and presents results in the feedback UI for you to review before the next iteration.
+
+### Via CLI (direct)
 
 `--iteration` is optional — `run.py` picks the highest existing `iteration-N/` (or `iteration-1` on first run).
 
-### Prep
+### One-shot full run
 
 ```bash
+python3 evals/axon4to5-migrate/run.py all --recipe aggregate
+python3 evals/axon4to5-migrate/run.py all --recipe event-processor
+python3 evals/axon4to5-migrate/run.py all --recipe all
+```
+
+Runs the complete pipeline: **prep → run → grade → aggregate → dashboard**. Stops on first failure. Writes `dashboard.html` per recipe and opens it in the browser.
+
+Options (all forwarded to the relevant phase):
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--workers N` | 5 | Parallel `claude -p` workers |
+| `--timeout N` | 300 | Per-eval timeout in seconds |
+| `--model <id>` | configured | Model for `claude -p` |
+| `--baseline` | off | Also run `without_skill` baseline configs |
+| `--serve` | off | Live feedback server instead of static HTML |
+| `--evals <id,…>` | all | Subset by eval ID |
+| `--iteration N` | auto | Explicit iteration number |
+
+### Step-by-step
+
+```bash
+# 1. Stage fixtures + render prompt.md per eval
 python3 evals/axon4to5-migrate/run.py prep --recipe aggregate
-python3 evals/axon4to5-migrate/run.py prep --recipe event-processor
-python3 evals/axon4to5-migrate/run.py prep --recipe all
-python3 evals/axon4to5-migrate/run.py prep --recipe event-processor --evals 1,4,7   # subset
+
+# 2. Execute evals via claude -p (parallel); writes timing.json per run dir
+python3 evals/axon4to5-migrate/run.py run --recipe aggregate
+
+# 3. Deterministic grep grading → grading.json
+python3 evals/axon4to5-migrate/run.py grade --recipe aggregate
+
+# 4. Aggregate into benchmark.json / benchmark.md
+python3 evals/axon4to5-migrate/run.py aggregate --recipe aggregate
+
+# 5. Generate dashboard.html + open in browser
+python3 evals/axon4to5-migrate/run.py dashboard --recipe aggregate
+
+# Status snapshot any time
+python3 evals/axon4to5-migrate/run.py status --recipe aggregate
 ```
 
-Per eval, prep writes the workspace tree shown above. Every rendered prompt includes `skip-openrewrite=true` in the skill_args line.
+### Re-running specific evals
 
-### Dispatch subagents
-
-Open [`RUN_EVALS_PROMPT.md`](RUN_EVALS_PROMPT.md), fill in `<RECIPE>`, paste into a fresh Claude Code session. The driver Claude invokes `/skill-creator:skill-creator` to handle prep → parallel subagent dispatch → grade → aggregate → dashboard refresh. Or drive manually: dispatch one `Agent` (general-purpose) call per `prompt.md`, all in a single message so they run in parallel.
-
-### Grade
+After tweaking `RECIPE.md` or use-cases, prep and re-run only the failing evals:
 
 ```bash
-python3 evals/axon4to5-migrate/run.py grade --recipe <name>
+python3 evals/axon4to5-migrate/run.py prep      --recipe aggregate --evals 6,8,9
+python3 evals/axon4to5-migrate/run.py run       --recipe aggregate --evals 6,8,9
+python3 evals/axon4to5-migrate/run.py grade     --recipe aggregate
+python3 evals/axon4to5-migrate/run.py aggregate --recipe aggregate
+python3 evals/axon4to5-migrate/run.py dashboard --recipe aggregate
 ```
 
-Writes `grading.json` per run dir using the canonical skill-creator schema: `{expectations[]{text,passed,evidence}, summary{passed,failed,total,pass_rate}}`.
-
-### Aggregate + dashboard
-
-```bash
-python3 evals/axon4to5-migrate/run.py aggregate --recipe <name>
-```
-
-Produces `workspace/iteration-N/<recipe>/benchmark.{json,md}` via skill-creator's official `aggregate_benchmark.py`. Refresh the HTML viewer:
-
-```bash
-VIEWER=~/.claude/plugins/marketplaces/claude-plugins-official/plugins/skill-creator/skills/skill-creator/eval-viewer/generate_review.py
-WS=evals/axon4to5-migrate/workspace/iteration-1/<recipe>
-~/.claude/venv/bin/python "$VIEWER" "$WS" \
-  --skill-name "axon4to5-migrate/<recipe>" \
-  --benchmark "$WS/benchmark.json" \
-  --static "$WS/dashboard.html"
-```
-
-### Status
-
-```bash
-python3 evals/axon4to5-migrate/run.py status --recipe <name>
-```
+`prep` re-copies fixtures and resets `result.md` only for the specified evals; already-green evals stay untouched.
 
 ## Assertion vocabulary (`grade.py`)
 
