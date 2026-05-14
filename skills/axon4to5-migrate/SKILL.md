@@ -3,7 +3,7 @@ name: axon4to5-migrate
 description: >-
   Migrate Axon Framework 4 project to Axon(iq) Framework 5.
 argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>]"
-allowed-tools: Bash(./scripts/list-recipes.sh)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/list-recipes.sh)
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,7 @@ disable-model-invocation: true
 
 ## Available recipes (auto-listed)
 
-!`./scripts/list-recipes.sh`
+!`${CLAUDE_SKILL_DIR}/scripts/list-recipes.sh`
 
 ## Inputs
 
