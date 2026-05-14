@@ -9,15 +9,32 @@ disable-model-invocation: true
 
 # axon4to5-migrate
 
-## Role: orchestrator that fills the gap
-
-This skill is the **orchestrator** of an Axon 4 → 5 migration. It owns the whole end-to-end flow. One of its internal steps — the bulk mechanical rewrites — is delegated to `axon4to5-openrewrite` (invoked via the `Skill` tool). Everything *after* that bulk pass is the orchestrator's own work: **filling the gaps** OpenRewrite can't handle (Aggregate restructuring, event sourcing patterns, projection wiring, anything needing semantic understanding).
-
-`axon4to5-openrewrite` is not a separate stage the user runs — it is a step *of this skill*, executed automatically on every invocation regardless of `mode`. Idempotent, safe to re-run.
-
 ## Available recipes (auto-listed)
 
 !`./scripts/list-recipes.sh`
+
+## Migration paths catalog
+
+Shared cross-recipe knowledge base at `references/docs/paths/`. Recipes pick relevant entries in their `### Migration Paths` subsection, each with an **apply-condition** (a fact about current scope that triggers loading the file). The orchestrator never reads these directly — only recipes do, gated by their declared apply-condition.
+
+Catalog (one file per topic; `.adoc`):
+
+| Path                                                | Topic                                                                                |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------|
+| `aggregates/index.adoc`                             | Aggregate migration entry point                                                      |
+| `aggregates/configuration-migration.adoc`           | Aggregate Spring/Configurer wiring                                                   |
+| `aggregates/multi-entity-migration.adoc`            | Aggregates with child entities (`@AggregateMember`)                                  |
+| `aggregates/polymorphism-migration.adoc`            | Polymorphic aggregates                                                               |
+| `configuration.adoc`                                | Global Axon configuration / Configurer                                               |
+| `messages.adoc`                                     | Command / Event / Query message changes                                              |
+| `event-store.adoc`                                  | Event Store engine + APIs                                                            |
+| `snapshotting.adoc`                                 | Snapshot trigger + storage                                                           |
+| `serializers.adoc`                                  | Serializer registration + payload formats                                            |
+| `interceptors.adoc`                                 | Command / Event / Query handler interceptors                                         |
+| `projectors-event-processors.adoc`                  | Projection / Event Processor wiring                                                  |
+| `sequencing-policies.adoc`                          | Event sequencing policies                                                            |
+| `dlq.adoc`                                          | Dead-Letter Queue                                                                    |
+| `test-fixtures.adoc`                                | Test fixtures migration                                                              |
 
 ## Inputs
 
@@ -48,8 +65,8 @@ Migrate ONE element (one aggregate, one handler, etc.) using exactly one recipe 
 
 Steps (after the common pre-steps):
 
-1. Match user's request + `source` to ONE recipe in the auto-listed set (by `name` + `description`). If ambiguous → ask user via `AskUserQuestion` to pick. If no match → STOP and report.
-2. `Read` the chosen recipe file (`references/recipes/<name>.md`) and execute it per the **Recipe sub-flow** below.
+1. Match user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's `applicable` block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `name` + `description`. If ambiguous → ask user via `AskUserQuestion` to pick. If no `applicable` block matches and description is also unclear → STOP and report.
+2. `Read` the chosen recipe file (`references/recipes/<name>/RECIPE.md`) and execute it per the **Recipe sub-flow** below. Recipe-local auxiliary files (examples, fixtures, supporting docs) live alongside it under `references/recipes/<name>/`.
 3. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
 4. Report: recipe used, files changed (since OpenRewrite step), follow-ups.
 
@@ -81,15 +98,8 @@ flowchart TD
     %% shared processing loop
     Q --> L{queue empty?}
     L -- no --> W[[Run recipe sub-flow]]
-    W --> R{recipe result}
-    R -- Success --> REC["record: ✅"]
-    R -- Blocker --> REC2["record: ⚠ blocker"]
-    R -- Rejected --> REC3["record: ⏭ skipped"]
-    R -- Failure --> REC4["record: ❌ failure"]
+    W --> REC["record result<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
     REC --> Q
-    REC2 --> Q
-    REC3 --> Q
-    REC4 --> Q
     L -- yes --> M{mode policy}
 
     %% empty-queue behavior per mode
@@ -113,7 +123,7 @@ Rule of thumb:
 
 ## Recipe sub-flow
 
-The orchestrator-owned spec for executing any recipe in `references/recipes/`. Recipes never re-implement this — they fill in the named sections referenced from the diagram nodes (see `references/recipes/_template.md` for the authoring guide).
+The orchestrator-owned spec for executing any recipe in `references/recipes/`. Recipes never re-implement this — they fill in the named sections referenced from the diagram nodes (see `references/recipes/_template/RECIPE.md` for the authoring guide).
 
 Retry budget = **1** additional Apply (≤ 2 Applies total). Each diagram node names the recipe section it consults using markdown header refs (`# Applicable`, `# Scope`, etc. — these map to top-level headings in the recipe file).
 
@@ -126,7 +136,7 @@ flowchart TD
     subgraph RESEARCH ["Research (loops until scope stabilizes)"]
         direction TB
         S2["<b>Define Scope</b><br/>enumerate per # Scope<br/>on re-entry: add, never shrink"]
-        S3["<b>Read References</b><br/>load # References sections<br/>whose read-condition<br/>matches current scope"]
+        S3["<b>Read References</b><br/>load # References sections<br/>whose apply-condition<br/>matches current scope"]
         SQ{"References reveal<br/>extra files / types<br/>belonging in scope?"}
         S2 --> S3 --> SQ
         SQ -- "yes (extend scope)" --> S2

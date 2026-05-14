@@ -88,14 +88,23 @@ Aggregation rule: all three criteria must match.
 
 ## References
 
-Recipe playbook. Three subsections; each entry has an explicit *read-condition* (a fact about scope that triggers loading the entry).
+Recipe playbook. Three subsections; each entry has an explicit *apply-condition* (a fact about scope that triggers loading the entry).
 
 <example>
-Available resources, read them only if the read-condition is met.
+Available resources, read them only if the apply-condition is met.
 
 ### Migration Paths
 
-<!-- TODO: Fill during iterations. -->
+Pick entries from the **Migration paths catalog** (see `SKILL.md` § Migration paths catalog — `references/docs/paths/*.adoc`). Each entry MUST declare an **apply-condition** — a fact about current scope that triggers loading the file.
+
+Format:
+
+```
+- path: aggregates/multi-entity-migration.adoc
+  apply-condition: scope contains at least one `@AggregateMember`-typed member
+```
+
+Do NOT copy content from the catalog into the recipe — only the path and the apply-condition. Do NOT invent paths; only use files that exist under `references/docs/paths/`.
 
 ### Toolbox
 
