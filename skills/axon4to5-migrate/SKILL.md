@@ -1,13 +1,19 @@
 ---
 name: axon4to5-migrate
 description: >-
-  Migrate Axon Framework 4 project to Axon Framework 5 — preserves behavior (do not introduce DCB, keep AggregateBasedEventStorageEngine etc).
-argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single> [source=<class|file|fqn>]"
+  Migrate Axon Framework 4 project to Axon Framework 5 by filling gaps left by the OpenRewrite bulk migration. Preserves behavior (no DCB, keeps AggregateBasedEventStorageEngine).
+argument-hint: "framework=<axon|axoniq> configuration=<native|spring> context=<single|project> [source=<class|file|fqn>]"
 allowed-tools: Bash(./scripts/list-recipes.sh)
 disable-model-invocation: true
 ---
 
 # axon4to5-migrate
+
+## Role: orchestrator that fills the gap
+
+This skill is the **orchestrator** of an Axon 4 → 5 migration. It owns the whole end-to-end flow. One of its internal steps — the bulk mechanical rewrites — is delegated to `axon4to5-openrewrite` (invoked via the `Skill` tool). Everything *after* that bulk pass is the orchestrator's own work: **filling the gaps** OpenRewrite can't handle (Aggregate restructuring, event sourcing patterns, projection wiring, anything needing semantic understanding).
+
+`axon4to5-openrewrite` is not a separate stage the user runs — it is a step *of this skill*, executed automatically on every invocation regardless of `context`. Idempotent, safe to re-run.
 
 ## Available recipes (auto-listed)
 
@@ -17,25 +23,35 @@ disable-model-invocation: true
 
 - `framework` (**required**): which Axon flavor to migrate. Currently supported values: `axon`, `axoniq`. Any other value → STOP.
 - `configuration` (**required**): how the application wires Axon. Currently supported values: `native`, `spring`. Any other value → STOP.
-- `mode` (required): currently only `single`.
-- `source` (optional, mode=single): user-supplied hint identifying the thing to migrate (class name, file path, FQN).
+- `context` (required): what gets migrated in one invocation.
+  - `single` — one element (a class, e.g. an Aggregate). Requires `source`.
+  - `project` — the whole application (default: current working directory). `source` ignored.
+- `source` (required for `context=single`): hint identifying the thing to migrate (class name, file path, FQN).
 
-## Modes
+## Pre-steps (common to every context)
+
+These run **before** any context-specific logic — independent of whether `context=single`, `project`, or anything added later.
+
+1. Parse `framework`, `configuration`, `context` from `$ARGUMENTS`.
+   - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
+   - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
+   - If `context` is missing or ∉ {`single`, `project`} → STOP and report unsupported context.
+2. **Run the bulk-rewrite step** — internally invoke `axon4to5-openrewrite` via the `Skill` tool, passing `framework=$framework`. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass).
+
+Only after pre-steps complete does the context-specific producer below run.
+
+## Contexts
 
 ### `single`
 
 Migrate ONE element (one aggregate, one handler, etc.) using exactly one recipe from the list above.
 
-Steps:
+Steps (after the common pre-steps):
 
-1. Parse `framework`, `configuration`, `mode` from `$ARGUMENTS`.
-   - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
-   - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
-   - If `mode != single` → STOP and report unsupported mode.
-2. Match user's request + `source` to ONE recipe in the auto-listed set (by `name` + `description`). If ambiguous → ask user via `AskUserQuestion` to pick. If no match → STOP and report.
-3. `Read` the chosen recipe file (`references/recipes/<name>.md`) and execute it per the **Recipe sub-flow** below.
-4. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
-5. Report: recipe used, files changed, follow-ups.
+1. Match user's request + `source` to ONE recipe in the auto-listed set (by `name` + `description`). If ambiguous → ask user via `AskUserQuestion` to pick. If no match → STOP and report.
+2. `Read` the chosen recipe file (`references/recipes/<name>.md`) and execute it per the **Recipe sub-flow** below.
+3. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
+4. Report: recipe used, files changed (since OpenRewrite step), follow-ups.
 
 MUST NOT:
 
@@ -48,16 +64,18 @@ MUST NOT:
 ## Queue flow
 
 `$SOURCE` is referenced throughout the recipe sub-flow as the argument passed to the skill from `source`.
-Every mode produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty queue depends on the mode.
+Every context produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty queue depends on the context.
 
 ```mermaid
 flowchart TD
-    A[Skill invoked] --> B["! list-recipes.sh<br/>(recipes catalog)"]
-    B --> C{mode}
+    A[Skill invoked] --> ORW[["<b>Bulk-rewrite step</b><br/>(internal: Skill axon4to5-openrewrite,<br/>framework=$framework, idempotent)"]]
+    ORW -- fail --> XORW[STOP: bulk-rewrite failed]
+    ORW -- ok --> B["! list-recipes.sh<br/>(recipes catalog)"]
+    B --> C{context}
 
-    %% mode-specific producers — all feed the same queue
+    %% context-specific producers — all feed the same queue
     C -- single --> P1["Match request+source<br/>→ enqueue 1 item"]
-    C -- other --> X[STOP: unsupported mode]
+    C -- other --> X[STOP: unsupported context]
     P1 --> Q[(Migration queue)]
 
     %% shared processing loop
@@ -72,9 +90,9 @@ flowchart TD
     REC2 --> Q
     REC3 --> Q
     REC4 --> Q
-    L -- yes --> M{mode policy}
+    L -- yes --> M{context policy}
 
-    %% empty-queue behavior per mode
+    %% empty-queue behavior per context
     M -- single --> E["Report &amp; END"]
 ```
 
@@ -82,8 +100,8 @@ flowchart TD
 
 ### Queue-level result handling
 
-| Result     | Queue action                | `single` mode end-state |
-|------------|-----------------------------|-------------------------|
+| Result     | Queue action                | `single` context end-state |
+|------------|-----------------------------|----------------------------|
 | `Success`  | mark item done, drain next  | Report ✅                |
 | `Blocker`  | record + drain next         | Report ⚠ with reason    |
 | `Rejected` | record + drain next         | Report ⏭ with reason    |
