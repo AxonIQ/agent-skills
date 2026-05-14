@@ -1,0 +1,141 @@
+{
+  "eval_id": 29,
+  "eval_name": "spring-axoniq-partial-already-rewritten",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. PartialCalendarSpring.java is a realistic OpenRewrite-Phase-1 partial state: `@EventSourced` annotation is present (mechanically swapped from `@Aggregate`) but tagKey/idType attributes are missing; `@AggregateIdentifier` annotation + import still there; `@CreationPolicy(CREATE_IF_MISSING)` still there; `AggregateLifecycle.apply(...)` still in handler bodies; no `@EntityCreator`; no `EventAppender` parameter; AF4 `@CommandHandler` / `@EventSourcingHandler` imports. The recipe MUST apply # Applicable predicate 5 (partially-migrated event-sourced aggregate \u2014 continue to Research), find that the Success Criteria pre-Apply check fails (AF4 imports present, no EntityCreator, no EventAppender threading), run Plan-Apply once, and finish the migration to a fully-AF5 shape. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+  "expectations": [
+    "@EventSourced annotation now has explicit tagKey attribute (was missing in partial state)",
+    "@EventSourced has explicit idType attribute (was missing)",
+    "@EntityCreator added on the no-arg constructor",
+    "EventAppender parameter threaded through every @CommandHandler",
+    "eventAppender.append(...) replaces every AggregateLifecycle.apply(...)",
+    "AF4 @AggregateIdentifier annotation + import removed",
+    "AF4 @CreationPolicy annotation + import removed",
+    "AF4 AggregateLifecycle static import removed",
+    "AF4 @CommandHandler import (org.axonframework.commandhandling.CommandHandler) replaced with AF5 .messaging.commandhandling.annotation",
+    "AF4 @EventSourcingHandler import replaced with AF5 .eventsourcing.annotation",
+    "Result block marks Success with axon4to5-aggregate"
+  ],
+  "category": "partial-state-spring",
+  "fixture": "synthetic/PartialCalendarSpring.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "tagKey",
+      "text": "@EventSourced now has explicit tagKey attribute (was missing in partial state)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "idType",
+      "text": "@EventSourced has explicit idType attribute (was missing)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EntityCreator",
+      "text": "@EntityCreator added on the no-arg constructor"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.reflection.EntityCreator",
+      "text": "@EntityCreator import added (.reflection. infix)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "EventAppender eventAppender",
+      "text": "EventAppender parameter threaded through every @CommandHandler"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.gateway.EventAppender",
+      "text": "AF5 EventAppender import (.messaging. infix) added"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "eventAppender.append",
+      "text": "eventAppender.append(...) replaces AggregateLifecycle.apply(...)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.annotation.CommandHandler",
+      "text": "AF5 @CommandHandler import added (.messaging. infix)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.EventSourcingHandler",
+      "text": "AF5 @EventSourcingHandler import added"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier",
+      "text": "AF4 @AggregateIdentifier annotation removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@CreationPolicy",
+      "text": "AF4 @CreationPolicy annotation removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle",
+      "text": "AF4 AggregateLifecycle reference + static import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "import org.axonframework.commandhandling.CommandHandler;",
+      "text": "AF4 @CommandHandler import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "import org.axonframework.eventsourcing.EventSourcingHandler;",
+      "text": "AF4 @EventSourcingHandler import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.modelling.command.AggregateIdentifier",
+      "text": "AF4 @AggregateIdentifier import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.modelling.command.CreationPolicy",
+      "text": "AF4 @CreationPolicy import removed"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Result block marks Success"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "axon4to5-aggregate",
+      "text": "Recipe identifier present"
+    }
+  ]
+}
