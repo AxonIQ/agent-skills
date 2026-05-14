@@ -54,12 +54,12 @@ Migrate ONE element (one aggregate, one event processor, etc.) using exactly one
 Steps (after the common pre-steps):
 
 1. Match user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's `applicable`
-   block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `name` + `description`.
-   If ambiguous → ask user via `AskUserQuestion` to pick. If no `applicable` block matches and description is also
-   unclear → STOP and report.
-2. `Read` the chosen recipe file (`references/recipes/<name>/RECIPE.md`) and execute it per the **Recipe sub-flow** (
-   `references/recipes/FLOW.md`, already loaded). Recipe-local auxiliary files (examples, fixtures, supporting docs)
-   live alongside it under `references/recipes/<name>/`.
+   block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `id` + `title` +
+   `description`. If ambiguous → ask user via `AskUserQuestion` to pick (show `title` to the user; dispatch by `id`). If
+   no `applicable` block matches and description is also unclear → STOP and report.
+2. `Read` the chosen recipe file under [`references/recipes/`](references/recipes/) (`<name>/RECIPE.md`) and execute it
+   per the **Recipe sub-flow** ([`FLOW.md`](references/recipes/FLOW.md), already loaded). Recipe-local auxiliary files (
+   examples, fixtures, supporting docs) live alongside it in the same `<name>/` directory.
 3. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
 4. Render the report (see Queue flow § Render report).
 
@@ -81,7 +81,7 @@ Steps (after the common pre-steps):
    to produce candidate sources.
     - `execution=inline` → orchestrator scans inline using `Grep` / `Glob` / `Read`.
     - `execution=subagent` → dispatch one `Explore` subagent **per recipe** (parallel batch via a single `Agent` tool
-      message with multiple calls). Each agent receives the recipe's `applicable` block + `name` and returns a list of
+      message with multiple calls). Each agent receives the recipe's `applicable` block + `id` and returns a list of
       FQNs / file paths. Read-only — no edits.
 2. **Enqueue** every `(recipe, source)` candidate. Deduplication is recipe's concern (handled inside its Recipe
    sub-flow); orchestrator does not collapse items across recipes.
@@ -129,52 +129,55 @@ flowchart TD
     L -- no --> RPT["Render report &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
 ```
 
-> The `[[Run recipe sub-flow]]` node is the **nested** sub-flow defined in `references/recipes/FLOW.md` (loaded at skill
-> start). The queue only reacts to the recipe's emitted result.
+> The `[[Run recipe sub-flow]]` node is the **nested** sub-flow defined in
+> [`references/recipes/FLOW.md`](references/recipes/FLOW.md) (loaded at skill start). The queue only reacts to the
+> recipe's emitted result.
 
 ## Recipe sub-flow
 
-**ALWAYS load `references/recipes/FLOW.md` via the `Read` tool at skill start — before any mode-specific logic.** It
-defines the orchestrator-owned control flow every recipe executes against. Non-optional. Recipes fill in named sections
-referenced from that flow; they never re-implement it.
+**ALWAYS load [`references/recipes/FLOW.md`](references/recipes/FLOW.md) via the `Read` tool at skill start — before any
+mode-specific logic.** It defines the orchestrator-owned control flow every recipe executes against. Non-optional.
+Recipes fill in named sections referenced from that flow; they never re-implement it.
 
-### Recipe defaults (`DEFAULT.md`)
+### Recipe defaults ([`DEFAULT.md`](references/recipes/DEFAULT.md))
 
-**ALWAYS `Read` `references/recipes/DEFAULT.md` BEFORE any `references/recipes/<name>/RECIPE.md`.** It holds shared
-defaults for every named recipe section (`# Applicable`, `# Scope`, `# References`, `# Success Criteria`, `# Blocker`,
-`# Toolbox`, `# Out of Scope`, `# Gotchas`).
+**ALWAYS `Read` [`references/recipes/DEFAULT.md`](references/recipes/DEFAULT.md) BEFORE any per-recipe `RECIPE.md` under
+[`references/recipes/`](references/recipes/).** It holds shared defaults for every named recipe section (`# Applicable`,
+`# Scope`, `# References`, `# Success Criteria`, `# Blocker`, `# Toolbox`, `# Out of Scope`, `# Gotchas`).
 
 Merge rule when executing a recipe:
 
-- For each section the FLOW consults, start from `DEFAULT.md`'s content for that section.
+- For each section the FLOW consults, start from [`DEFAULT.md`](references/recipes/DEFAULT.md)'s content for that
+  section.
 - If `RECIPE.md` defines the same section → **`RECIPE.md` overrides** (full section replacement, not append).
-    - Exception: if `RECIPE.md`'s section body references `DEFAULT.md` (e.g. literal token `@DEFAULT.md` or prose like
-      "inherits from DEFAULT.md" / "extends DEFAULT.md") → **append** the recipe's content to the default's content for
-      that section instead of replacing.
-- If `RECIPE.md` omits the section → the `DEFAULT.md` content stands.
+    - Exception: if `RECIPE.md`'s section body references [`DEFAULT.md`](references/recipes/DEFAULT.md) (e.g. literal
+      token `@DEFAULT.md` or prose like "inherits from DEFAULT.md" / "extends DEFAULT.md") → **append** the recipe's
+      content to the default's content for that section instead of replacing.
+- If `RECIPE.md` omits the section → the [`DEFAULT.md`](references/recipes/DEFAULT.md) content stands.
 - Recipe authors only write sections that differ from the default. No need to re-state defaults.
 
 ## References/Docs: Migration paths catalog
 
-Shared cross-recipe knowledge base at `references/docs/paths/`. Recipes pick relevant entries in their
-`### Migration Paths` subsection, each with an **apply-condition** (a fact about current scope that triggers loading the
-file). The orchestrator never reads these directly — only recipes do, gated by their declared apply-condition.
+Shared cross-recipe knowledge base at [`references/docs/paths/`](references/docs/paths/). Recipes pick relevant entries
+in their `### Migration Paths` subsection, each with an **apply-condition** (a fact about current scope that triggers
+loading the file). The orchestrator never reads these directly — only recipes do, gated by their declared
+apply-condition.
 
 Catalog (one file per topic; `.adoc`):
 
-| Path                                      | Topic                                               |
-|-------------------------------------------|-----------------------------------------------------|
-| `aggregates/index.adoc`                   | Aggregate migration entry point                     |
-| `aggregates/configuration-migration.adoc` | Aggregate Spring/Configurer wiring                  |
-| `aggregates/multi-entity-migration.adoc`  | Aggregates with child entities (`@AggregateMember`) |
-| `aggregates/polymorphism-migration.adoc`  | Polymorphic aggregates                              |
-| `configuration.adoc`                      | Global Axon configuration / Configurer              |
-| `messages.adoc`                           | Command / Event / Query message changes             |
-| `event-store.adoc`                        | Event Store engine + APIs                           |
-| `snapshotting.adoc`                       | Snapshot trigger + storage                          |
-| `serializers.adoc`                        | Serializer registration + payload formats           |
-| `interceptors.adoc`                       | Command / Event / Query handler interceptors        |
-| `projectors-event-processors.adoc`        | Projection / Event Processor wiring                 |
-| `sequencing-policies.adoc`                | Event sequencing policies                           |
-| `dlq.adoc`                                | Dead-Letter Queue                                   |
-| `test-fixtures.adoc`                      | Test fixtures migration                             |
+| Path                                                                                              | Topic                                               |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| [`aggregates/index.adoc`](references/docs/paths/aggregates/index.adoc)                            | Aggregate migration entry point                     |
+| [`aggregates/configuration-migration.adoc`](references/docs/paths/aggregates/configuration-migration.adoc) | Aggregate Spring/Configurer wiring                  |
+| [`aggregates/multi-entity-migration.adoc`](references/docs/paths/aggregates/multi-entity-migration.adoc)   | Aggregates with child entities (`@AggregateMember`) |
+| [`aggregates/polymorphism-migration.adoc`](references/docs/paths/aggregates/polymorphism-migration.adoc)   | Polymorphic aggregates                              |
+| [`configuration.adoc`](references/docs/paths/configuration.adoc)                                  | Global Axon configuration / Configurer              |
+| [`messages.adoc`](references/docs/paths/messages.adoc)                                            | Command / Event / Query message changes             |
+| [`event-store.adoc`](references/docs/paths/event-store.adoc)                                      | Event Store engine + APIs                           |
+| [`snapshotting.adoc`](references/docs/paths/snapshotting.adoc)                                    | Snapshot trigger + storage                          |
+| [`serializers.adoc`](references/docs/paths/serializers.adoc)                                      | Serializer registration + payload formats           |
+| [`interceptors.adoc`](references/docs/paths/interceptors.adoc)                                    | Command / Event / Query handler interceptors        |
+| [`projectors-event-processors.adoc`](references/docs/paths/projectors-event-processors.adoc)      | Projection / Event Processor wiring                 |
+| [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                      | Event sequencing policies                           |
+| [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                      | Dead-Letter Queue                                   |
+| [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                  | Test fixtures migration                             |

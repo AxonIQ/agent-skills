@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# List each recipe's surface: name, description, and the `## Applicable` predicates.
-# Recipes live in references/recipes/<name>/RECIPE.md (subdirs starting with `_` are skipped).
+# List each recipe's surface: id, title, description, and the `## Applicable` predicates.
+# Recipes live in references/recipes/<dir>/RECIPE.md (subdirs starting with `_` are skipped).
 # Output format (one block per recipe):
 #   - file: <relative path>
-#     name: <recipe-name>
+#     id: <machine id — stable, used for matching/dispatch>
+#     title: <human-readable name — shown to user>
 #     description: <one-line description>
 #     applicable: |
 #       <verbatim content of `## Applicable` section, indented; "(none)" if missing>
@@ -11,6 +12,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RECIPES_DIR="$SCRIPT_DIR/../references/recipes"
+
+# Strip surrounding single/double quotes from a YAML scalar value.
+unquote() {
+  local v="$1"
+  v="${v#\"}"; v="${v%\"}"
+  v="${v#\'}"; v="${v%\'}"
+  printf '%s' "$v"
+}
 
 shopt -s nullglob
 for d in "$RECIPES_DIR"/*/; do
@@ -23,7 +32,10 @@ for d in "$RECIPES_DIR"/*/; do
 
   # Extract YAML frontmatter between first two `---` lines
   fm="$(awk 'BEGIN{c=0} /^---[[:space:]]*$/{c++; next} c==1{print} c>=2{exit}' "$f")"
-  name="$(printf '%s\n' "$fm" | awk -F': *' '/^name:/{print $2; exit}')"
+  id_raw="$(printf '%s\n' "$fm" | awk -F': *' '/^id:/{print $2; exit}')"
+  title_raw="$(printf '%s\n' "$fm" | awk -F': *' '/^title:/{print $2; exit}')"
+  id="$(unquote "$id_raw")"
+  title="$(unquote "$title_raw")"
   desc="$(printf '%s\n' "$fm" | awk '
     /^description:/{
       sub(/^description:[[:space:]]*/,"")
@@ -53,6 +65,6 @@ for d in "$RECIPES_DIR"/*/; do
     applicable="(none)"
   fi
 
-  printf -- "- file: %s\n  name: %s\n  description: %s\n  applicable: |\n" "$rel" "$name" "$desc"
+  printf -- "- file: %s\n  id: %s\n  title: %s\n  description: %s\n  applicable: |\n" "$rel" "$id" "$title" "$desc"
   printf '%s\n' "$applicable" | sed 's/^/    /'
 done
