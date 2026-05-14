@@ -38,7 +38,7 @@ Single canonical message (do NOT customize per run):
 
 ```
 COMMIT_MESSAGE_TEMPLATE:
-chore(axon): apply Axon 4 → 5 OpenRewrite migration (--framework <FRAMEWORK>)
+chore(af5): apply Axon 4 → 5 OpenRewrite migration (--framework <FRAMEWORK>)
 ```
 
 Substitute `<FRAMEWORK>` with the actual value (`axon` or `axoniq`). Use the result verbatim.
