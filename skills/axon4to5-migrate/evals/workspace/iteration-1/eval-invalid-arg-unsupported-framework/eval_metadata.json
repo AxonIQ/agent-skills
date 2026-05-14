@@ -1,0 +1,62 @@
+{
+  "eval_id": 28,
+  "eval_name": "invalid-arg-unsupported-framework",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=spring configuration=spring mode=single source=$SOURCE`. `framework=spring` is NOT supported (must be `axon` or `axoniq`). Per SKILL.md pre-step 1, the orchestrator MUST STOP and report unsupported framework \u2014 no migration runs. Write whatever message the orchestrator produces verbatim to $WORKSPACE/result.md.",
+  "expected_output": "The orchestrator STOPS at the pre-step and reports the invalid argument verbatim. No migration runs; the source on disk is unchanged.",
+  "expectations": [
+    "Stop message names `framework`",
+    "Stop wording present",
+    "Source untouched: no @EventSourced added",
+    "Source untouched: no @EventSourcedEntity added",
+    "Source still in AF4 shape (untouched)"
+  ],
+  "category": "argument-validation",
+  "fixture": "axon4/heroes/Calendar.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "spring",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Stop",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "framework",
+      "text": "Stop message names `framework`"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains_any",
+      "patterns": [
+        "unsupported",
+        "STOP",
+        "invalid",
+        "Unsupported"
+      ],
+      "text": "Stop wording present"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@EventSourced",
+      "text": "Source untouched: no @EventSourced added"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@EventSourcedEntity",
+      "text": "Source untouched: no @EventSourcedEntity added"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@Aggregate",
+      "text": "Source still in AF4 shape (untouched)"
+    }
+  ]
+}

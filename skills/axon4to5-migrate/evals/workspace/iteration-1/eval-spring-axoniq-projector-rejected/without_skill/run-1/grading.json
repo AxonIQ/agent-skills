@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Rejected outcome emoji (\u23ed\ufe0f)",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u23ed` in result.md"
+    },
+    {
+      "text": "Rejected text present",
+      "passed": false,
+      "evidence": "missing required substring `Rejected` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": false,
+      "evidence": "missing required substring `axon4to5-aggregate` in result.md"
+    },
+    {
+      "text": "Source untouched: original @ProcessingGroup intact",
+      "passed": true,
+      "evidence": "found `@ProcessingGroup` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "No @EventSourced added to a projector",
+      "passed": true,
+      "evidence": "forbidden `@EventSourced` absent from DwellingReadModelProjector.java \u2014 good"
+    },
+    {
+      "text": "No @EventSourcedEntity added to a projector",
+      "passed": true,
+      "evidence": "forbidden `@EventSourcedEntity` absent from DwellingReadModelProjector.java \u2014 good"
+    },
+    {
+      "text": "No @EntityCreator added to a projector",
+      "passed": true,
+      "evidence": "forbidden `@EntityCreator` absent from DwellingReadModelProjector.java \u2014 good"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 3,
+    "total": 7,
+    "pass_rate": 0.5714
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Blocker emitted (\ud83d\udea7)",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \ud83d\udea7 Blocker` in result.md"
+    },
+    {
+      "text": "Blocker notes reference Map-typed @AggregateMember",
+      "passed": false,
+      "evidence": "missing required substring `Map` in result.md"
+    },
+    {
+      "text": "Blocker explicitly names @AggregateMember",
+      "passed": false,
+      "evidence": "missing required substring `@AggregateMember` in result.md"
+    },
+    {
+      "text": "Option `skip` listed",
+      "passed": false,
+      "evidence": "missing required substring `skip` in result.md"
+    },
+    {
+      "text": "Option `revert` listed",
+      "passed": false,
+      "evidence": "missing required substring `revert` in result.md"
+    },
+    {
+      "text": "Option `solve-manually` listed",
+      "passed": false,
+      "evidence": "missing required substring `solve-manually` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "total": 6,
+    "pass_rate": 0.0
+  }
+}

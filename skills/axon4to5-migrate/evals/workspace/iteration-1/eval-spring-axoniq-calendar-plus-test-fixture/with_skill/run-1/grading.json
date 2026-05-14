@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Production source migrated",
+      "passed": false,
+      "evidence": "missing required substring `@EventSourced(tagKey = \"Calendar\"` in Calendar.java"
+    },
+    {
+      "text": "EventAppender wired in production source",
+      "passed": false,
+      "evidence": "missing required substring `EventAppender` in Calendar.java"
+    },
+    {
+      "text": "AxonTestFixture replaces AggregateTestFixture",
+      "passed": false,
+      "evidence": "missing required substring `AxonTestFixture` in CalendarTest.java"
+    },
+    {
+      "text": "AF5 fixture import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.test.fixture.AxonTestFixture` in CalendarTest.java"
+    },
+    {
+      "text": "Fluent given() API used",
+      "passed": false,
+      "evidence": "missing required substring `.given()` in CalendarTest.java"
+    },
+    {
+      "text": "Fluent .when().command(...) API",
+      "passed": false,
+      "evidence": "missing required substring `.when().command(` in CalendarTest.java"
+    },
+    {
+      "text": "Fluent .then().events(...) API",
+      "passed": false,
+      "evidence": "missing required substring `.then().events(` in CalendarTest.java"
+    },
+    {
+      "text": "AF4 AggregateTestFixture removed",
+      "passed": false,
+      "evidence": "forbidden substring `AggregateTestFixture` STILL present in CalendarTest.java"
+    },
+    {
+      "text": "AF4 fixture import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.test.aggregate.AggregateTestFixture` STILL present in CalendarTest.java"
+    },
+    {
+      "text": "AF4 .expectEvents(...) replaced",
+      "passed": false,
+      "evidence": "forbidden substring `.expectEvents(` STILL present in CalendarTest.java"
+    },
+    {
+      "text": "AF4 .givenNoPriorActivity() replaced (becomes .given().noPriorActivity())",
+      "passed": false,
+      "evidence": "forbidden substring `givenNoPriorActivity()` STILL present in CalendarTest.java"
+    },
+    {
+      "text": "Success result",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 12,
+    "total": 12,
+    "pass_rate": 0.0
+  }
+}

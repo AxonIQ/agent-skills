@@ -1,0 +1,108 @@
+{
+  "eval_id": 27,
+  "eval_name": "spring-axoniq-calendar-plus-test-fixture",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. A CalendarTest.java with AggregateTestFixture is in the workspace next to Calendar.java. The aggregate recipe's scope must include the test class \u2014 it migrates BOTH: Calendar.java to AF5 + CalendarTest.java from AggregateTestFixture to AxonTestFixture, fluent given/when/then, AF5 record-style payload accessors. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+  "expectations": [
+    "Production source migrated",
+    "EventAppender wired in production source",
+    "AxonTestFixture replaces AggregateTestFixture",
+    "AF5 fixture import landed",
+    "Fluent given() API used",
+    "Fluent .when().command(...) API",
+    "Fluent .then().events(...) API",
+    "AF4 AggregateTestFixture removed",
+    "AF4 fixture import removed",
+    "AF4 .expectEvents(...) replaced",
+    "AF4 .givenNoPriorActivity() replaced (becomes .given().noPriorActivity())",
+    "Success result"
+  ],
+  "category": "test-fixture-migration",
+  "fixture": "axon4/heroes/Calendar.java",
+  "secondary_fixtures": [
+    "synthetic/CalendarTest.java"
+  ],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EventSourced(tagKey = \"Calendar\"",
+      "text": "Production source migrated"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "EventAppender",
+      "text": "EventAppender wired in production source"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_require",
+      "pattern": "AxonTestFixture",
+      "text": "AxonTestFixture replaces AggregateTestFixture"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_require",
+      "pattern": "org.axonframework.test.fixture.AxonTestFixture",
+      "text": "AF5 fixture import landed"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_require",
+      "pattern": ".given()",
+      "text": "Fluent given() API used"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_require",
+      "pattern": ".when().command(",
+      "text": "Fluent .when().command(...) API"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_require",
+      "pattern": ".then().events(",
+      "text": "Fluent .then().events(...) API"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_forbid",
+      "pattern": "AggregateTestFixture",
+      "text": "AF4 AggregateTestFixture removed"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.test.aggregate.AggregateTestFixture",
+      "text": "AF4 fixture import removed"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_forbid",
+      "pattern": ".expectEvents(",
+      "text": "AF4 .expectEvents(...) replaced"
+    },
+    {
+      "target": "secondary:CalendarTest.java",
+      "type": "grep_forbid",
+      "pattern": "givenNoPriorActivity()",
+      "text": "AF4 .givenNoPriorActivity() replaced (becomes .given().noPriorActivity())"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Success result"
+    }
+  ]
+}

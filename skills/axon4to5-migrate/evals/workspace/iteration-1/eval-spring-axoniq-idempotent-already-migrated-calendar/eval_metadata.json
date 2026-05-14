@@ -1,0 +1,71 @@
+{
+  "eval_id": 21,
+  "eval_name": "spring-axoniq-idempotent-already-migrated-calendar",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. The source is ALREADY on AF5 shape (extracted from .knowledge/repositories/axon-examples/axon5). Recipe must return Success with NOTES indicating `edits=none (idempotent)` per FLOW.md S5 pre-Apply check. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+  "expectations": [
+    "AF5 annotation still present (untouched)",
+    "@EntityCreator still present",
+    "EventAppender parameter still present",
+    "No AF4 regression",
+    "No AF4 regression",
+    "Success result",
+    "Notes mention `idempotent` per DEFAULT.md baseline"
+  ],
+  "category": "idempotency",
+  "fixture": "axon5/heroes/Calendar.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EventSourced(tagKey = \"Calendar\"",
+      "text": "AF5 annotation still present (untouched)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EntityCreator",
+      "text": "@EntityCreator still present"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "EventAppender eventAppender",
+      "text": "EventAppender parameter still present"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle",
+      "text": "No AF4 regression"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier",
+      "text": "No AF4 regression"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Success result"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "idempotent",
+      "text": "Notes mention `idempotent` per DEFAULT.md baseline"
+    }
+  ]
+}

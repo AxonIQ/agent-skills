@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Stop message names `framework`",
+      "passed": false,
+      "evidence": "missing required substring `framework` in result.md"
+    },
+    {
+      "text": "Stop wording present",
+      "passed": false,
+      "evidence": "none of ['unsupported', 'STOP', 'invalid', 'Unsupported'] found in result.md"
+    },
+    {
+      "text": "Source untouched: no @EventSourced added",
+      "passed": true,
+      "evidence": "forbidden `@EventSourced` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "Source untouched: no @EventSourcedEntity added",
+      "passed": true,
+      "evidence": "forbidden `@EventSourcedEntity` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "Source still in AF4 shape (untouched)",
+      "passed": true,
+      "evidence": "found `@Aggregate` in Calendar.java"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  }
+}

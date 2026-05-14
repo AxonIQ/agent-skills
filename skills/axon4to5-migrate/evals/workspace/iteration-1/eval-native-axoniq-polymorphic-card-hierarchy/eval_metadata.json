@@ -1,0 +1,130 @@
+{
+  "eval_id": 24,
+  "eval_name": "native-axoniq-polymorphic-card-hierarchy",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. Card is an abstract @AggregateRoot with two concrete subtypes (OpenLoopGiftCard, RechargeableGiftCard, both @Aggregate). AF5 shape: base class carries @EventSourcedEntity(concreteTypes = {OpenLoopGiftCard.class, RechargeableGiftCard.class}), subtypes are NOT annotated. Migrate the base AND the two subtypes. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+  "expectations": [
+    "@EventSourcedEntity on abstract base Card",
+    "concreteTypes attribute lists subtypes",
+    "OpenLoopGiftCard.class enumerated in concreteTypes",
+    "RechargeableGiftCard.class enumerated in concreteTypes",
+    "AF4 @AggregateRoot removed from base",
+    "@AggregateIdentifier removed",
+    "@EntityCreator on OpenLoopGiftCard constructor",
+    "OpenLoopGiftCard handlers use EventAppender",
+    "Subtype NOT annotated @EventSourcedEntity (discovered via base)",
+    "AF4 @Aggregate gone from subtype",
+    "@EntityCreator on RechargeableGiftCard constructor",
+    "RechargeableGiftCard handlers use EventAppender",
+    "Subtype NOT annotated @EventSourcedEntity",
+    "AF4 @Aggregate gone from subtype",
+    "Success result"
+  ],
+  "category": "polymorphic",
+  "fixture": "synthetic/Card.java",
+  "secondary_fixtures": [
+    "synthetic/OpenLoopGiftCard.java",
+    "synthetic/RechargeableGiftCard.java"
+  ],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "native",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EventSourcedEntity",
+      "text": "@EventSourcedEntity on abstract base Card"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "concreteTypes",
+      "text": "concreteTypes attribute lists subtypes"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "OpenLoopGiftCard.class",
+      "text": "OpenLoopGiftCard.class enumerated in concreteTypes"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "RechargeableGiftCard.class",
+      "text": "RechargeableGiftCard.class enumerated in concreteTypes"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@AggregateRoot",
+      "text": "AF4 @AggregateRoot removed from base"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier",
+      "text": "@AggregateIdentifier removed"
+    },
+    {
+      "target": "secondary:OpenLoopGiftCard.java",
+      "type": "grep_require",
+      "pattern": "@EntityCreator",
+      "text": "@EntityCreator on OpenLoopGiftCard constructor"
+    },
+    {
+      "target": "secondary:OpenLoopGiftCard.java",
+      "type": "grep_require",
+      "pattern": "EventAppender",
+      "text": "OpenLoopGiftCard handlers use EventAppender"
+    },
+    {
+      "target": "secondary:OpenLoopGiftCard.java",
+      "type": "grep_forbid",
+      "pattern": "@EventSourcedEntity",
+      "text": "Subtype NOT annotated @EventSourcedEntity (discovered via base)"
+    },
+    {
+      "target": "secondary:OpenLoopGiftCard.java",
+      "type": "grep_forbid",
+      "pattern": "@Aggregate",
+      "text": "AF4 @Aggregate gone from subtype"
+    },
+    {
+      "target": "secondary:RechargeableGiftCard.java",
+      "type": "grep_require",
+      "pattern": "@EntityCreator",
+      "text": "@EntityCreator on RechargeableGiftCard constructor"
+    },
+    {
+      "target": "secondary:RechargeableGiftCard.java",
+      "type": "grep_require",
+      "pattern": "EventAppender",
+      "text": "RechargeableGiftCard handlers use EventAppender"
+    },
+    {
+      "target": "secondary:RechargeableGiftCard.java",
+      "type": "grep_forbid",
+      "pattern": "@EventSourcedEntity",
+      "text": "Subtype NOT annotated @EventSourcedEntity"
+    },
+    {
+      "target": "secondary:RechargeableGiftCard.java",
+      "type": "grep_forbid",
+      "pattern": "@Aggregate",
+      "text": "AF4 @Aggregate gone from subtype"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Success result"
+    }
+  ]
+}

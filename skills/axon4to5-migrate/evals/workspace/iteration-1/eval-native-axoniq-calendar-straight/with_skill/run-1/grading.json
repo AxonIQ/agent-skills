@@ -1,0 +1,65 @@
+{
+  "expectations": [
+    {
+      "text": "Path B annotation @EventSourcedEntity applied",
+      "passed": false,
+      "evidence": "missing required substring `@EventSourcedEntity(tagKey = \"Calendar\"` in Calendar.java"
+    },
+    {
+      "text": "idType=CalendarId.class explicit",
+      "passed": false,
+      "evidence": "missing required substring `idType = CalendarId.class` in Calendar.java"
+    },
+    {
+      "text": "AF5 EventSourcedEntity import landed",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.eventsourcing.annotation.EventSourcedEntity` in Calendar.java"
+    },
+    {
+      "text": "@EntityCreator on no-arg constructor",
+      "passed": false,
+      "evidence": "missing required substring `@EntityCreator` in Calendar.java"
+    },
+    {
+      "text": "EventAppender parameter on @CommandHandler",
+      "passed": false,
+      "evidence": "missing required substring `EventAppender eventAppender` in Calendar.java"
+    },
+    {
+      "text": "eventAppender.append replaces apply",
+      "passed": false,
+      "evidence": "missing required substring `eventAppender.append` in Calendar.java"
+    },
+    {
+      "text": "Path A annotation NOT applied (this is native/Path B)",
+      "passed": true,
+      "evidence": "forbidden `@EventSourced(` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "Path A import NOT introduced",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.extension.spring.stereotype.EventSourced` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "@AggregateIdentifier removed",
+      "passed": false,
+      "evidence": "forbidden substring `@AggregateIdentifier` STILL present in Calendar.java"
+    },
+    {
+      "text": "AggregateLifecycle removed",
+      "passed": false,
+      "evidence": "forbidden substring `AggregateLifecycle` STILL present in Calendar.java"
+    },
+    {
+      "text": "Success result",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 9,
+    "total": 11,
+    "pass_rate": 0.1818
+  }
+}

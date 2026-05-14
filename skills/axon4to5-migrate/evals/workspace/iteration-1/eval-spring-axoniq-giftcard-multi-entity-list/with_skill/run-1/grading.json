@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Parent root annotated @EventSourced tagKey=\"GiftCard\"",
+      "passed": false,
+      "evidence": "missing required substring `@EventSourced(tagKey = \"GiftCard\"` in GiftCard.java"
+    },
+    {
+      "text": "Child collection annotated @EntityMember",
+      "passed": false,
+      "evidence": "missing required substring `@EntityMember` in GiftCard.java"
+    },
+    {
+      "text": "AF5 EntityMember import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.modelling.entity.annotation.EntityMember` in GiftCard.java"
+    },
+    {
+      "text": "@EntityCreator on parent constructor",
+      "passed": false,
+      "evidence": "missing required substring `@EntityCreator` in GiftCard.java"
+    },
+    {
+      "text": "AF4 @AggregateMember removed",
+      "passed": false,
+      "evidence": "forbidden substring `@AggregateMember` STILL present in GiftCard.java"
+    },
+    {
+      "text": "AF4 AggregateMember import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.modelling.command.AggregateMember` STILL present in GiftCard.java"
+    },
+    {
+      "text": "Transaction child has @EntityCreator on its constructor",
+      "passed": false,
+      "evidence": "missing required substring `@EntityCreator` in Transaction.java"
+    },
+    {
+      "text": "Transaction's @CommandHandler uses EventAppender",
+      "passed": false,
+      "evidence": "missing required substring `EventAppender` in Transaction.java"
+    },
+    {
+      "text": "Child Transaction NOT annotated with class-level @EventSourced \u2014 reached via parent",
+      "passed": true,
+      "evidence": "forbidden `@EventSourced` absent from Transaction.java \u2014 good"
+    },
+    {
+      "text": "Child Transaction NOT annotated with @EventSourcedEntity \u2014 reached via parent",
+      "passed": true,
+      "evidence": "forbidden `@EventSourcedEntity` absent from Transaction.java \u2014 good"
+    },
+    {
+      "text": "AggregateLifecycle gone from child too",
+      "passed": false,
+      "evidence": "forbidden substring `AggregateLifecycle` STILL present in Transaction.java"
+    },
+    {
+      "text": "Success result",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 10,
+    "total": 12,
+    "pass_rate": 0.1667
+  }
+}

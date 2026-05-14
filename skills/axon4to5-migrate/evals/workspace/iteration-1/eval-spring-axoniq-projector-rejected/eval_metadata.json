@@ -1,0 +1,71 @@
+{
+  "eval_id": 18,
+  "eval_name": "spring-axoniq-projector-rejected",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. The source is a read-model projector (@ProcessingGroup + @EventHandler), NOT an aggregate. The orchestrator's Match step in single mode must EITHER ask which recipe to apply OR (if it forces aggregate based on the user's recipe hint) the aggregate recipe must reject. For this eval, assume the user pinned recipe=aggregate \u2014 the recipe's # Applicable predicate must reject. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "The orchestrator emits a `**Result:** \u23ed\ufe0f Rejected` block. The source on disk is unchanged \u2014 the aggregate recipe's `# Applicable` predicate decided this is not an aggregate.",
+  "expectations": [
+    "Rejected outcome emoji (\u23ed\ufe0f)",
+    "Rejected text present",
+    "Recipe identifier present",
+    "Source untouched: original @ProcessingGroup intact",
+    "No @EventSourced added to a projector",
+    "No @EventSourcedEntity added to a projector",
+    "No @EntityCreator added to a projector"
+  ],
+  "category": "rejected-not-aggregate",
+  "fixture": "axon4/heroes/DwellingReadModelProjector.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Rejected",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u23ed",
+      "text": "Rejected outcome emoji (\u23ed\ufe0f)"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Rejected",
+      "text": "Rejected text present"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "axon4to5-aggregate",
+      "text": "Recipe identifier present"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@ProcessingGroup",
+      "text": "Source untouched: original @ProcessingGroup intact"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@EventSourced",
+      "text": "No @EventSourced added to a projector"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@EventSourcedEntity",
+      "text": "No @EventSourcedEntity added to a projector"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@EntityCreator",
+      "text": "No @EntityCreator added to a projector"
+    }
+  ]
+}

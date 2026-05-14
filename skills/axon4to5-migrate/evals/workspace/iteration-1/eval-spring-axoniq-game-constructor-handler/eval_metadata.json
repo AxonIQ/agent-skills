@@ -1,0 +1,92 @@
+{
+  "eval_id": 5,
+  "eval_name": "spring-axoniq-game-constructor-handler",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Game has a CONSTRUCTOR-STYLE @CommandHandler (`public Game(RegisterGameCommand)`), a @Profile(\"command\") Spring annotation that must be preserved, and an @ExceptionHandler (which is an Axon, not Spring, interceptor). Apply the aggregate recipe in-place. Copy the Result block verbatim to $WORKSPACE/result.md.",
+  "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+  "expectations": [
+    "Path A annotation @EventSourced applied",
+    "tagKey explicit on @EventSourced",
+    "Spring @Profile preserved (non-Axon annotation)",
+    "@EntityCreator on constructor (likely on the RegisterGame factory or no-arg one)",
+    "EventAppender used in @CommandHandler methods",
+    "EventAppender.append(...) invoked",
+    "@AggregateIdentifier removed",
+    "AggregateLifecycle removed",
+    "AF4 @Aggregate import removed",
+    "Success result"
+  ],
+  "category": "spring-path-constructor-handler",
+  "fixture": "axon4/gamerental/Game.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EventSourced",
+      "text": "Path A annotation @EventSourced applied"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "tagKey",
+      "text": "tagKey explicit on @EventSourced"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@Profile(\"command\")",
+      "text": "Spring @Profile preserved (non-Axon annotation)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "@EntityCreator",
+      "text": "@EntityCreator on constructor (likely on the RegisterGame factory or no-arg one)"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "EventAppender",
+      "text": "EventAppender used in @CommandHandler methods"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": ".append(",
+      "text": "EventAppender.append(...) invoked"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier",
+      "text": "@AggregateIdentifier removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle",
+      "text": "AggregateLifecycle removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.spring.stereotype.Aggregate",
+      "text": "AF4 @Aggregate import removed"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Success result"
+    }
+  ]
+}
