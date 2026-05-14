@@ -49,7 +49,7 @@ Steps (after the common pre-steps):
 1. Match user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's `applicable` block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `name` + `description`. If ambiguous → ask user via `AskUserQuestion` to pick. If no `applicable` block matches and description is also unclear → STOP and report.
 2. `Read` the chosen recipe file (`references/recipes/<name>/RECIPE.md`) and execute it per the **Recipe sub-flow** below. Recipe-local auxiliary files (examples, fixtures, supporting docs) live alongside it under `references/recipes/<name>/`.
 3. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
-4. Report: recipe used, files changed (since OpenRewrite step), follow-ups.
+4. Render the report (see Queue flow § Render report).
 
 MUST NOT:
 
@@ -72,7 +72,7 @@ Steps (after the common pre-steps):
 3. **Drain the queue** — for each item run the Recipe sub-flow:
    - `execution=inline` → run in main session, sequentially.
    - `execution=subagent` → dispatch each item to a `general-purpose` subagent. Batch independent items in a single `Agent` tool message so they run in parallel. Subagent receives `(recipe path, source, framework, configuration)` and the full Recipe sub-flow spec; returns one result block (`RESULT:` line + NOTES). Orchestrator parses and records.
-4. **Summary report** — per-recipe tally of ✅ / ⚠ / ⏭ / ❌ + a list of all non-Success items with their NOTES.
+4. Render the report (see Queue flow § Render report).
 
 MUST NOT:
 
@@ -101,33 +101,16 @@ flowchart TD
     P1 --> Q[(Migration queue)]
     P2 --> Q
 
-    %% shared processing loop
-    Q --> L{queue empty?}
-    L -- no --> W[["Run recipe sub-flow<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
-    W --> REC["record result<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
-    REC --> Q
-    L -- yes --> M{mode policy}
-
-    %% empty-queue behavior per mode
-    M -- single --> E["Report &amp; END"]
-    M -- project --> E2["Summary report<br/>per-recipe ✅/⚠/⏭/❌<br/>+ non-Success items + NOTES<br/>&amp; END"]
+    %% shared processing loop — items stay in the queue, state transitions write back to it
+    Q --> L{any pending<br/>items in queue?}
+    L -- yes --> INP["pick next pending →<br/>mark in-progress in queue"]
+    INP --> W[["Run recipe sub-flow on that item<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
+    W --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
+    DONE --> Q
+    L -- no --> RPT["Render report &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
 ```
 
 > The `[[Run recipe sub-flow]]` node is the **nested** sub-flow defined below. The queue only reacts to the recipe's emitted result.
-
-### Queue-level result handling
-
-| Result     | Queue action                | `single` mode end-state | `project` mode end-state             |
-|------------|-----------------------------|-------------------------|--------------------------------------|
-| `Success`  | mark item done, drain next  | Report ✅                | tallied under ✅ in summary           |
-| `Blocker`  | record + drain next         | Report ⚠ with reason    | listed under ⚠ in summary + NOTES    |
-| `Rejected` | record + drain next         | Report ⏭ with reason    | listed under ⏭ in summary + NOTES    |
-| `Failure`  | record + drain next         | Report ❌ with reason    | listed under ❌ in summary + NOTES    |
-
-Rule of thumb:
-
-- `single` → enqueue exactly 1, process, END (report whichever result came back).
-- `project` → Discovery enqueues N (one per matching `(recipe, source)`), drain (sequential if `execution=inline`, parallel batches if `execution=subagent`), END with summary report. Single-item failures never halt the queue.
 
 ## Recipe sub-flow
 
