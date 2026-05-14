@@ -106,4 +106,4 @@ public record FindOneQuery(String bikeId) {}
 
 - **Dispatch side coupling**: The `queryGateway.query("findAll", ...)` calls elsewhere MUST also be updated (query-gateway recipe, use-case 04). Handler and dispatch sides must agree on payload class.
 - **@Query annotation omittable if names match**: If the record simple name happens to equal the AF4 queryName string exactly (case-sensitive), `@Query` is not required. In practice this rarely happens because Java class names are typically PascalCase while AF4 query names were camelCase.
-- **Inner vs top-level records**: Inner records work for small projections. Prefer a separate API class (e.g. `queries/FindAllQuery.java`) when the record is shared by multiple classes.
+- **Records must be top-level**: Always create query records as separate top-level classes in the project's query API package — never as inner classes of the handler. They are shared API used by both handler and dispatch sides.
