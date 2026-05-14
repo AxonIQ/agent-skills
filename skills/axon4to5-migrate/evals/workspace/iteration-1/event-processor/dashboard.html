@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "axon4to5-migrate/event-processor", "runs": [{"id": "eval-native-axoniq-messaging-configurer-event-processing-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "AxonProcessorConfigNative.java", "type": "text", "content": "package com.example.config;\n\n// AF5 non-Spring bootstrap that wires a pooled streaming processor via MessagingConfigurer.eventProcessing(...).\n// See use-case 05 (native-configurer-event-processing).\n\nimport org.axonframework.eventsourcing.configuration.EventSourcingConfigurer;\nimport org.axonframework.messaging.configuration.MessagingConfigurer;\n\npublic class AxonProcessorConfigNative {\n\n    public static void main(String[] args) {\n        EventSourcingConfigurer eventSourcing = EventSourcingConfigurer.create();\n\n        eventSourcing.messaging(messaging ->\n            messaging.eventProcessing(eventProcessing ->\n                eventProcessing.pooledStreaming(pooledStreaming ->\n                    pooledStreaming.processor(\"ReadModel_Dwelling\", module ->\n                        module.eventHandlingComponents(components ->\n                                  components.autodetected(cfg ->\n                                      new DwellingReadModelProjector(\n                                          cfg.getComponent(DwellingReadModelRepository.class)\n                                      )\n                                  )\n                              )\n                              .customized((cfg, conf) -> conf.batchSize(100).initialSegmentCount(8))\n                    )\n                )\n            )\n        );\n\n        eventSourcing.start();\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.example.config.AxonProcessorConfigNative`\n**Recipe:** axon4to5-event-processor\n\n**Notes:**\n- Replaced AF4 `DefaultConfigurer.defaultConfiguration()` + `EventProcessingConfigurer.registerPooledStreamingEventProcessor(...)` chain with the AF5 `EventSourcingConfigurer.create()` + `MessagingConfigurer.eventProcessing(...)` fluent block (Path B \u2014 native).\n- Dropped imports: `org.axonframework.config.Configurer`, `org.axonframework.config.DefaultConfigurer`. The implicit AF4 `EventProcessingConfigurer` reference is also gone.\n- Added imports: `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`, `org.axonframework.messaging.configuration.MessagingConfigurer`.\n- Processor name `ReadModel_Dwelling` preserved as the binding contract; matches the projector's `@Namespace` value and any external references.\n- Handler registration migrated from `.registerEventHandler(...)` + `.assignHandlerTypesMatching(...)` to `module.eventHandlingComponents(components -> components.autodetected(cfg -> new DwellingReadModelProjector(cfg.getComponent(DwellingReadModelRepository.class))))` \u2014 the AF5 fluent block adopts the component for the surrounding processor.\n- Customisation `(config, builder) -> builder.initialSegmentCount(8).batchSize(100)` preserved as `.customized((cfg, conf) -> conf.batchSize(100).initialSegmentCount(8))`.\n- Lifecycle moved from `configurer.buildConfiguration().start()` to `eventSourcing.start()`.\n- Did NOT introduce `org.axonframework.extension.spring.config.EventProcessorDefinition` \u2014 that bean type is Spring-only (Path A); this is the native Path B per use-case 05.\n\n**Learnings:**\n- None flagged: no DLQ, no `@EventHandlerInterceptor`, no orphaned `@Bean SequencingPolicy` in scope (file is a non-Spring bootstrap, not the projector class).\n"}], "grading": {"expectations": [{"text": "eventProcessing fluent block used", "passed": true, "evidence": "found `eventProcessing` in AxonProcessorConfigNative.java"}, {"text": "pooledStreaming fluent block used", "passed": true, "evidence": "found `pooledStreaming` in AxonProcessorConfigNative.java"}, {"text": "Processor name preserved", "passed": true, "evidence": "found `processor(\"ReadModel_Dwelling\"` in AxonProcessorConfigNative.java"}, {"text": "eventHandlingComponents wiring", "passed": true, "evidence": "found `eventHandlingComponents` in AxonProcessorConfigNative.java"}, {"text": "autodetected(...) component wiring", "passed": true, "evidence": "found `autodetected` in AxonProcessorConfigNative.java"}, {"text": "AF4 DefaultConfigurer removed", "passed": true, "evidence": "forbidden `DefaultConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 EventProcessingConfigurer removed", "passed": true, "evidence": "forbidden `EventProcessingConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 register call removed", "passed": true, "evidence": "forbidden `registerPooledStreamingEventProcessor` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 matcher removed", "passed": true, "evidence": "forbidden `assignHandlerTypesMatching` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Spring-only EventProcessorDefinition NOT introduced in native config", "passed": true, "evidence": "forbidden `EventProcessorDefinition` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 12, "failed": 0, "total": 12, "pass_rate": 1.0}}}, {"id": "eval-native-axoniq-messaging-configurer-event-processing-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "AxonProcessorConfigNative.java", "type": "text", "content": "package com.example.config;\n\n// AF4 non-Spring bootstrap that wires a pooled streaming processor via EventProcessingConfigurer.\n// AF5 equivalent uses MessagingConfigurer.eventProcessing(...) \u2014 see use-case 05.\n\nimport org.axonframework.config.Configurer;\nimport org.axonframework.config.DefaultConfigurer;\n\npublic class AxonProcessorConfigNative {\n\n    public static void main(String[] args) {\n        Configurer configurer = DefaultConfigurer.defaultConfiguration();\n\n        configurer.eventProcessing()\n                  .registerPooledStreamingEventProcessor(\n                          \"ReadModel_Dwelling\",\n                          org.axonframework.config.Configuration::eventStore,\n                          (config, builder) -> builder.initialSegmentCount(8).batchSize(100)\n                  )\n                  .assignHandlerTypesMatching(\n                          \"ReadModel_Dwelling\",\n                          type -> type.getPackageName()\n                                      .startsWith(\"com.dddheroes.heroesofddd.creaturerecruitment.read\")\n                  )\n                  .registerEventHandler(c -> new DwellingReadModelProjector(\n                          c.getComponent(DwellingReadModelRepository.class)\n                  ));\n\n        configurer.buildConfiguration().start();\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "eventProcessing fluent block used", "passed": true, "evidence": "found `eventProcessing` in AxonProcessorConfigNative.java"}, {"text": "pooledStreaming fluent block used", "passed": false, "evidence": "missing required substring `pooledStreaming` in AxonProcessorConfigNative.java"}, {"text": "Processor name preserved", "passed": false, "evidence": "missing required substring `processor(\"ReadModel_Dwelling\"` in AxonProcessorConfigNative.java"}, {"text": "eventHandlingComponents wiring", "passed": false, "evidence": "missing required substring `eventHandlingComponents` in AxonProcessorConfigNative.java"}, {"text": "autodetected(...) component wiring", "passed": false, "evidence": "none of ['autodetected', 'components.autodetected'] found in AxonProcessorConfigNative.java"}, {"text": "AF4 DefaultConfigurer removed", "passed": false, "evidence": "forbidden substring `DefaultConfigurer` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 EventProcessingConfigurer removed", "passed": false, "evidence": "forbidden substring `EventProcessingConfigurer` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 register call removed", "passed": false, "evidence": "forbidden substring `registerPooledStreamingEventProcessor` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 matcher removed", "passed": false, "evidence": "forbidden substring `assignHandlerTypesMatching` STILL present in AxonProcessorConfigNative.java"}, {"text": "Spring-only EventProcessorDefinition NOT introduced in native config", "passed": true, "evidence": "forbidden `EventProcessorDefinition` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 2, "failed": 10, "total": 12, "pass_rate": 0.1667}}}, {"id": "eval-spring-axoniq-aggregate-rejected-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "Calendar.java", "type": "text", "content": "package com.dddheroes.heroesofddd.calendar.write;\n\nimport com.dddheroes.heroesofddd.calendar.write.finishday.CanOnlyFinishCurrentDay;\nimport com.dddheroes.heroesofddd.calendar.events.DayFinished;\nimport com.dddheroes.heroesofddd.calendar.write.finishday.FinishDay;\nimport com.dddheroes.heroesofddd.calendar.write.startday.CannotSkipDays;\nimport com.dddheroes.heroesofddd.calendar.events.DayStarted;\nimport com.dddheroes.heroesofddd.calendar.write.startday.StartDay;\nimport org.axonframework.commandhandling.CommandHandler;\nimport org.axonframework.eventsourcing.EventSourcingHandler;\nimport org.axonframework.modelling.command.AggregateCreationPolicy;\nimport org.axonframework.modelling.command.AggregateIdentifier;\nimport org.axonframework.modelling.command.CreationPolicy;\nimport org.axonframework.spring.stereotype.Aggregate;\n\nimport static org.axonframework.modelling.command.AggregateLifecycle.apply;\n\n@Aggregate\nclass Calendar {\n\n    @AggregateIdentifier\n    private CalendarId calendarId;\n    private Month currentMonth;\n    private Week currentWeek;\n    private Day currentDay;\n\n    @CommandHandler\n    @CreationPolicy(AggregateCreationPolicy.CREATE_IF_MISSING)\n        // performance downside in comparison to constructor\n    void decide(StartDay command) {\n        new CannotSkipDays(command, currentMonth, currentWeek, currentDay).verify();\n\n        apply(\n                DayStarted.event(\n                        command.calendarId(),\n                        command.month(),\n                        command.week(),\n                        command.day()\n                )\n        );\n    }\n\n    @EventSourcingHandler\n    void evolve(DayStarted event) {\n        calendarId = new CalendarId(event.calendarId());\n        currentMonth = new Month(event.month());\n        currentWeek = new Week(event.week());\n        currentDay = new Day(event.day());\n    }\n\n    @CommandHandler\n    void decide(FinishDay command) {\n        new CanOnlyFinishCurrentDay(command, currentMonth, currentWeek, currentDay).verify();\n\n        apply(\n                DayFinished.event(\n                        command.calendarId(),\n                        command.month(),\n                        command.week(),\n                        command.day()\n                )\n        );\n    }\n\n    Calendar() {\n        // required by Axon\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u23ed\ufe0f Rejected\n**Source:** `com.dddheroes.heroesofddd.calendar.write.Calendar`\n**Recipe:** axon4to5-event-processor\n\n**Notes:** Applicable predicate 2 \u2014 `@Aggregate` + `@EventSourcingHandler` \u2014 failed at `Calendar.java:18` (class annotated `@Aggregate`) with `@EventSourcingHandler` method at `Calendar.java:43`. This is an event-sourced aggregate, not an event-processor. Route to the aggregate recipe (`axon4to5-aggregate`). No edits made to `Calendar.java`; source remains byte-identical (no `@Namespace`, no AF5 `@EventHandler` import, no `@EntityCreator` added).\n"}], "grading": {"expectations": [{"text": "Rejected emoji", "passed": true, "evidence": "found `Result:** \u23ed` in result.md"}, {"text": "Rejected text", "passed": true, "evidence": "found `Rejected` in result.md"}, {"text": "Notes name aggregate as the routing target", "passed": true, "evidence": "found `aggregate` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}, {"text": "Source untouched: @Aggregate present", "passed": true, "evidence": "found `@Aggregate` in Calendar.java"}, {"text": "No @Namespace added", "passed": true, "evidence": "forbidden `@Namespace` absent from Calendar.java \u2014 good"}, {"text": "No AF5 @EventHandler import added", "passed": true, "evidence": "forbidden `org.axonframework.messaging.eventhandling.annotation.EventHandler` absent from Calendar.java \u2014 good"}, {"text": "No @EntityCreator added (aggregate recipe's territory)", "passed": true, "evidence": "forbidden `@EntityCreator` absent from Calendar.java \u2014 good"}], "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-aggregate-rejected-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "Calendar.java", "type": "text", "content": "package com.dddheroes.heroesofddd.calendar.write;\n\nimport com.dddheroes.heroesofddd.calendar.write.finishday.CanOnlyFinishCurrentDay;\nimport com.dddheroes.heroesofddd.calendar.events.DayFinished;\nimport com.dddheroes.heroesofddd.calendar.write.finishday.FinishDay;\nimport com.dddheroes.heroesofddd.calendar.write.startday.CannotSkipDays;\nimport com.dddheroes.heroesofddd.calendar.events.DayStarted;\nimport com.dddheroes.heroesofddd.calendar.write.startday.StartDay;\nimport org.axonframework.commandhandling.CommandHandler;\nimport org.axonframework.eventsourcing.EventSourcingHandler;\nimport org.axonframework.modelling.command.AggregateCreationPolicy;\nimport org.axonframework.modelling.command.AggregateIdentifier;\nimport org.axonframework.modelling.command.CreationPolicy;\nimport org.axonframework.spring.stereotype.Aggregate;\n\nimport static org.axonframework.modelling.command.AggregateLifecycle.apply;\n\n@Aggregate\nclass Calendar {\n\n    @AggregateIdentifier\n    private CalendarId calendarId;\n    private Month currentMonth;\n    private Week currentWeek;\n    private Day currentDay;\n\n    @CommandHandler\n    @CreationPolicy(AggregateCreationPolicy.CREATE_IF_MISSING)\n        // performance downside in comparison to constructor\n    void decide(StartDay command) {\n        new CannotSkipDays(command, currentMonth, currentWeek, currentDay).verify();\n\n        apply(\n                DayStarted.event(\n                        command.calendarId(),\n                        command.month(),\n                        command.week(),\n                        command.day()\n                )\n        );\n    }\n\n    @EventSourcingHandler\n    void evolve(DayStarted event) {\n        calendarId = new CalendarId(event.calendarId());\n        currentMonth = new Month(event.month());\n        currentWeek = new Week(event.week());\n        currentDay = new Day(event.day());\n    }\n\n    @CommandHandler\n    void decide(FinishDay command) {\n        new CanOnlyFinishCurrentDay(command, currentMonth, currentWeek, currentDay).verify();\n\n        apply(\n                DayFinished.event(\n                        command.calendarId(),\n                        command.month(),\n                        command.week(),\n                        command.day()\n                )\n        );\n    }\n\n    Calendar() {\n        // required by Axon\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "Rejected emoji", "passed": false, "evidence": "missing required substring `Result:** \u23ed` in result.md"}, {"text": "Rejected text", "passed": false, "evidence": "missing required substring `Rejected` in result.md"}, {"text": "Notes name aggregate as the routing target", "passed": false, "evidence": "missing required substring `aggregate` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}, {"text": "Source untouched: @Aggregate present", "passed": true, "evidence": "found `@Aggregate` in Calendar.java"}, {"text": "No @Namespace added", "passed": true, "evidence": "forbidden `@Namespace` absent from Calendar.java \u2014 good"}, {"text": "No AF5 @EventHandler import added", "passed": true, "evidence": "forbidden `org.axonframework.messaging.eventhandling.annotation.EventHandler` absent from Calendar.java \u2014 good"}, {"text": "No @EntityCreator added (aggregate recipe's territory)", "passed": true, "evidence": "forbidden `@EntityCreator` absent from Calendar.java \u2014 good"}], "summary": {"passed": 4, "failed": 4, "total": 8, "pass_rate": 0.5}}}, {"id": "eval-spring-axoniq-custom-sequencing-policy-rewrite-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "TenantAndGameSequencingPolicy.java", "type": "text", "content": "package com.example.sequencing;\n\n// AF4 custom SequencingPolicy that derives the sequence id from two metadata keys.\n// AF5 form rewires the interface, method signature, accessor names, and return wrapping.\n\nimport org.axonframework.messaging.core.ProcessingContext;\nimport org.axonframework.messaging.core.sequencing.SequencingPolicy;\nimport org.axonframework.messaging.eventhandling.EventMessage;\n\nimport java.util.Optional;\n\npublic class TenantAndGameSequencingPolicy implements SequencingPolicy {\n\n    public static final String TENANT_KEY = \"tenant-id\";\n    public static final String GAME_ID_KEY = \"game-id\";\n\n    @Override\n    public Optional<Object> sequenceIdentifierFor(EventMessage message, ProcessingContext context) {\n        String tenant = (String) message.metaData().get(TENANT_KEY);\n        String gameId = (String) message.metaData().get(GAME_ID_KEY);\n        if (tenant == null || gameId == null) {\n            return Optional.empty();\n        }\n        return Optional.of(tenant + \":\" + gameId);\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.example.sequencing.TenantAndGameSequencingPolicy`\n**Recipe:** axon4to5-event-processor\n\n**Notes:**\n- Custom `SequencingPolicy` migrated per Step 7 (use-case 06).\n- Interface swapped: `org.axonframework.eventhandling.async.SequencingPolicy<EventMessage<?>>` \u2192 `org.axonframework.messaging.core.sequencing.SequencingPolicy` (generic parameter dropped \u2014 AF5 binds message type at registration).\n- `EventMessage` import moved: `org.axonframework.eventhandling.EventMessage` \u2192 `org.axonframework.messaging.eventhandling.EventMessage`.\n- Added imports: `org.axonframework.messaging.core.ProcessingContext`, `java.util.Optional`.\n- Method renamed + signature changed: `Object getSequenceIdentifierFor(EventMessage<?> event)` \u2192 `Optional<Object> sequenceIdentifierFor(EventMessage message, ProcessingContext context)`. AF5 `Message` is non-generic \u2014 dropped `<?>`.\n- Body rewrites: `event.getMetaData()` \u2192 `message.metaData()`; `return null;` \u2192 `return Optional.empty();`; `return tenant + \":\" + gameId;` \u2192 `return Optional.of(tenant + \":\" + gameId);`.\n\n**Learnings:**\n- The projector class that depends on this policy must carry class-level `@SequencingPolicy(type = TenantAndGameSequencingPolicy.class)` (no `parameters` for custom policies). AF4 `assignSequencingPolicy(...)` / YAML `axon.eventhandling.processors.<group>.sequencing-policy` references must be removed (handled by the projector's own recipe run).\n- Returning bare `null` from `Optional<Object>` would compile but NPE at scheduler \u2014 verified zero `return null` remain.\n"}], "grading": {"expectations": [{"text": "AF5 SequencingPolicy import", "passed": true, "evidence": "found `org.axonframework.messaging.core.sequencing.SequencingPolicy` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 EventMessage import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.EventMessage` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 ProcessingContext import", "passed": true, "evidence": "found `org.axonframework.messaging.core.ProcessingContext` in TenantAndGameSequencingPolicy.java"}, {"text": "Method renamed to sequenceIdentifierFor", "passed": true, "evidence": "found `sequenceIdentifierFor` in TenantAndGameSequencingPolicy.java"}, {"text": "Return type Optional<Object>", "passed": true, "evidence": "found `Optional<Object>` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional wrapping used", "passed": true, "evidence": "found `Optional.of(` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional.empty() replaces return null", "passed": true, "evidence": "found `Optional.empty()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 record-style metaData() accessor used", "passed": true, "evidence": "found `message.metaData()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 SequencingPolicy import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.async.SequencingPolicy` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 EventMessage import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventMessage` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 method name removed", "passed": true, "evidence": "forbidden `getSequenceIdentifierFor` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 getMetaData() accessor removed", "passed": true, "evidence": "forbidden `event.getMetaData()` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "Bare 'return null' replaced by Optional.empty()", "passed": true, "evidence": "forbidden `return null` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 15, "failed": 0, "total": 15, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-custom-sequencing-policy-rewrite-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "TenantAndGameSequencingPolicy.java", "type": "text", "content": "package com.example.sequencing;\n\n// AF4 custom SequencingPolicy that derives the sequence id from two metadata keys.\n// AF5 form rewires the interface, method signature, accessor names, and return wrapping.\n\nimport org.axonframework.eventhandling.EventMessage;\nimport org.axonframework.eventhandling.async.SequencingPolicy;\n\npublic class TenantAndGameSequencingPolicy implements SequencingPolicy<EventMessage<?>> {\n\n    public static final String TENANT_KEY = \"tenant-id\";\n    public static final String GAME_ID_KEY = \"game-id\";\n\n    @Override\n    public Object getSequenceIdentifierFor(EventMessage<?> event) {\n        String tenant = (String) event.getMetaData().get(TENANT_KEY);\n        String gameId = (String) event.getMetaData().get(GAME_ID_KEY);\n        if (tenant == null || gameId == null) {\n            return null;\n        }\n        return tenant + \":\" + gameId;\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "AF5 SequencingPolicy import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.sequencing.SequencingPolicy` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 EventMessage import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.EventMessage` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 ProcessingContext import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.ProcessingContext` in TenantAndGameSequencingPolicy.java"}, {"text": "Method renamed to sequenceIdentifierFor", "passed": false, "evidence": "missing required substring `sequenceIdentifierFor` in TenantAndGameSequencingPolicy.java"}, {"text": "Return type Optional<Object>", "passed": false, "evidence": "missing required substring `Optional<Object>` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional wrapping used", "passed": false, "evidence": "none of ['Optional.of(', 'Optional.ofNullable('] found in TenantAndGameSequencingPolicy.java"}, {"text": "Optional.empty() replaces return null", "passed": false, "evidence": "missing required substring `Optional.empty()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 record-style metaData() accessor used", "passed": false, "evidence": "none of ['message.metaData()', '.metaData().get('] found in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 SequencingPolicy import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.async.SequencingPolicy` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 EventMessage import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventMessage` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 method name removed", "passed": false, "evidence": "forbidden substring `getSequenceIdentifierFor` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 getMetaData() accessor removed", "passed": false, "evidence": "forbidden substring `event.getMetaData()` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "Bare 'return null' replaced by Optional.empty()", "passed": false, "evidence": "forbidden substring `return null` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 0, "failed": 15, "total": 15, "pass_rate": 0.0}}}, {"id": "eval-spring-axoniq-dual-role-event-and-query-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "GetAllDwellingsQueryHandler.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.read.getalldwellings;\n\nimport com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModel;\nimport com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModelRepository;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.DwellingBuilt;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.messaging.core.annotation.MetadataValue;\nimport org.axonframework.messaging.core.annotation.Namespace;\nimport org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy;\nimport org.axonframework.messaging.core.sequencing.annotation.SequencingPolicy;\nimport org.axonframework.messaging.eventhandling.annotation.EventHandler;\nimport org.axonframework.messaging.queryhandling.annotation.QueryHandler;\nimport org.springframework.stereotype.Component;\n\nimport java.util.concurrent.ConcurrentLinkedDeque;\nimport java.util.stream.Stream;\n\n@Namespace(\"Read_GetAllDwellings_QueryCache\")\n@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)\n@Component\nclass GetAllDwellingsQueryHandler {\n\n    private final DwellingReadModelRepository dwellingReadModelRepository;\n    private final ConcurrentLinkedDeque<DwellingReadModel> cache = new ConcurrentLinkedDeque<>();\n\n    GetAllDwellingsQueryHandler(DwellingReadModelRepository dwellingReadModelRepository) {\n        this.dwellingReadModelRepository = dwellingReadModelRepository;\n    }\n\n    @QueryHandler\n    GetAllDwellings.Result handle(GetAllDwellings query) {\n        var gameId = query.gameId().raw();\n        var dwellings = dwellingReadModelRepository.findAllByGameId(gameId);\n        var result = Stream.concat(\n                        dwellings.stream(),\n                        cache.stream().filter(it -> it.getGameId().equals(gameId))\n                ) // todo: check ordering\n                .distinct()\n                .toList();\n        return new GetAllDwellings.Result(result);\n    }\n\n    @EventHandler\n    void evolve(DwellingBuilt event, @MetadataValue(GameMetaData.GAME_ID_KEY) String gameId) {\n        while (cache.size() > 20) {\n            cache.pollFirst();\n        }\n        var item = new DwellingReadModel(\n                gameId,\n                event.dwellingId(),\n                event.creatureId(),\n                event.costPerTroop(),\n                0\n        );\n        if (!cache.contains(item)) { // todo: check if there are any concurrency issues\n            cache.push(item);\n        }\n    }\n}\n\n// without cache\n//@Component\n//class GetAllDwellingsQueryHandler {\n//\n//    private final DwellingReadModelRepository dwellingReadModelRepository;\n//\n//    GetAllDwellingsQueryHandler(DwellingReadModelRepository dwellingReadModelRepository) {\n//        this.dwellingReadModelRepository = dwellingReadModelRepository;\n//    }\n//\n//    @QueryHandler\n//    GetAllDwellings.Result handle(GetAllDwellings query) {\n//        var dwellings = dwellingReadModelRepository.findAll();\n//        return new GetAllDwellings.Result(dwellings);\n//    }\n//}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.dddheroes.heroesofddd.creaturerecruitment.read.getalldwellings.GetAllDwellingsQueryHandler`\n**Recipe:** axon4to5-event-processor\n\n**Notes:** Dual-role class (use-case 07) \u2014 both `@EventHandler` and `@QueryHandler` migrated to keep file internally consistent. Applied: `@ProcessingGroup(\"Read_GetAllDwellings_QueryCache\")` \u2192 `@Namespace(\"Read_GetAllDwellings_QueryCache\")` (string preserved); added class-level `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)`; AF4 \u2192 AF5 import swaps for `EventHandler`, `QueryHandler`, `MetaDataValue` \u2192 `MetadataValue`; `@MetaDataValue` parameter annotation rewritten on the `@EventHandler` method. `@Component`, method bodies, return types, and repository injection preserved verbatim.\n\n**Learnings:**\n- The `@QueryHandler` method on this class has no `@MetaDataValue` parameter \u2014 only the `@EventHandler` method required the parameter-annotation rewrite. The `@QueryHandler` import was still swapped to its AF5 location to keep the file internally consistent.\n- `ResponseType` is not used in this file; no query-handler response-type rewrites required.\n- Namespace string preserved as `\"Read_GetAllDwellings_QueryCache\"` (from the source `@ProcessingGroup`). Caller must ensure every external reference (YAML, `EventProcessorDefinition.pooledStreaming(...)`) uses the same string.\n"}], "grading": {"expectations": [{"text": "AF5 @QueryHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@QueryHandler kept", "passed": true, "evidence": "found `@QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@EventHandler kept", "passed": true, "evidence": "found `@EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@Namespace applied", "passed": true, "evidence": "found `@Namespace` in GetAllDwellingsQueryHandler.java"}, {"text": "@SequencingPolicy at class level", "passed": true, "evidence": "found `@SequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "MetadataSequencingPolicy used", "passed": true, "evidence": "found `MetadataSequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in GetAllDwellingsQueryHandler.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @QueryHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.queryhandling.QueryHandler` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @MetaDataValue (capital D) gone", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 16, "failed": 0, "total": 16, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-dual-role-event-and-query-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "GetAllDwellingsQueryHandler.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.read.getalldwellings;\n\nimport com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModel;\nimport com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModelRepository;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.DwellingBuilt;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.config.ProcessingGroup;\nimport org.axonframework.eventhandling.EventHandler;\nimport org.axonframework.messaging.annotation.MetaDataValue;\nimport org.axonframework.queryhandling.QueryHandler;\nimport org.springframework.stereotype.Component;\n\nimport java.util.concurrent.ConcurrentLinkedDeque;\nimport java.util.stream.Stream;\n\n@ProcessingGroup(\"Read_GetAllDwellings_QueryCache\")\n@Component\nclass GetAllDwellingsQueryHandler {\n\n    private final DwellingReadModelRepository dwellingReadModelRepository;\n    private final ConcurrentLinkedDeque<DwellingReadModel> cache = new ConcurrentLinkedDeque<>();\n\n    GetAllDwellingsQueryHandler(DwellingReadModelRepository dwellingReadModelRepository) {\n        this.dwellingReadModelRepository = dwellingReadModelRepository;\n    }\n\n    @QueryHandler\n    GetAllDwellings.Result handle(GetAllDwellings query) {\n        var gameId = query.gameId().raw();\n        var dwellings = dwellingReadModelRepository.findAllByGameId(gameId);\n        var result = Stream.concat(\n                        dwellings.stream(),\n                        cache.stream().filter(it -> it.getGameId().equals(gameId))\n                ) // todo: check ordering\n                .distinct()\n                .toList();\n        return new GetAllDwellings.Result(result);\n    }\n\n    @EventHandler\n    void evolve(DwellingBuilt event, @MetaDataValue(GameMetaData.GAME_ID_KEY) String gameId) {\n        while (cache.size() > 20) {\n            cache.pollFirst();\n        }\n        var item = new DwellingReadModel(\n                gameId,\n                event.dwellingId(),\n                event.creatureId(),\n                event.costPerTroop(),\n                0\n        );\n        if (!cache.contains(item)) { // todo: check if there are any concurrency issues\n            cache.push(item);\n        }\n    }\n}\n\n// without cache\n//@Component\n//class GetAllDwellingsQueryHandler {\n//\n//    private final DwellingReadModelRepository dwellingReadModelRepository;\n//\n//    GetAllDwellingsQueryHandler(DwellingReadModelRepository dwellingReadModelRepository) {\n//        this.dwellingReadModelRepository = dwellingReadModelRepository;\n//    }\n//\n//    @QueryHandler\n//    GetAllDwellings.Result handle(GetAllDwellings query) {\n//        var dwellings = dwellingReadModelRepository.findAll();\n//        return new GetAllDwellings.Result(dwellings);\n//    }\n//}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "AF5 @QueryHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@QueryHandler kept", "passed": true, "evidence": "found `@QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@EventHandler kept", "passed": true, "evidence": "found `@EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@Namespace applied", "passed": false, "evidence": "missing required substring `@Namespace` in GetAllDwellingsQueryHandler.java"}, {"text": "@SequencingPolicy at class level", "passed": false, "evidence": "missing required substring `@SequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "MetadataSequencingPolicy used", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in GetAllDwellingsQueryHandler.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @QueryHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @MetaDataValue (capital D) gone", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 3, "failed": 13, "total": 16, "pass_rate": 0.1875}}}, {"id": "eval-spring-axoniq-event-processor-definition-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "AxonProcessorConfigSpring.java", "type": "text", "content": "package com.example.config;\n\n// AF4 Spring @Configuration that wires a pooled streaming processor + handler matcher + customisation,\n// to be migrated to AF5 @Bean EventProcessorDefinition per use-case 04.\n\nimport org.axonframework.extension.spring.config.EventProcessorDefinition;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\n\n@Configuration\npublic class AxonProcessorConfigSpring {\n\n    @Bean\n    public EventProcessorDefinition readModelDwellingProcessor() {\n        return EventProcessorDefinition.pooledStreaming(\"ReadModel_Dwelling\")\n                .assigningHandlers(descriptor -> descriptor.beanType().getPackageName()\n                        .startsWith(\"com.dddheroes.heroesofddd.creaturerecruitment.read\"))\n                .customized(config -> config.initialSegmentCount(8).batchSize(100));\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.example.config.AxonProcessorConfigSpring`\n**Recipe:** axon4to5-event-processor\n\n**Notes:** Replaced the AF4 `@Bean ConfigurerModule configureProjectors()` body with `@Bean EventProcessorDefinition readModelDwellingProcessor()` using the fluent builder `EventProcessorDefinition.pooledStreaming(\"ReadModel_Dwelling\").assigningHandlers(...).customized(...)`. Removed AF4 imports `org.axonframework.config.ConfigurerModule` and `org.axonframework.config.EventProcessingConfigurer`; added `org.axonframework.extension.spring.config.EventProcessorDefinition`. `@Configuration` annotation and class name preserved. Namespace string `ReadModel_Dwelling` kept intact (binding contract with the projector's `@Namespace`).\n"}], "grading": {"expectations": [{"text": "AF5 EventProcessorDefinition used", "passed": true, "evidence": "found `EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "AF5 EventProcessorDefinition import", "passed": true, "evidence": "found `org.axonframework.extension.spring.config.EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "Pooled streaming name preserved", "passed": true, "evidence": "found `pooledStreaming(\"ReadModel_Dwelling\")` in AxonProcessorConfigSpring.java"}, {"text": "assigningHandlers chained", "passed": true, "evidence": "found `assigningHandlers` in AxonProcessorConfigSpring.java"}, {"text": "customized chained", "passed": true, "evidence": "found `customized` in AxonProcessorConfigSpring.java"}, {"text": "@Bean preserved", "passed": true, "evidence": "found `@Bean` in AxonProcessorConfigSpring.java"}, {"text": "AF4 ConfigurerModule reference removed", "passed": true, "evidence": "forbidden `ConfigurerModule` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 EventProcessingConfigurer reference removed", "passed": true, "evidence": "forbidden `EventProcessingConfigurer` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 register call removed", "passed": true, "evidence": "forbidden `registerPooledStreamingEventProcessor` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 handler matcher call removed", "passed": true, "evidence": "forbidden `assignHandlerTypesMatching` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 12, "failed": 0, "total": 12, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-event-processor-definition-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "AxonProcessorConfigSpring.java", "type": "text", "content": "package com.example.config;\n\n// AF4 Spring @Configuration that wires a pooled streaming processor + handler matcher + customisation,\n// to be migrated to AF5 @Bean EventProcessorDefinition per use-case 04.\n\nimport org.axonframework.config.ConfigurerModule;\nimport org.axonframework.config.EventProcessingConfigurer;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\n\n@Configuration\npublic class AxonProcessorConfigSpring {\n\n    @Bean\n    public ConfigurerModule configureProjectors() {\n        return configurer -> {\n            EventProcessingConfigurer processing = configurer.eventProcessing();\n            processing.registerPooledStreamingEventProcessor(\n                            \"ReadModel_Dwelling\",\n                            org.axonframework.config.Configuration::eventStore,\n                            (config, builder) -> builder.initialSegmentCount(8).batchSize(100)\n                    )\n                    .assignHandlerTypesMatching(\n                            \"ReadModel_Dwelling\",\n                            type -> type.getPackageName()\n                                        .startsWith(\"com.dddheroes.heroesofddd.creaturerecruitment.read\")\n                    );\n        };\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "AF5 EventProcessorDefinition used", "passed": true, "evidence": "found `EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "AF5 EventProcessorDefinition import", "passed": false, "evidence": "missing required substring `org.axonframework.extension.spring.config.EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "Pooled streaming name preserved", "passed": false, "evidence": "missing required substring `pooledStreaming(\"ReadModel_Dwelling\")` in AxonProcessorConfigSpring.java"}, {"text": "assigningHandlers chained", "passed": false, "evidence": "missing required substring `assigningHandlers` in AxonProcessorConfigSpring.java"}, {"text": "customized chained", "passed": false, "evidence": "missing required substring `customized` in AxonProcessorConfigSpring.java"}, {"text": "@Bean preserved", "passed": true, "evidence": "found `@Bean` in AxonProcessorConfigSpring.java"}, {"text": "AF4 ConfigurerModule reference removed", "passed": false, "evidence": "forbidden substring `ConfigurerModule` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 EventProcessingConfigurer reference removed", "passed": false, "evidence": "forbidden substring `EventProcessingConfigurer` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 register call removed", "passed": false, "evidence": "forbidden substring `registerPooledStreamingEventProcessor` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 handler matcher call removed", "passed": false, "evidence": "forbidden substring `assignHandlerTypesMatching` STILL present in AxonProcessorConfigSpring.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 2, "failed": 10, "total": 12, "pass_rate": 0.1667}}}, {"id": "eval-spring-axoniq-projector-with-command-dispatch-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "WhenCreatureRecruitedThenAddToArmyProcessor.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.automation;\n\nimport com.dddheroes.heroesofddd.armies.write.addcreature.AddCreatureToArmy;\nimport com.dddheroes.heroesofddd.creaturerecruitment.write.changeavailablecreatures.IncreaseAvailableCreatures;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.CreatureRecruited;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.messaging.commandhandling.gateway.CommandDispatcher;\nimport org.axonframework.messaging.core.MetaData;\nimport org.axonframework.messaging.core.Message;\nimport org.axonframework.messaging.core.annotation.MetadataValue;\nimport org.axonframework.messaging.core.annotation.Namespace;\nimport org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy;\nimport org.axonframework.messaging.core.sequencing.annotation.SequencingPolicy;\nimport org.axonframework.messaging.eventhandling.annotation.EventHandler;\nimport org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay;\nimport org.springframework.stereotype.Component;\n\nimport java.util.concurrent.CompletableFuture;\n\n@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")\n@DisallowReplay\n@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)\n@Component\nclass WhenCreatureRecruitedThenAddToArmyProcessor {\n\n    @EventHandler\n    CompletableFuture<? extends Message> react(\n            CreatureRecruited event,\n            @MetadataValue(GameMetaData.GAME_ID_KEY) String gameId,\n            @MetadataValue(GameMetaData.PLAYER_ID_KEY) String playerId,\n            CommandDispatcher commandDispatcher\n    ) {\n        MetaData metadata = GameMetaData.with(gameId, playerId);\n        var command = AddCreatureToArmy.command(\n                event.toArmy(),\n                event.creatureId(),\n                event.quantity()\n        );\n        return commandDispatcher.send(command, metadata)\n                .getResultMessage()\n                .thenApply(m -> (Message) m)\n                .exceptionallyCompose(failure -> {\n                    var compensatingAction = IncreaseAvailableCreatures.command(\n                            event.dwellingId(),\n                            event.creatureId(),\n                            event.quantity()\n                    );\n                    return commandDispatcher.send(compensatingAction, metadata)\n                            .getResultMessage()\n                            .thenApply(m -> m);\n                });\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.dddheroes.heroesofddd.creaturerecruitment.automation.WhenCreatureRecruitedThenAddToArmyProcessor`\n**Recipe:** axon4to5-event-processor\n\n**Notes:** Single-file migration per use-case 02 (projector with in-handler command dispatch). All Success Criteria match on first Apply: AF4 imports removed; `@ProcessingGroup` \u2192 `@Namespace` (string preserved); `@DisallowReplay`, `@EventHandler` swapped to AF5 packages; both `@MetaDataValue` parameters flipped to `@MetadataValue` (capital-D loss + package change); class-level `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)` added; `CommandGateway` field + constructor removed; `CommandDispatcher` added as last method parameter; handler return type now `CompletableFuture<? extends Message>` (AF5 `Message` is non-generic); `sendAndWait` rewritten to `send(...).getResultMessage()` with `.thenApply(m -> (Message) m).exceptionallyCompose(failure -> ...)` for the compensation path.\n\n**Learnings:**\n- `GameMetaData.with(gameId, playerId)` helper still produces `org.axonframework.messaging.core.MetaData` (AF5 package) \u2014 if the helper itself remains on AF4 `org.axonframework.messaging.MetaData`, command dispatch will fail at runtime even though it compiles. Flagged for the project-wide pass; helper migration is outside the strict event-processor recipe scope.\n"}], "grading": {"expectations": [{"text": "@Namespace with original processing-group string", "passed": true, "evidence": "found `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Namespace import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.Namespace` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": true, "evidence": "found `MetadataSequencingPolicy` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CommandDispatcher injected as method parameter", "passed": true, "evidence": "found `CommandDispatcher commandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 CommandDispatcher import", "passed": true, "evidence": "found `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @DisallowReplay import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@MetadataValue annotation used", "passed": true, "evidence": "found `@MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CompletableFuture import added", "passed": true, "evidence": "found `java.util.concurrent.CompletableFuture` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Async chain using getResultMessage()", "passed": true, "evidence": "found `.getResultMessage()` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @DisallowReplay import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.DisallowReplay` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @MetaDataValue usage removed (capital D)", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 CommandGateway import removed", "passed": true, "evidence": "forbidden `org.axonframework.commandhandling.gateway.CommandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "sendAndWait removed (replaced by async chain)", "passed": true, "evidence": "forbidden `sendAndWait` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Class-level CommandGateway field removed", "passed": true, "evidence": "forbidden `private final CommandGateway commandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF5 Message is non-generic \u2014 Message<?> must not appear", "passed": true, "evidence": "forbidden `Message<?>` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 22, "failed": 0, "total": 22, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-projector-with-command-dispatch-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "WhenCreatureRecruitedThenAddToArmyProcessor.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.automation;\n\nimport com.dddheroes.heroesofddd.armies.write.addcreature.AddCreatureToArmy;\nimport com.dddheroes.heroesofddd.creaturerecruitment.write.changeavailablecreatures.IncreaseAvailableCreatures;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.CreatureRecruited;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.commandhandling.gateway.CommandGateway;\nimport org.axonframework.config.ProcessingGroup;\nimport org.axonframework.eventhandling.DisallowReplay;\nimport org.axonframework.eventhandling.EventHandler;\nimport org.axonframework.messaging.annotation.MetaDataValue;\nimport org.springframework.stereotype.Component;\n\n@ProcessingGroup(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")\n@DisallowReplay\n@Component\nclass WhenCreatureRecruitedThenAddToArmyProcessor {\n\n    private final CommandGateway commandGateway;\n\n    WhenCreatureRecruitedThenAddToArmyProcessor(CommandGateway commandGateway) {\n        this.commandGateway = commandGateway;\n    }\n\n    @EventHandler\n    void react(\n            CreatureRecruited event,\n            @MetaDataValue(GameMetaData.GAME_ID_KEY) String gameId,\n            @MetaDataValue(GameMetaData.PLAYER_ID_KEY) String playerId\n    ) {\n        try {\n            var command = AddCreatureToArmy.command(\n                    event.toArmy(),\n                    event.creatureId(),\n                    event.quantity()\n            );\n            commandGateway.sendAndWait(command, GameMetaData.with(gameId, playerId));\n        } catch (Exception e) {\n            var compensatingAction = IncreaseAvailableCreatures.command(\n                    event.dwellingId(),\n                    event.creatureId(),\n                    event.quantity()\n            );\n            commandGateway.sendAndWait(compensatingAction, GameMetaData.with(gameId, playerId));\n        }\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "@Namespace with original processing-group string", "passed": false, "evidence": "missing required substring `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Namespace import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CommandDispatcher injected as method parameter", "passed": false, "evidence": "missing required substring `CommandDispatcher commandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 CommandDispatcher import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @DisallowReplay import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@MetadataValue annotation used", "passed": false, "evidence": "missing required substring `@MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CompletableFuture import added", "passed": false, "evidence": "missing required substring `java.util.concurrent.CompletableFuture` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Async chain using getResultMessage()", "passed": false, "evidence": "missing required substring `.getResultMessage()` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @DisallowReplay import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.DisallowReplay` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @MetaDataValue usage removed (capital D)", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 CommandGateway import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.commandhandling.gateway.CommandGateway` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "sendAndWait removed (replaced by async chain)", "passed": false, "evidence": "forbidden substring `sendAndWait` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Class-level CommandGateway field removed", "passed": false, "evidence": "forbidden substring `private final CommandGateway commandGateway` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Message is non-generic \u2014 Message<?> must not appear", "passed": true, "evidence": "forbidden `Message<?>` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 1, "failed": 21, "total": 22, "pass_rate": 0.0455}}}, {"id": "eval-spring-axoniq-pure-projector-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "DwellingReadModelProjector.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.read;\n\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.DwellingBuilt;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.AvailableCreaturesChanged;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.CreatureRecruited;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.messaging.core.annotation.MetadataValue;\nimport org.axonframework.messaging.core.annotation.Namespace;\nimport org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy;\nimport org.axonframework.messaging.core.sequencing.annotation.SequencingPolicy;\nimport org.axonframework.messaging.eventhandling.annotation.EventHandler;\nimport org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler;\nimport org.springframework.stereotype.Component;\n\n@Namespace(\"ReadModel_Dwelling\")\n@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)\n@Component\nclass DwellingReadModelProjector {\n\n    private final DwellingReadModelRepository repository;\n\n    DwellingReadModelProjector(DwellingReadModelRepository repository) {\n        this.repository = repository;\n    }\n\n    @EventHandler\n    void on(DwellingBuilt event, @MetadataValue(GameMetaData.GAME_ID_KEY) String gameId) {\n        var state = new DwellingReadModel(\n                gameId,\n                event.dwellingId(),\n                event.creatureId(),\n                event.costPerTroop(),\n                0\n        );\n        repository.save(state);\n    }\n\n    @EventHandler\n    void on(AvailableCreaturesChanged event) {\n        repository.findById(event.dwellingId())\n                  .map(state -> state.withAvailableCreatures(event.changedTo()))\n                  .ifPresent(repository::save);\n    }\n\n    @EventHandler\n    void on(CreatureRecruited event) {\n        repository.findById(event.dwellingId())\n                  .map(state -> state.withAvailableCreaturesDecreasedBy(event.quantity()))\n                  .ifPresent(repository::save);\n    }\n\n    @ResetHandler\n    void onReset() {\n        repository.deleteAll();\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModelProjector`\n**Recipe:** axon4to5-event-processor\n\n**Notes:** Pure-projector Spring variant (use-case 01). All Success Criteria match. `@ProcessingGroup(\"ReadModel_Dwelling\")` swapped to `@Namespace(\"ReadModel_Dwelling\")` (string preserved exactly). AF4 imports for `@EventHandler`, `@ResetHandler`, and `@MetaDataValue` replaced with their AF5 counterparts (`org.axonframework.messaging.eventhandling.annotation.EventHandler`, `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler`, `org.axonframework.messaging.core.annotation.MetadataValue`). `@MetaDataValue` parameter annotation flipped to `@MetadataValue` (capital `M`, lowercase `d`). Class-level `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)` added to preserve the AF4 `@Bean SequencingPolicy gameIdSequencingPolicy` behaviour. `@Component` (Spring stereotype) preserved. No `CommandDispatcher` introduced \u2014 pure read-side projector with no in-handler dispatch.\n\n**Learnings:**\n- AF4 `@Bean SequencingPolicy gameIdSequencingPolicy` keyed on `GameMetaData.GAME_ID_KEY` becomes orphan once all dependent processor groups have been migrated to class-level `@SequencingPolicy` \u2014 do not delete here; write-configuration cleanup owns bean removal.\n"}], "grading": {"expectations": [{"text": "@Namespace replaces @ProcessingGroup with same string", "passed": true, "evidence": "found `@Namespace(\"ReadModel_Dwelling\")` in DwellingReadModelProjector.java"}, {"text": "AF5 @Namespace import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.Namespace` in DwellingReadModelProjector.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": true, "evidence": "found `MetadataSequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "Class-level @SequencingPolicy applied", "passed": true, "evidence": "found `@SequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @ResetHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@MetadataValue annotation used", "passed": true, "evidence": "found `@MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @ResetHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.ResetHandler` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @MetaDataValue (capital D) usage removed", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @MetaDataValue import removed", "passed": true, "evidence": "forbidden `org.axonframework.messaging.annotation.MetaDataValue` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "NO CommandDispatcher introduced (pure projection)", "passed": true, "evidence": "forbidden `CommandDispatcher` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 18, "failed": 0, "total": 18, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-pure-projector-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "DwellingReadModelProjector.java", "type": "text", "content": "package com.dddheroes.heroesofddd.creaturerecruitment.read;\n\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.DwellingBuilt;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.AvailableCreaturesChanged;\nimport com.dddheroes.heroesofddd.creaturerecruitment.events.CreatureRecruited;\nimport com.dddheroes.heroesofddd.shared.application.GameMetaData;\nimport org.axonframework.config.ProcessingGroup;\nimport org.axonframework.eventhandling.EventHandler;\nimport org.axonframework.eventhandling.ResetHandler;\nimport org.axonframework.messaging.annotation.MetaDataValue;\nimport org.springframework.stereotype.Component;\n\n@ProcessingGroup(\"ReadModel_Dwelling\")\n@Component\nclass DwellingReadModelProjector {\n\n    private final DwellingReadModelRepository repository;\n\n    DwellingReadModelProjector(DwellingReadModelRepository repository) {\n        this.repository = repository;\n    }\n\n    @EventHandler\n    void on(DwellingBuilt event, @MetaDataValue(GameMetaData.GAME_ID_KEY) String gameId) {\n        var state = new DwellingReadModel(\n                gameId,\n                event.dwellingId(),\n                event.creatureId(),\n                event.costPerTroop(),\n                0\n        );\n        repository.save(state);\n    }\n\n    @EventHandler\n    void on(AvailableCreaturesChanged event) {\n        repository.findById(event.dwellingId())\n                  .map(state -> state.withAvailableCreatures(event.changedTo()))\n                  .ifPresent(repository::save);\n    }\n\n    @EventHandler\n    void on(CreatureRecruited event) {\n        repository.findById(event.dwellingId())\n                  .map(state -> state.withAvailableCreaturesDecreasedBy(event.quantity()))\n                  .ifPresent(repository::save);\n    }\n\n    @ResetHandler\n    void onReset() {\n        repository.deleteAll();\n    }\n}\n"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "@Namespace replaces @ProcessingGroup with same string", "passed": false, "evidence": "missing required substring `@Namespace(\"ReadModel_Dwelling\")` in DwellingReadModelProjector.java"}, {"text": "AF5 @Namespace import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in DwellingReadModelProjector.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "Class-level @SequencingPolicy applied", "passed": false, "evidence": "missing required substring `@SequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @ResetHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@MetadataValue annotation used", "passed": false, "evidence": "missing required substring `@MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @ResetHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.ResetHandler` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @MetaDataValue (capital D) usage removed", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @MetaDataValue import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.messaging.annotation.MetaDataValue` STILL present in DwellingReadModelProjector.java"}, {"text": "NO CommandDispatcher introduced (pure projection)", "passed": true, "evidence": "forbidden `CommandDispatcher` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 2, "failed": 16, "total": 18, "pass_rate": 0.1111}}}, {"id": "eval-spring-axoniq-yaml-sequencing-policy-move-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "application.yaml", "type": "text", "content": "server:\n  port: 3773\nspring:\n  application:\n    name: heroesofddd\n  threads:\n    virtual:\n      enabled: true\n  ai:\n    mcp:\n      server:\n        enabled: true\n        name: \"Heroes of Might & Magic III - DDD/Event Sourcing Server\"\n        version: \"1.0.0\"\n        instructions: \"MCP server for Heroes of Might & Magic III domain built with DDD, Event Sourcing, and Axon Framework. Provides domain operations, game management tools, and educational DDD resources.\"\n  datasource:\n    url: jdbc:postgresql://localhost:6446/heroes_of_ddd_development\n    username: heroes_of_ddd_db_user\n    password: heroes_of_ddd_db_password\n    driver-class-name: org.postgresql.Driver\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: true\n    properties:\n      hibernate:\n        dialect: org.hibernate.dialect.PostgreSQLDialect\naxon:\n  axonserver:\n    enabled: false\n      #  eventhandling:\n      #    processors:\n    # (Optional) You can override processor settings here if needed\n    #  eventstore:\n    # No need to specify storage-engine if axon-server is disabled and JPA is on classpath\n    # Axon will auto-configure JpaEventStorageEngine\n  converter:\n    general: jackson\n    events: jackson\n    messages: jackson\n  eventhandling:\n    processors:\n      Automation_WhenCreatureRecruitedThenAddToArmy_Processor:\n        mode: pooled\n        dlq:\n          enabled: true\n      Automation_WhenWeekStartedThenProclaimWeekSymbol_Processor:\n        mode: pooled\n        dlq:\n          enabled: true\n      Automation_WhenWeekSymbolProclaimedThenIncreaseDwellingAvailableCreatures_Processor:\n        mode: pooled\n        dlq:\n          enabled: true\n      ReadModel_Dwelling:\n        mode: pooled\n        initial-segment-count: 2\n        batch-size: 5\n      Read_GetAllDwellings_QueryCache:\n        mode: subscribing\n#  update-check:\n#    disabled: true\napplication:\n  maintenance:\n    enabled: true\n  interceptors:\n    paid-commands:\n      enabled: false\n\nspringdoc:\n  api-docs:\n    path: /api-docs\n  swagger-ui:\n    path: /swagger-ui.html\n    operationsSorter: method\n    tagsSorter: alpha\n    docExpansion: none\n\naxoniq:\n  console:\n    application-name: HeroesOfDDD-Axon4\n    credentials: XYZ\n    dlq-mode: FULL"}, {"name": "result.md", "type": "text", "content": "**Result:** \u2705 Success\n**Source:** `application.yaml`\n**Recipe:** axon4to5-event-processor\n\n**Notes:**\n- Renamed top-level `axon.serializer.*` \u2192 `axon.converter.*` (nested keys `general`, `events`, `messages` preserved verbatim).\n- Deleted `sequencing-policy: gameIdSequencingPolicy` from all 5 processors under `axon.eventhandling.processors.*` (moves to class-level `@SequencingPolicy` annotation on each projector \u2014 out of scope for this eval).\n- No `mode: tracking` keys found; existing `mode: pooled` and `mode: subscribing` left unchanged.\n- All other keys preserved byte-for-byte (`batch-size`, `initial-segment-count`, `dlq.enabled`, etc.).\n\n**Learnings:**\n- 5 projectors require follow-up class-level `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = \"<gameId metadata key>\")` to preserve `gameIdSequencingPolicy` behaviour: `Automation_WhenCreatureRecruitedThenAddToArmy_Processor`, `Automation_WhenWeekStartedThenProclaimWeekSymbol_Processor`, `Automation_WhenWeekSymbolProclaimedThenIncreaseDwellingAvailableCreatures_Processor`, `ReadModel_Dwelling`, `Read_GetAllDwellings_QueryCache`.\n- DLQ wired on 3 processors (`dlq.enabled: true`) \u2014 informational, route to commercial `axoniq-dead-letter` flow per `dlq.adoc`.\n- `axon.serializer` rename was scoped to this YAML slice; broader project-wide `Serializer` \u2192 `Converter` migration belongs to the serializer recipe.\n"}], "grading": {"expectations": [{"text": "axon.converter section present", "passed": true, "evidence": "found `converter:` in application.yaml"}, {"text": "Pooled processors configured", "passed": true, "evidence": "found `mode: pooled` in application.yaml"}, {"text": "AF4 axon.serializer.* key removed", "passed": true, "evidence": "forbidden `serializer:` absent from application.yaml \u2014 good"}, {"text": "Per-processor sequencing-policy keys removed", "passed": true, "evidence": "forbidden `sequencing-policy:` absent from application.yaml \u2014 good"}, {"text": "TrackingEventProcessor mode removed (AF5 has no Tracking)", "passed": true, "evidence": "forbidden `mode: tracking` absent from application.yaml \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}}}, {"id": "eval-spring-axoniq-yaml-sequencing-policy-move-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "application.yaml", "type": "text", "content": "server:\n  port: 3773\nspring:\n  application:\n    name: heroesofddd\n  threads:\n    virtual:\n      enabled: true\n  ai:\n    mcp:\n      server:\n        enabled: true\n        name: \"Heroes of Might & Magic III - DDD/Event Sourcing Server\"\n        version: \"1.0.0\"\n        instructions: \"MCP server for Heroes of Might & Magic III domain built with DDD, Event Sourcing, and Axon Framework. Provides domain operations, game management tools, and educational DDD resources.\"\n  datasource:\n    url: jdbc:postgresql://localhost:6446/heroes_of_ddd_development\n    username: heroes_of_ddd_db_user\n    password: heroes_of_ddd_db_password\n    driver-class-name: org.postgresql.Driver\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: true\n    properties:\n      hibernate:\n        dialect: org.hibernate.dialect.PostgreSQLDialect\naxon:\n  axonserver:\n    enabled: false\n      #  eventhandling:\n      #    processors:\n    # (Optional) You can override processor settings here if needed\n    #  eventstore:\n    # No need to specify storage-engine if axon-server is disabled and JPA is on classpath\n    # Axon will auto-configure JpaEventStorageEngine\n  serializer:\n    general: jackson\n    events: jackson\n    messages: jackson\n  eventhandling:\n    processors:\n      Automation_WhenCreatureRecruitedThenAddToArmy_Processor:\n        mode: pooled\n        sequencing-policy: gameIdSequencingPolicy\n        dlq:\n          enabled: true\n      Automation_WhenWeekStartedThenProclaimWeekSymbol_Processor:\n        mode: pooled\n        sequencing-policy: gameIdSequencingPolicy\n        dlq:\n          enabled: true\n      Automation_WhenWeekSymbolProclaimedThenIncreaseDwellingAvailableCreatures_Processor:\n        mode: pooled\n        sequencing-policy: gameIdSequencingPolicy\n        dlq:\n          enabled: true\n      ReadModel_Dwelling:\n        mode: pooled\n        sequencing-policy: gameIdSequencingPolicy\n        initial-segment-count: 2\n        batch-size: 5\n      Read_GetAllDwellings_QueryCache:\n        mode: subscribing\n        sequencing-policy: gameIdSequencingPolicy\n#  update-check:\n#    disabled: true\napplication:\n  maintenance:\n    enabled: true\n  interceptors:\n    paid-commands:\n      enabled: false\n\nspringdoc:\n  api-docs:\n    path: /api-docs\n  swagger-ui:\n    path: /swagger-ui.html\n    operationsSorter: method\n    tagsSorter: alpha\n    docExpansion: none\n\naxoniq:\n  console:\n    application-name: HeroesOfDDD-Axon4\n    credentials: XYZ\n    dlq-mode: FULL"}, {"name": "result.md", "type": "text", "content": ""}], "grading": {"expectations": [{"text": "axon.converter section present", "passed": false, "evidence": "missing required substring `converter:` in application.yaml"}, {"text": "Pooled processors configured", "passed": true, "evidence": "found `mode: pooled` in application.yaml"}, {"text": "AF4 axon.serializer.* key removed", "passed": false, "evidence": "forbidden substring `serializer:` STILL present in application.yaml"}, {"text": "Per-processor sequencing-policy keys removed", "passed": false, "evidence": "forbidden substring `sequencing-policy:` STILL present in application.yaml"}, {"text": "TrackingEventProcessor mode removed (AF5 has no Tracking)", "passed": true, "evidence": "forbidden `mode: tracking` absent from application.yaml \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "summary": {"passed": 2, "failed": 5, "total": 7, "pass_rate": 0.2857}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "axon4to5-migrate/event-processor", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-05-14T17:42:41Z", "evals_run": [1, 2, 3, 4, 5, 6, 7, 8], "runs_per_configuration": 3}, "runs": [{"eval_id": 5, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 12, "failed": 0, "total": 12, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "eventProcessing fluent block used", "passed": true, "evidence": "found `eventProcessing` in AxonProcessorConfigNative.java"}, {"text": "pooledStreaming fluent block used", "passed": true, "evidence": "found `pooledStreaming` in AxonProcessorConfigNative.java"}, {"text": "Processor name preserved", "passed": true, "evidence": "found `processor(\"ReadModel_Dwelling\"` in AxonProcessorConfigNative.java"}, {"text": "eventHandlingComponents wiring", "passed": true, "evidence": "found `eventHandlingComponents` in AxonProcessorConfigNative.java"}, {"text": "autodetected(...) component wiring", "passed": true, "evidence": "found `autodetected` in AxonProcessorConfigNative.java"}, {"text": "AF4 DefaultConfigurer removed", "passed": true, "evidence": "forbidden `DefaultConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 EventProcessingConfigurer removed", "passed": true, "evidence": "forbidden `EventProcessingConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 register call removed", "passed": true, "evidence": "forbidden `registerPooledStreamingEventProcessor` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "AF4 matcher removed", "passed": true, "evidence": "forbidden `assignHandlerTypesMatching` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Spring-only EventProcessorDefinition NOT introduced in native config", "passed": true, "evidence": "forbidden `EventProcessorDefinition` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 8, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Rejected emoji", "passed": true, "evidence": "found `Result:** \u23ed` in result.md"}, {"text": "Rejected text", "passed": true, "evidence": "found `Rejected` in result.md"}, {"text": "Notes name aggregate as the routing target", "passed": true, "evidence": "found `aggregate` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}, {"text": "Source untouched: @Aggregate present", "passed": true, "evidence": "found `@Aggregate` in Calendar.java"}, {"text": "No @Namespace added", "passed": true, "evidence": "forbidden `@Namespace` absent from Calendar.java \u2014 good"}, {"text": "No AF5 @EventHandler import added", "passed": true, "evidence": "forbidden `org.axonframework.messaging.eventhandling.annotation.EventHandler` absent from Calendar.java \u2014 good"}, {"text": "No @EntityCreator added (aggregate recipe's territory)", "passed": true, "evidence": "forbidden `@EntityCreator` absent from Calendar.java \u2014 good"}], "notes": []}, {"eval_id": 6, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 15, "failed": 0, "total": 15, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 SequencingPolicy import", "passed": true, "evidence": "found `org.axonframework.messaging.core.sequencing.SequencingPolicy` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 EventMessage import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.EventMessage` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 ProcessingContext import", "passed": true, "evidence": "found `org.axonframework.messaging.core.ProcessingContext` in TenantAndGameSequencingPolicy.java"}, {"text": "Method renamed to sequenceIdentifierFor", "passed": true, "evidence": "found `sequenceIdentifierFor` in TenantAndGameSequencingPolicy.java"}, {"text": "Return type Optional<Object>", "passed": true, "evidence": "found `Optional<Object>` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional wrapping used", "passed": true, "evidence": "found `Optional.of(` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional.empty() replaces return null", "passed": true, "evidence": "found `Optional.empty()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 record-style metaData() accessor used", "passed": true, "evidence": "found `message.metaData()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 SequencingPolicy import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.async.SequencingPolicy` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 EventMessage import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventMessage` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 method name removed", "passed": true, "evidence": "forbidden `getSequenceIdentifierFor` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "AF4 getMetaData() accessor removed", "passed": true, "evidence": "forbidden `event.getMetaData()` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "Bare 'return null' replaced by Optional.empty()", "passed": true, "evidence": "forbidden `return null` absent from TenantAndGameSequencingPolicy.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 7, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 16, "failed": 0, "total": 16, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 @QueryHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@QueryHandler kept", "passed": true, "evidence": "found `@QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@EventHandler kept", "passed": true, "evidence": "found `@EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@Namespace applied", "passed": true, "evidence": "found `@Namespace` in GetAllDwellingsQueryHandler.java"}, {"text": "@SequencingPolicy at class level", "passed": true, "evidence": "found `@SequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "MetadataSequencingPolicy used", "passed": true, "evidence": "found `MetadataSequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in GetAllDwellingsQueryHandler.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @QueryHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.queryhandling.QueryHandler` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "AF4 @MetaDataValue (capital D) gone", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from GetAllDwellingsQueryHandler.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 4, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 12, "failed": 0, "total": 12, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 EventProcessorDefinition used", "passed": true, "evidence": "found `EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "AF5 EventProcessorDefinition import", "passed": true, "evidence": "found `org.axonframework.extension.spring.config.EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "Pooled streaming name preserved", "passed": true, "evidence": "found `pooledStreaming(\"ReadModel_Dwelling\")` in AxonProcessorConfigSpring.java"}, {"text": "assigningHandlers chained", "passed": true, "evidence": "found `assigningHandlers` in AxonProcessorConfigSpring.java"}, {"text": "customized chained", "passed": true, "evidence": "found `customized` in AxonProcessorConfigSpring.java"}, {"text": "@Bean preserved", "passed": true, "evidence": "found `@Bean` in AxonProcessorConfigSpring.java"}, {"text": "AF4 ConfigurerModule reference removed", "passed": true, "evidence": "forbidden `ConfigurerModule` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 EventProcessingConfigurer reference removed", "passed": true, "evidence": "forbidden `EventProcessingConfigurer` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 register call removed", "passed": true, "evidence": "forbidden `registerPooledStreamingEventProcessor` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "AF4 handler matcher call removed", "passed": true, "evidence": "forbidden `assignHandlerTypesMatching` absent from AxonProcessorConfigSpring.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 22, "failed": 0, "total": 22, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "@Namespace with original processing-group string", "passed": true, "evidence": "found `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Namespace import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.Namespace` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": true, "evidence": "found `MetadataSequencingPolicy` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CommandDispatcher injected as method parameter", "passed": true, "evidence": "found `CommandDispatcher commandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 CommandDispatcher import", "passed": true, "evidence": "found `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @DisallowReplay import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@MetadataValue annotation used", "passed": true, "evidence": "found `@MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CompletableFuture import added", "passed": true, "evidence": "found `java.util.concurrent.CompletableFuture` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Async chain using getResultMessage()", "passed": true, "evidence": "found `.getResultMessage()` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @DisallowReplay import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.DisallowReplay` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 @MetaDataValue usage removed (capital D)", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF4 CommandGateway import removed", "passed": true, "evidence": "forbidden `org.axonframework.commandhandling.gateway.CommandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "sendAndWait removed (replaced by async chain)", "passed": true, "evidence": "forbidden `sendAndWait` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Class-level CommandGateway field removed", "passed": true, "evidence": "forbidden `private final CommandGateway commandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "AF5 Message is non-generic \u2014 Message<?> must not appear", "passed": true, "evidence": "forbidden `Message<?>` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 18, "failed": 0, "total": 18, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "@Namespace replaces @ProcessingGroup with same string", "passed": true, "evidence": "found `@Namespace(\"ReadModel_Dwelling\")` in DwellingReadModelProjector.java"}, {"text": "AF5 @Namespace import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.Namespace` in DwellingReadModelProjector.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": true, "evidence": "found `MetadataSequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "Class-level @SequencingPolicy applied", "passed": true, "evidence": "found `@SequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "AF5 @EventHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @ResetHandler import", "passed": true, "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @MetadataValue import", "passed": true, "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@MetadataValue annotation used", "passed": true, "evidence": "found `@MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": true, "evidence": "forbidden `@ProcessingGroup` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @ProcessingGroup import removed", "passed": true, "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @EventHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @ResetHandler import removed", "passed": true, "evidence": "forbidden `org.axonframework.eventhandling.ResetHandler` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @MetaDataValue (capital D) usage removed", "passed": true, "evidence": "forbidden `@MetaDataValue(` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "AF4 @MetaDataValue import removed", "passed": true, "evidence": "forbidden `org.axonframework.messaging.annotation.MetaDataValue` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "NO CommandDispatcher introduced (pure projection)", "passed": true, "evidence": "forbidden `CommandDispatcher` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "axon.converter section present", "passed": true, "evidence": "found `converter:` in application.yaml"}, {"text": "Pooled processors configured", "passed": true, "evidence": "found `mode: pooled` in application.yaml"}, {"text": "AF4 axon.serializer.* key removed", "passed": true, "evidence": "forbidden `serializer:` absent from application.yaml \u2014 good"}, {"text": "Per-processor sequencing-policy keys removed", "passed": true, "evidence": "forbidden `sequencing-policy:` absent from application.yaml \u2014 good"}, {"text": "TrackingEventProcessor mode removed (AF5 has no Tracking)", "passed": true, "evidence": "forbidden `mode: tracking` absent from application.yaml \u2014 good"}, {"text": "Result block marks Success", "passed": true, "evidence": "found `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": true, "evidence": "found `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 5, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.1667, "passed": 2, "failed": 10, "total": 12, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "eventProcessing fluent block used", "passed": true, "evidence": "found `eventProcessing` in AxonProcessorConfigNative.java"}, {"text": "pooledStreaming fluent block used", "passed": false, "evidence": "missing required substring `pooledStreaming` in AxonProcessorConfigNative.java"}, {"text": "Processor name preserved", "passed": false, "evidence": "missing required substring `processor(\"ReadModel_Dwelling\"` in AxonProcessorConfigNative.java"}, {"text": "eventHandlingComponents wiring", "passed": false, "evidence": "missing required substring `eventHandlingComponents` in AxonProcessorConfigNative.java"}, {"text": "autodetected(...) component wiring", "passed": false, "evidence": "none of ['autodetected', 'components.autodetected'] found in AxonProcessorConfigNative.java"}, {"text": "AF4 DefaultConfigurer removed", "passed": false, "evidence": "forbidden substring `DefaultConfigurer` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 EventProcessingConfigurer removed", "passed": false, "evidence": "forbidden substring `EventProcessingConfigurer` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 register call removed", "passed": false, "evidence": "forbidden substring `registerPooledStreamingEventProcessor` STILL present in AxonProcessorConfigNative.java"}, {"text": "AF4 matcher removed", "passed": false, "evidence": "forbidden substring `assignHandlerTypesMatching` STILL present in AxonProcessorConfigNative.java"}, {"text": "Spring-only EventProcessorDefinition NOT introduced in native config", "passed": true, "evidence": "forbidden `EventProcessorDefinition` absent from AxonProcessorConfigNative.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 8, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 4, "failed": 4, "total": 8, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Rejected emoji", "passed": false, "evidence": "missing required substring `Result:** \u23ed` in result.md"}, {"text": "Rejected text", "passed": false, "evidence": "missing required substring `Rejected` in result.md"}, {"text": "Notes name aggregate as the routing target", "passed": false, "evidence": "missing required substring `aggregate` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}, {"text": "Source untouched: @Aggregate present", "passed": true, "evidence": "found `@Aggregate` in Calendar.java"}, {"text": "No @Namespace added", "passed": true, "evidence": "forbidden `@Namespace` absent from Calendar.java \u2014 good"}, {"text": "No AF5 @EventHandler import added", "passed": true, "evidence": "forbidden `org.axonframework.messaging.eventhandling.annotation.EventHandler` absent from Calendar.java \u2014 good"}, {"text": "No @EntityCreator added (aggregate recipe's territory)", "passed": true, "evidence": "forbidden `@EntityCreator` absent from Calendar.java \u2014 good"}], "notes": []}, {"eval_id": 6, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.0, "passed": 0, "failed": 15, "total": 15, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 SequencingPolicy import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.sequencing.SequencingPolicy` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 EventMessage import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.EventMessage` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 ProcessingContext import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.ProcessingContext` in TenantAndGameSequencingPolicy.java"}, {"text": "Method renamed to sequenceIdentifierFor", "passed": false, "evidence": "missing required substring `sequenceIdentifierFor` in TenantAndGameSequencingPolicy.java"}, {"text": "Return type Optional<Object>", "passed": false, "evidence": "missing required substring `Optional<Object>` in TenantAndGameSequencingPolicy.java"}, {"text": "Optional wrapping used", "passed": false, "evidence": "none of ['Optional.of(', 'Optional.ofNullable('] found in TenantAndGameSequencingPolicy.java"}, {"text": "Optional.empty() replaces return null", "passed": false, "evidence": "missing required substring `Optional.empty()` in TenantAndGameSequencingPolicy.java"}, {"text": "AF5 record-style metaData() accessor used", "passed": false, "evidence": "none of ['message.metaData()', '.metaData().get('] found in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 SequencingPolicy import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.async.SequencingPolicy` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 EventMessage import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventMessage` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 method name removed", "passed": false, "evidence": "forbidden substring `getSequenceIdentifierFor` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "AF4 getMetaData() accessor removed", "passed": false, "evidence": "forbidden substring `event.getMetaData()` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "Bare 'return null' replaced by Optional.empty()", "passed": false, "evidence": "forbidden substring `return null` STILL present in TenantAndGameSequencingPolicy.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 7, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.1875, "passed": 3, "failed": 13, "total": 16, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 @QueryHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@QueryHandler kept", "passed": true, "evidence": "found `@QueryHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@EventHandler kept", "passed": true, "evidence": "found `@EventHandler` in GetAllDwellingsQueryHandler.java"}, {"text": "@Namespace applied", "passed": false, "evidence": "missing required substring `@Namespace` in GetAllDwellingsQueryHandler.java"}, {"text": "@SequencingPolicy at class level", "passed": false, "evidence": "missing required substring `@SequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "MetadataSequencingPolicy used", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in GetAllDwellingsQueryHandler.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in GetAllDwellingsQueryHandler.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @QueryHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "AF4 @MetaDataValue (capital D) gone", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in GetAllDwellingsQueryHandler.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 4, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.1667, "passed": 2, "failed": 10, "total": 12, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "AF5 EventProcessorDefinition used", "passed": true, "evidence": "found `EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "AF5 EventProcessorDefinition import", "passed": false, "evidence": "missing required substring `org.axonframework.extension.spring.config.EventProcessorDefinition` in AxonProcessorConfigSpring.java"}, {"text": "Pooled streaming name preserved", "passed": false, "evidence": "missing required substring `pooledStreaming(\"ReadModel_Dwelling\")` in AxonProcessorConfigSpring.java"}, {"text": "assigningHandlers chained", "passed": false, "evidence": "missing required substring `assigningHandlers` in AxonProcessorConfigSpring.java"}, {"text": "customized chained", "passed": false, "evidence": "missing required substring `customized` in AxonProcessorConfigSpring.java"}, {"text": "@Bean preserved", "passed": true, "evidence": "found `@Bean` in AxonProcessorConfigSpring.java"}, {"text": "AF4 ConfigurerModule reference removed", "passed": false, "evidence": "forbidden substring `ConfigurerModule` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 EventProcessingConfigurer reference removed", "passed": false, "evidence": "forbidden substring `EventProcessingConfigurer` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 register call removed", "passed": false, "evidence": "forbidden substring `registerPooledStreamingEventProcessor` STILL present in AxonProcessorConfigSpring.java"}, {"text": "AF4 handler matcher call removed", "passed": false, "evidence": "forbidden substring `assignHandlerTypesMatching` STILL present in AxonProcessorConfigSpring.java"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.0455, "passed": 1, "failed": 21, "total": 22, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "@Namespace with original processing-group string", "passed": false, "evidence": "missing required substring `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Namespace import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CommandDispatcher injected as method parameter", "passed": false, "evidence": "missing required substring `CommandDispatcher commandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 CommandDispatcher import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @DisallowReplay import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "@MetadataValue annotation used", "passed": false, "evidence": "missing required substring `@MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "CompletableFuture import added", "passed": false, "evidence": "missing required substring `java.util.concurrent.CompletableFuture` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Async chain using getResultMessage()", "passed": false, "evidence": "missing required substring `.getResultMessage()` in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @DisallowReplay import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.DisallowReplay` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 @MetaDataValue usage removed (capital D)", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF4 CommandGateway import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.commandhandling.gateway.CommandGateway` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "sendAndWait removed (replaced by async chain)", "passed": false, "evidence": "forbidden substring `sendAndWait` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "Class-level CommandGateway field removed", "passed": false, "evidence": "forbidden substring `private final CommandGateway commandGateway` STILL present in WhenCreatureRecruitedThenAddToArmyProcessor.java"}, {"text": "AF5 Message is non-generic \u2014 Message<?> must not appear", "passed": true, "evidence": "forbidden `Message<?>` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.1111, "passed": 2, "failed": 16, "total": 18, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "@Namespace replaces @ProcessingGroup with same string", "passed": false, "evidence": "missing required substring `@Namespace(\"ReadModel_Dwelling\")` in DwellingReadModelProjector.java"}, {"text": "AF5 @Namespace import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in DwellingReadModelProjector.java"}, {"text": "@SequencingPolicy uses MetadataSequencingPolicy", "passed": false, "evidence": "missing required substring `MetadataSequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "Class-level @SequencingPolicy applied", "passed": false, "evidence": "missing required substring `@SequencingPolicy` in DwellingReadModelProjector.java"}, {"text": "AF5 @EventHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @ResetHandler import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler` in DwellingReadModelProjector.java"}, {"text": "AF5 @MetadataValue import", "passed": false, "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@MetadataValue annotation used", "passed": false, "evidence": "missing required substring `@MetadataValue` in DwellingReadModelProjector.java"}, {"text": "@Component preserved", "passed": true, "evidence": "found `@Component` in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup annotation removed", "passed": false, "evidence": "forbidden substring `@ProcessingGroup` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @ProcessingGroup import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @EventHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @ResetHandler import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.eventhandling.ResetHandler` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @MetaDataValue (capital D) usage removed", "passed": false, "evidence": "forbidden substring `@MetaDataValue(` STILL present in DwellingReadModelProjector.java"}, {"text": "AF4 @MetaDataValue import removed", "passed": false, "evidence": "forbidden substring `org.axonframework.messaging.annotation.MetaDataValue` STILL present in DwellingReadModelProjector.java"}, {"text": "NO CommandDispatcher introduced (pure projection)", "passed": true, "evidence": "forbidden `CommandDispatcher` absent from DwellingReadModelProjector.java \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.2857, "passed": 2, "failed": 5, "total": 7, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "axon.converter section present", "passed": false, "evidence": "missing required substring `converter:` in application.yaml"}, {"text": "Pooled processors configured", "passed": true, "evidence": "found `mode: pooled` in application.yaml"}, {"text": "AF4 axon.serializer.* key removed", "passed": false, "evidence": "forbidden substring `serializer:` STILL present in application.yaml"}, {"text": "Per-processor sequencing-policy keys removed", "passed": false, "evidence": "forbidden substring `sequencing-policy:` STILL present in application.yaml"}, {"text": "TrackingEventProcessor mode removed (AF5 has no Tracking)", "passed": true, "evidence": "forbidden `mode: tracking` absent from application.yaml \u2014 good"}, {"text": "Result block marks Success", "passed": false, "evidence": "missing required substring `Result:** \u2705 Success` in result.md"}, {"text": "Recipe identifier present", "passed": false, "evidence": "missing required substring `axon4to5-event-processor` in result.md"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "without_skill": {"pass_rate": {"mean": 0.1829, "stddev": 0.1554, "min": 0.0, "max": 0.5}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "delta": {"pass_rate": "+0.82", "time_seconds": "+0.0", "tokens": "+0"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

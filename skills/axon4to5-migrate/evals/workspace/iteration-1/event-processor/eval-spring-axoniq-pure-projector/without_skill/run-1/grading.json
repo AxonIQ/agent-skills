@@ -1,0 +1,100 @@
+{
+  "expectations": [
+    {
+      "text": "@Namespace replaces @ProcessingGroup with same string",
+      "passed": false,
+      "evidence": "missing required substring `@Namespace(\"ReadModel_Dwelling\")` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF5 @Namespace import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "@SequencingPolicy uses MetadataSequencingPolicy",
+      "passed": false,
+      "evidence": "missing required substring `MetadataSequencingPolicy` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "Class-level @SequencingPolicy applied",
+      "passed": false,
+      "evidence": "missing required substring `@SequencingPolicy` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF5 @ResetHandler import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF5 @MetadataValue import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "@MetadataValue annotation used",
+      "passed": false,
+      "evidence": "missing required substring `@MetadataValue` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "@Component preserved",
+      "passed": true,
+      "evidence": "found `@Component` in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation removed",
+      "passed": false,
+      "evidence": "forbidden substring `@ProcessingGroup` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @ProcessingGroup import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @EventHandler import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @ResetHandler import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.ResetHandler` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @MetaDataValue (capital D) usage removed",
+      "passed": false,
+      "evidence": "forbidden substring `@MetaDataValue(` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "AF4 @MetaDataValue import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.messaging.annotation.MetaDataValue` STILL present in DwellingReadModelProjector.java"
+    },
+    {
+      "text": "NO CommandDispatcher introduced (pure projection)",
+      "passed": true,
+      "evidence": "forbidden `CommandDispatcher` absent from DwellingReadModelProjector.java \u2014 good"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": false,
+      "evidence": "missing required substring `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 16,
+    "total": 18,
+    "pass_rate": 0.1111
+  }
+}

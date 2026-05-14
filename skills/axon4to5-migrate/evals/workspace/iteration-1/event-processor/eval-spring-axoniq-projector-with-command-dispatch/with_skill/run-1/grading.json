@@ -1,0 +1,120 @@
+{
+  "expectations": [
+    {
+      "text": "@Namespace with original processing-group string",
+      "passed": true,
+      "evidence": "found `@Namespace(\"Automation_WhenCreatureRecruitedThenAddToArmy_Processor\")` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF5 Namespace import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.annotation.Namespace` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "@SequencingPolicy uses MetadataSequencingPolicy",
+      "passed": true,
+      "evidence": "found `MetadataSequencingPolicy` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "CommandDispatcher injected as method parameter",
+      "passed": true,
+      "evidence": "found `CommandDispatcher commandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF5 CommandDispatcher import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF5 @DisallowReplay import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF5 @MetadataValue import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.annotation.MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "@MetadataValue annotation used",
+      "passed": true,
+      "evidence": "found `@MetadataValue` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "CompletableFuture import added",
+      "passed": true,
+      "evidence": "found `java.util.concurrent.CompletableFuture` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "Async chain using getResultMessage()",
+      "passed": true,
+      "evidence": "found `.getResultMessage()` in WhenCreatureRecruitedThenAddToArmyProcessor.java"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation removed",
+      "passed": true,
+      "evidence": "forbidden `@ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF4 @ProcessingGroup import removed",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.config.ProcessingGroup` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import removed",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.eventhandling.EventHandler` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF4 @DisallowReplay import removed",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.eventhandling.DisallowReplay` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF4 @MetaDataValue usage removed (capital D)",
+      "passed": true,
+      "evidence": "forbidden `@MetaDataValue(` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF4 CommandGateway import removed",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.commandhandling.gateway.CommandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "sendAndWait removed (replaced by async chain)",
+      "passed": true,
+      "evidence": "forbidden `sendAndWait` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "Class-level CommandGateway field removed",
+      "passed": true,
+      "evidence": "forbidden `private final CommandGateway commandGateway` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "AF5 Message is non-generic \u2014 Message<?> must not appear",
+      "passed": true,
+      "evidence": "forbidden `Message<?>` absent from WhenCreatureRecruitedThenAddToArmyProcessor.java \u2014 good"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": true,
+      "evidence": "found `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": true,
+      "evidence": "found `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 22,
+    "failed": 0,
+    "total": 22,
+    "pass_rate": 1.0
+  }
+}

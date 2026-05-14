@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "axon.converter section present",
+      "passed": false,
+      "evidence": "missing required substring `converter:` in application.yaml"
+    },
+    {
+      "text": "Pooled processors configured",
+      "passed": true,
+      "evidence": "found `mode: pooled` in application.yaml"
+    },
+    {
+      "text": "AF4 axon.serializer.* key removed",
+      "passed": false,
+      "evidence": "forbidden substring `serializer:` STILL present in application.yaml"
+    },
+    {
+      "text": "Per-processor sequencing-policy keys removed",
+      "passed": false,
+      "evidence": "forbidden substring `sequencing-policy:` STILL present in application.yaml"
+    },
+    {
+      "text": "TrackingEventProcessor mode removed (AF5 has no Tracking)",
+      "passed": true,
+      "evidence": "forbidden `mode: tracking` absent from application.yaml \u2014 good"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": false,
+      "evidence": "missing required substring `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 5,
+    "total": 7,
+    "pass_rate": 0.2857
+  }
+}

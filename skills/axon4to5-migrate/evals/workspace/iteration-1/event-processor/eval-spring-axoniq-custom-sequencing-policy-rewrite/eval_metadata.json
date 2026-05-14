@@ -1,0 +1,132 @@
+{
+  "eval_id": 6,
+  "eval_name": "spring-axoniq-custom-sequencing-policy-rewrite",
+  "recipe": "event-processor",
+  "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. TenantAndGameSequencingPolicy.java is a custom AF4 SequencingPolicy<EventMessage<?>> reading two metadata keys. Per use-case 06: swap interface to org.axonframework.messaging.core.sequencing.SequencingPolicy (no generic parameter); rename method getSequenceIdentifierFor \u2192 sequenceIdentifierFor; add ProcessingContext context parameter; return type Object \u2192 Optional<Object>; replace return null with Optional.empty() and bare returns with Optional.of(...); replace event.getMetaData() with message.metaData(); rename EventMessage import to AF5 location. Copy the Result block to $WORKSPACE/result.md.",
+  "expected_output": "Custom SequencingPolicy rewritten to AF5 signature + Optional wrapping + AF5 imports; Result: \u2705 Success.",
+  "expectations": [
+    "AF5 SequencingPolicy import (messaging.core.sequencing.SequencingPolicy)",
+    "AF5 EventMessage import (messaging.eventhandling.EventMessage)",
+    "AF5 ProcessingContext import",
+    "Method renamed to sequenceIdentifierFor",
+    "Method returns Optional<Object>",
+    "Optional.ofNullable / Optional.of used",
+    "Optional.empty replaces return null",
+    "message.metaData() AF5 accessor used",
+    "AF4 SequencingPolicy import removed",
+    "AF4 EventMessage import removed",
+    "AF4 getSequenceIdentifierFor name removed",
+    "AF4 event.getMetaData() removed",
+    "Result block marks Success with axon4to5-event-processor"
+  ],
+  "category": "custom-sequencing-policy",
+  "fixture": "synthetic/TenantAndGameSequencingPolicy.java",
+  "secondary_fixtures": [],
+  "skill_args": {
+    "framework": "axoniq",
+    "configuration": "spring",
+    "mode": "single",
+    "source": "$SOURCE"
+  },
+  "pinned_decisions": {},
+  "expected_result": "Success",
+  "expected_blocker": null,
+  "assertions": [
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.sequencing.SequencingPolicy",
+      "text": "AF5 SequencingPolicy import"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.EventMessage",
+      "text": "AF5 EventMessage import"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.ProcessingContext",
+      "text": "AF5 ProcessingContext import"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "sequenceIdentifierFor",
+      "text": "Method renamed to sequenceIdentifierFor"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "Optional<Object>",
+      "text": "Return type Optional<Object>"
+    },
+    {
+      "target": "source",
+      "type": "grep_require_any",
+      "patterns": [
+        "Optional.of(",
+        "Optional.ofNullable("
+      ],
+      "text": "Optional wrapping used"
+    },
+    {
+      "target": "source",
+      "type": "grep_require",
+      "pattern": "Optional.empty()",
+      "text": "Optional.empty() replaces return null"
+    },
+    {
+      "target": "source",
+      "type": "grep_require_any",
+      "patterns": [
+        "message.metaData()",
+        ".metaData().get("
+      ],
+      "text": "AF5 record-style metaData() accessor used"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.async.SequencingPolicy",
+      "text": "AF4 SequencingPolicy import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.EventMessage",
+      "text": "AF4 EventMessage import removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "getSequenceIdentifierFor",
+      "text": "AF4 method name removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "event.getMetaData()",
+      "text": "AF4 getMetaData() accessor removed"
+    },
+    {
+      "target": "source",
+      "type": "grep_forbid",
+      "pattern": "return null",
+      "text": "Bare 'return null' replaced by Optional.empty()"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "Result:** \u2705 Success",
+      "text": "Result block marks Success"
+    },
+    {
+      "target": "result",
+      "type": "result_block_contains",
+      "pattern": "axon4to5-event-processor",
+      "text": "Recipe identifier present"
+    }
+  ]
+}

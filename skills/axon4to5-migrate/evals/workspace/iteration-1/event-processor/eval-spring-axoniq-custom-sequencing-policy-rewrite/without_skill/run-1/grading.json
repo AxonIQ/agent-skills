@@ -1,0 +1,85 @@
+{
+  "expectations": [
+    {
+      "text": "AF5 SequencingPolicy import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.sequencing.SequencingPolicy` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF5 EventMessage import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.EventMessage` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF5 ProcessingContext import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.ProcessingContext` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Method renamed to sequenceIdentifierFor",
+      "passed": false,
+      "evidence": "missing required substring `sequenceIdentifierFor` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Return type Optional<Object>",
+      "passed": false,
+      "evidence": "missing required substring `Optional<Object>` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Optional wrapping used",
+      "passed": false,
+      "evidence": "none of ['Optional.of(', 'Optional.ofNullable('] found in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Optional.empty() replaces return null",
+      "passed": false,
+      "evidence": "missing required substring `Optional.empty()` in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF5 record-style metaData() accessor used",
+      "passed": false,
+      "evidence": "none of ['message.metaData()', '.metaData().get('] found in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF4 SequencingPolicy import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.async.SequencingPolicy` STILL present in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF4 EventMessage import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventMessage` STILL present in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF4 method name removed",
+      "passed": false,
+      "evidence": "forbidden substring `getSequenceIdentifierFor` STILL present in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "AF4 getMetaData() accessor removed",
+      "passed": false,
+      "evidence": "forbidden substring `event.getMetaData()` STILL present in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Bare 'return null' replaced by Optional.empty()",
+      "passed": false,
+      "evidence": "forbidden substring `return null` STILL present in TenantAndGameSequencingPolicy.java"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": false,
+      "evidence": "missing required substring `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 15,
+    "total": 15,
+    "pass_rate": 0.0
+  }
+}

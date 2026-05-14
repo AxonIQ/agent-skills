@@ -43,12 +43,38 @@ from pathlib import Path
 EVALS_DIR = Path(__file__).resolve().parent
 SKILL_DIR = EVALS_DIR.parent
 WORKSPACE = EVALS_DIR / "workspace"
+RECIPES_ROOT = EVALS_DIR / "recipes"
 
 CONFIGS = ("with_skill", "without_skill")
 
 
-def load_evals() -> list[dict]:
-    return json.loads((EVALS_DIR / "evals.json").read_text())["evals"]
+def discover_recipes() -> list[str]:
+    """Every subdirectory of evals/recipes/ that has an evals.json is a recipe."""
+    if not RECIPES_ROOT.is_dir():
+        return []
+    return sorted(d.name for d in RECIPES_ROOT.iterdir()
+                  if d.is_dir() and (d / "evals.json").is_file())
+
+
+def resolve_recipes(recipe_arg: str | None) -> list[str]:
+    """`--recipe` accepts a single name, a comma-separated list, or `all` / None → every discovered recipe."""
+    all_recipes = discover_recipes()
+    if not all_recipes:
+        return []
+    if not recipe_arg or recipe_arg == "all":
+        return all_recipes
+    requested = [r.strip() for r in recipe_arg.split(",")]
+    unknown = [r for r in requested if r not in all_recipes]
+    if unknown:
+        raise SystemExit(f"unknown recipe(s): {unknown}; available: {all_recipes}")
+    return requested
+
+
+def load_evals(recipe: str) -> list[dict]:
+    path = RECIPES_ROOT / recipe / "evals.json"
+    if not path.is_file():
+        raise SystemExit(f"evals.json not found for recipe `{recipe}` at {path}")
+    return json.loads(path.read_text())["evals"]
 
 
 def filter_evals(evs: list[dict], pattern: str | None, ids: list[int] | None) -> list[dict]:
@@ -61,13 +87,18 @@ def filter_evals(evs: list[dict], pattern: str | None, ids: list[int] | None) ->
 
 def iteration_dir(n: int | None) -> Path:
     if n is None:
+        # `iteration-1`, `iteration-2`, … lives directly under WORKSPACE; per-recipe sub-dirs go inside.
         existing = sorted(WORKSPACE.glob("iteration-*"))
         return existing[-1] if existing else (WORKSPACE / "iteration-1")
     return WORKSPACE / f"iteration-{n}"
 
 
-def eval_dir(it: Path, name: str) -> Path:
-    return it / f"eval-{name}"
+def recipe_dir(it: Path, recipe: str) -> Path:
+    return it / recipe
+
+
+def eval_dir(it: Path, recipe: str, name: str) -> Path:
+    return recipe_dir(it, recipe) / f"eval-{name}"
 
 
 def _copy_fixture(fixture: str, dest_dir: Path) -> Path:
@@ -135,89 +166,98 @@ def _build_prompt(ev: dict, run_dir: Path, source_path: Path, with_skill: bool) 
 def prep(args: argparse.Namespace) -> int:
     it = iteration_dir(args.iteration)
     ids = [int(x) for x in args.evals.split(",")] if args.evals else None
-    evs = filter_evals(load_evals(), args.filter, ids)
-    if not evs:
-        print(f"no evals match (filter={args.filter}, ids={ids})")
+    recipes = resolve_recipes(args.recipe)
+    if not recipes:
+        print(f"no recipes found under {RECIPES_ROOT}")
         return 1
 
     print(f"# Workspace: {it}\n")
-    for ev in evs:
-        ed = eval_dir(it, ev["name"])
-        ed.mkdir(parents=True, exist_ok=True)
+    total_prepped = 0
+    for recipe in recipes:
+        evs = filter_evals(load_evals(recipe), args.filter, ids)
+        if not evs:
+            print(f"## recipe `{recipe}` — no evals match (filter={args.filter}, ids={ids})\n")
+            continue
+        print(f"# Recipe `{recipe}` — {len(evs)} evals\n")
+        for ev in evs:
+            ed = eval_dir(it, recipe, ev["name"])
+            ed.mkdir(parents=True, exist_ok=True)
 
-        # eval-level metadata (one per eval, sibling of config dirs)
-        metadata = {
-            "eval_id":            ev["id"],
-            "eval_name":          ev["name"],
-            "prompt":             ev["prompt"],
-            "expected_output":    ev.get("expected_output"),
-            "expectations":       ev.get("expectations", []),
-            # extensions for our deterministic grader
-            "category":           ev.get("category"),
-            "fixture":            ev["fixture"],
-            "secondary_fixtures": ev.get("secondary_fixtures") or [],
-            "skill_args":         ev.get("skill_args", {}),
-            "pinned_decisions":   ev.get("pinned_decisions") or {},
-            "expected_result":    ev.get("expected_result"),
-            "expected_blocker":   ev.get("expected_blocker"),
-            "assertions":         ev["assertions"],
-        }
-        (ed / "eval_metadata.json").write_text(json.dumps(metadata, indent=2))
+            metadata = {
+                "eval_id":            ev["id"],
+                "eval_name":          ev["name"],
+                "recipe":             recipe,
+                "prompt":             ev["prompt"],
+                "expected_output":    ev.get("expected_output"),
+                "expectations":       ev.get("expectations", []),
+                # extensions for our deterministic grader
+                "category":           ev.get("category"),
+                "fixture":            ev["fixture"],
+                "secondary_fixtures": ev.get("secondary_fixtures") or [],
+                "skill_args":         ev.get("skill_args", {}),
+                "pinned_decisions":   ev.get("pinned_decisions") or {},
+                "expected_result":    ev.get("expected_result"),
+                "expected_blocker":   ev.get("expected_blocker"),
+                "assertions":         ev["assertions"],
+            }
+            (ed / "eval_metadata.json").write_text(json.dumps(metadata, indent=2))
 
-        for config in CONFIGS:
-            for r in range(1, args.runs + 1):
-                run_dir = ed / config / f"run-{r}"
-                outputs = run_dir / "outputs"
-                outputs.mkdir(parents=True, exist_ok=True)
+            for config in CONFIGS:
+                for r in range(1, args.runs + 1):
+                    run_dir = ed / config / f"run-{r}"
+                    outputs = run_dir / "outputs"
+                    outputs.mkdir(parents=True, exist_ok=True)
 
-                src_path = _copy_fixture(ev["fixture"], outputs)
-                for sec in ev.get("secondary_fixtures") or []:
-                    _copy_fixture(sec, outputs)
-                # result.md placeholder — subagent overwrites with the orchestrator's block
-                (outputs / "result.md").write_text("")
+                    src_path = _copy_fixture(ev["fixture"], outputs)
+                    for sec in ev.get("secondary_fixtures") or []:
+                        _copy_fixture(sec, outputs)
+                    (outputs / "result.md").write_text("")
 
-                prompt = _build_prompt(ev, run_dir, src_path, with_skill=(config == "with_skill"))
-                (run_dir / "prompt.md").write_text(prompt)
+                    prompt = _build_prompt(ev, run_dir, src_path, with_skill=(config == "with_skill"))
+                    (run_dir / "prompt.md").write_text(prompt)
 
-        print(f"## eval {ev['id']}: {ev['name']}  ({ev.get('category')})  expect={ev.get('expected_result')}")
-        for config in CONFIGS:
-            for r in range(1, args.runs + 1):
-                print(f"  {config}/run-{r}/prompt.md")
-        print()
-    return 0
+            print(f"## {recipe}/eval {ev['id']}: {ev['name']}  ({ev.get('category')})  expect={ev.get('expected_result')}")
+            for config in CONFIGS:
+                for r in range(1, args.runs + 1):
+                    print(f"  {config}/run-{r}/prompt.md")
+            print()
+            total_prepped += 1
+    return 0 if total_prepped > 0 else 1
 
 
 def grade(args: argparse.Namespace) -> int:
     it = iteration_dir(args.iteration)
-    evs = filter_evals(load_evals(), args.filter, None)
+    recipes = resolve_recipes(args.recipe)
     grader = EVALS_DIR / "grade.py"
     python = shutil.which("python3") or sys.executable
 
     rc = 0
-    for ev in evs:
-        ed = eval_dir(it, ev["name"])
-        if not ed.exists():
-            continue
-        meta = ed / "eval_metadata.json"
-        for config in CONFIGS:
-            cfg_dir = ed / config
-            if not cfg_dir.exists():
+    for recipe in recipes:
+        evs = filter_evals(load_evals(recipe), args.filter, None)
+        for ev in evs:
+            ed = eval_dir(it, recipe, ev["name"])
+            if not ed.exists():
                 continue
-            for run_dir in sorted(cfg_dir.glob("run-*")):
-                grading_out = run_dir / "grading.json"
-                result = subprocess.run([
-                    python, str(grader),
-                    "--metadata", str(meta),
-                    "--run-dir", str(run_dir),
-                    "--out", str(grading_out),
-                ])
-                if result.returncode != 0:
-                    rc = 1
+            meta = ed / "eval_metadata.json"
+            for config in CONFIGS:
+                cfg_dir = ed / config
+                if not cfg_dir.exists():
+                    continue
+                for run_dir in sorted(cfg_dir.glob("run-*")):
+                    grading_out = run_dir / "grading.json"
+                    result = subprocess.run([
+                        python, str(grader),
+                        "--metadata", str(meta),
+                        "--run-dir", str(run_dir),
+                        "--out", str(grading_out),
+                    ])
+                    if result.returncode != 0:
+                        rc = 1
     return rc
 
 
 def aggregate(args: argparse.Namespace) -> int:
-    """Delegate to skill-creator's aggregate_benchmark.py for canonical benchmark.json."""
+    """Delegate to skill-creator's aggregate_benchmark.py for canonical benchmark.json. Per recipe by default."""
     it = iteration_dir(args.iteration)
     sc_root = Path(os.path.expanduser(
         "~/.claude/plugins/marketplaces/claude-plugins-official/plugins/skill-creator/skills/skill-creator"))
@@ -228,10 +268,21 @@ def aggregate(args: argparse.Namespace) -> int:
     python = os.path.expanduser("~/.claude/venv/bin/python")
     if not Path(python).is_file():
         python = shutil.which("python3") or sys.executable
-    cmd = [python, "-m", "scripts.aggregate_benchmark", str(it),
-           "--skill-name", "axon4to5-migrate"]
-    result = subprocess.run(cmd, cwd=sc_root)
-    return result.returncode
+
+    recipes = resolve_recipes(args.recipe)
+    rc = 0
+    for recipe in recipes:
+        target = recipe_dir(it, recipe)
+        if not target.exists():
+            print(f"SKIP `{recipe}` — no workspace at {target}")
+            continue
+        print(f"\n# Aggregating recipe `{recipe}` at {target}")
+        cmd = [python, "-m", "scripts.aggregate_benchmark", str(target),
+               "--skill-name", f"axon4to5-migrate/{recipe}"]
+        result = subprocess.run(cmd, cwd=sc_root)
+        if result.returncode != 0:
+            rc = 1
+    return rc
 
 
 def status(args: argparse.Namespace) -> int:
@@ -239,27 +290,31 @@ def status(args: argparse.Namespace) -> int:
     if not it.exists():
         print(f"no workspace at {it}")
         return 0
-    evs = load_evals()
+    recipes = resolve_recipes(args.recipe)
     print(f"# {it.name}\n")
-    print("| ID | Eval | category | expected | with_skill run-1 outputs | result.md | graded | pass |")
-    print("|---|---|---|---|---|---|---|---|")
-    for ev in evs:
-        ed = eval_dir(it, ev["name"])
-        if not ed.exists():
-            continue
-        run_dir = ed / "with_skill" / "run-1"
-        src = run_dir / "outputs" / Path(ev["fixture"]).name
-        result_md = run_dir / "outputs" / "result.md"
-        grading = run_dir / "grading.json"
-        pass_str = "—"
-        if grading.exists():
-            g = json.loads(grading.read_text())
-            s = g.get("summary", {})
-            pass_str = f"{s.get('passed', 0)}/{s.get('total', 0)}"
-        print(f"| {ev['id']} | {ev['name']} | {ev.get('category')} | {ev.get('expected_result')} | "
-              f"{'✓' if src.exists() else '—'} | "
-              f"{'✓' if result_md.exists() and result_md.stat().st_size > 0 else '—'} | "
-              f"{'✓' if grading.exists() else '—'} | {pass_str} |")
+    for recipe in recipes:
+        evs = load_evals(recipe)
+        print(f"## recipe `{recipe}`\n")
+        print("| ID | Eval | category | expected | with_skill run-1 outputs | result.md | graded | pass |")
+        print("|---|---|---|---|---|---|---|---|")
+        for ev in evs:
+            ed = eval_dir(it, recipe, ev["name"])
+            if not ed.exists():
+                continue
+            run_dir = ed / "with_skill" / "run-1"
+            src = run_dir / "outputs" / Path(ev["fixture"]).name
+            result_md = run_dir / "outputs" / "result.md"
+            grading = run_dir / "grading.json"
+            pass_str = "—"
+            if grading.exists():
+                g = json.loads(grading.read_text())
+                s = g.get("summary", {})
+                pass_str = f"{s.get('passed', 0)}/{s.get('total', 0)}"
+            print(f"| {ev['id']} | {ev['name']} | {ev.get('category')} | {ev.get('expected_result')} | "
+                  f"{'✓' if src.exists() else '—'} | "
+                  f"{'✓' if result_md.exists() and result_md.stat().st_size > 0 else '—'} | "
+                  f"{'✓' if grading.exists() else '—'} | {pass_str} |")
+        print()
     return 0
 
 
@@ -267,7 +322,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    recipe_help = "Recipe name, comma-separated list, or `all` (default). Discovered from evals/recipes/*/evals.json."
+
     p_prep = sub.add_parser("prep")
+    p_prep.add_argument("--recipe", type=str, default=None, help=recipe_help)
     p_prep.add_argument("--iteration", type=int, default=None)
     p_prep.add_argument("--filter", type=str, default=None)
     p_prep.add_argument("--evals", type=str, default=None)
@@ -275,13 +333,16 @@ def main() -> int:
                         help="Runs per (eval, config). Default 1; bump to 3 for variance analysis.")
 
     p_grade = sub.add_parser("grade")
+    p_grade.add_argument("--recipe", type=str, default=None, help=recipe_help)
     p_grade.add_argument("--iteration", type=int, default=None)
     p_grade.add_argument("--filter", type=str, default=None)
 
     p_agg = sub.add_parser("aggregate")
+    p_agg.add_argument("--recipe", type=str, default=None, help=recipe_help)
     p_agg.add_argument("--iteration", type=int, default=None)
 
     p_stat = sub.add_parser("status")
+    p_stat.add_argument("--recipe", type=str, default=None, help=recipe_help)
     p_stat.add_argument("--iteration", type=int, default=None)
 
     args = ap.parse_args()

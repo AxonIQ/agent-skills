@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Rejected emoji",
+      "passed": true,
+      "evidence": "found `Result:** \u23ed` in result.md"
+    },
+    {
+      "text": "Rejected text",
+      "passed": true,
+      "evidence": "found `Rejected` in result.md"
+    },
+    {
+      "text": "Notes name aggregate as the routing target",
+      "passed": true,
+      "evidence": "found `aggregate` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": true,
+      "evidence": "found `axon4to5-event-processor` in result.md"
+    },
+    {
+      "text": "Source untouched: @Aggregate present",
+      "passed": true,
+      "evidence": "found `@Aggregate` in Calendar.java"
+    },
+    {
+      "text": "No @Namespace added",
+      "passed": true,
+      "evidence": "forbidden `@Namespace` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "No AF5 @EventHandler import added",
+      "passed": true,
+      "evidence": "forbidden `org.axonframework.messaging.eventhandling.annotation.EventHandler` absent from Calendar.java \u2014 good"
+    },
+    {
+      "text": "No @EntityCreator added (aggregate recipe's territory)",
+      "passed": true,
+      "evidence": "forbidden `@EntityCreator` absent from Calendar.java \u2014 good"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

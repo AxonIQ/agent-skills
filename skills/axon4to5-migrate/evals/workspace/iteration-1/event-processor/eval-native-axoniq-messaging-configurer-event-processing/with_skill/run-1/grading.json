@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "eventProcessing fluent block used",
+      "passed": true,
+      "evidence": "found `eventProcessing` in AxonProcessorConfigNative.java"
+    },
+    {
+      "text": "pooledStreaming fluent block used",
+      "passed": true,
+      "evidence": "found `pooledStreaming` in AxonProcessorConfigNative.java"
+    },
+    {
+      "text": "Processor name preserved",
+      "passed": true,
+      "evidence": "found `processor(\"ReadModel_Dwelling\"` in AxonProcessorConfigNative.java"
+    },
+    {
+      "text": "eventHandlingComponents wiring",
+      "passed": true,
+      "evidence": "found `eventHandlingComponents` in AxonProcessorConfigNative.java"
+    },
+    {
+      "text": "autodetected(...) component wiring",
+      "passed": true,
+      "evidence": "found `autodetected` in AxonProcessorConfigNative.java"
+    },
+    {
+      "text": "AF4 DefaultConfigurer removed",
+      "passed": true,
+      "evidence": "forbidden `DefaultConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"
+    },
+    {
+      "text": "AF4 EventProcessingConfigurer removed",
+      "passed": true,
+      "evidence": "forbidden `EventProcessingConfigurer` absent from AxonProcessorConfigNative.java \u2014 good"
+    },
+    {
+      "text": "AF4 register call removed",
+      "passed": true,
+      "evidence": "forbidden `registerPooledStreamingEventProcessor` absent from AxonProcessorConfigNative.java \u2014 good"
+    },
+    {
+      "text": "AF4 matcher removed",
+      "passed": true,
+      "evidence": "forbidden `assignHandlerTypesMatching` absent from AxonProcessorConfigNative.java \u2014 good"
+    },
+    {
+      "text": "Spring-only EventProcessorDefinition NOT introduced in native config",
+      "passed": true,
+      "evidence": "forbidden `EventProcessorDefinition` absent from AxonProcessorConfigNative.java \u2014 good"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": true,
+      "evidence": "found `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": true,
+      "evidence": "found `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 12,
+    "failed": 0,
+    "total": 12,
+    "pass_rate": 1.0
+  }
+}

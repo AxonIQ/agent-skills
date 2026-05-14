@@ -76,12 +76,19 @@ def _evaluate(assertion: dict, content: str | None, target_path: Path) -> dict:
                 "evidence": (f"forbidden `{pat}` absent from {target_path.name} — good" if ok
                              else f"forbidden substring `{pat}` STILL present in {target_path.name}")}
 
-    if kind == "result_block_contains_any":
+    if kind in ("result_block_contains_any", "grep_require_any"):
         pats = assertion["patterns"]
         hit = next((p for p in pats if p in content), None)
         return {"text": text, "passed": hit is not None,
                 "evidence": (f"found `{hit}` in {target_path.name}" if hit
                              else f"none of {pats} found in {target_path.name}")}
+
+    if kind == "grep_forbid_all":
+        pats = assertion["patterns"]
+        offending = [p for p in pats if p in content]
+        return {"text": text, "passed": not offending,
+                "evidence": (f"none of {pats} present — good" if not offending
+                             else f"forbidden substrings still present: {offending}")}
 
     return {"text": text, "passed": False, "evidence": f"unknown assertion type `{kind}`"}
 

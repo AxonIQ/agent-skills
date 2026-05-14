@@ -1,0 +1,90 @@
+{
+  "expectations": [
+    {
+      "text": "AF5 @QueryHandler import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.queryhandling.annotation.QueryHandler` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "@QueryHandler kept",
+      "passed": true,
+      "evidence": "found `@QueryHandler` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "@EventHandler kept",
+      "passed": true,
+      "evidence": "found `@EventHandler` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "@Namespace applied",
+      "passed": false,
+      "evidence": "missing required substring `@Namespace` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "@SequencingPolicy at class level",
+      "passed": false,
+      "evidence": "missing required substring `@SequencingPolicy` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "MetadataSequencingPolicy used",
+      "passed": false,
+      "evidence": "missing required substring `MetadataSequencingPolicy` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF5 @MetadataValue import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.annotation.MetadataValue` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "@Component preserved",
+      "passed": true,
+      "evidence": "found `@Component` in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF4 @ProcessingGroup removed",
+      "passed": false,
+      "evidence": "forbidden substring `@ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF4 @ProcessingGroup import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` STILL present in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF4 @QueryHandler import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.queryhandling.QueryHandler` STILL present in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF4 @EventHandler import removed",
+      "passed": false,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` STILL present in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "AF4 @MetaDataValue (capital D) gone",
+      "passed": false,
+      "evidence": "forbidden substring `@MetaDataValue(` STILL present in GetAllDwellingsQueryHandler.java"
+    },
+    {
+      "text": "Result block marks Success",
+      "passed": false,
+      "evidence": "missing required substring `Result:** \u2705 Success` in result.md"
+    },
+    {
+      "text": "Recipe identifier present",
+      "passed": false,
+      "evidence": "missing required substring `axon4to5-event-processor` in result.md"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 13,
+    "total": 16,
+    "pass_rate": 0.1875
+  }
+}
