@@ -138,6 +138,22 @@ flowchart TD
 defines the orchestrator-owned control flow every recipe executes against. Non-optional. Recipes fill in named sections
 referenced from that flow; they never re-implement it.
 
+### Recipe defaults (`DEFAULT.md`)
+
+**ALWAYS `Read` `references/recipes/DEFAULT.md` BEFORE any `references/recipes/<name>/RECIPE.md`.** It holds shared
+defaults for every named recipe section (`# Applicable`, `# Scope`, `# References`, `# Success Criteria`, `# Blocker`,
+`# Toolbox`, `# Out of Scope`, `# Gotchas`).
+
+Merge rule when executing a recipe:
+
+- For each section the FLOW consults, start from `DEFAULT.md`'s content for that section.
+- If `RECIPE.md` defines the same section → **`RECIPE.md` overrides** (full section replacement, not append).
+    - Exception: if `RECIPE.md`'s section body references `DEFAULT.md` (e.g. literal token `@DEFAULT.md` or prose like
+      "inherits from DEFAULT.md" / "extends DEFAULT.md") → **append** the recipe's content to the default's content for
+      that section instead of replacing.
+- If `RECIPE.md` omits the section → the `DEFAULT.md` content stands.
+- Recipe authors only write sections that differ from the default. No need to re-state defaults.
+
 ## References/Docs: Migration paths catalog
 
 Shared cross-recipe knowledge base at `references/docs/paths/`. Recipes pick relevant entries in their

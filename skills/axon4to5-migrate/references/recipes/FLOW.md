@@ -44,15 +44,15 @@ flowchart TD
     class RJ,BL,SC,FL result;
 ```
 
-## Result emission
+## Result
 
-Each recipe completes by emitting **exactly one** result block. The orchestrator parses the `RESULT:` line; the rest is human-readable context.
+Each recipe completes by returning **exactly one** result block. 
+The orchestrator reads the `RESULT:` line to control the flow.
 
 ```
 RESULT: <Success|Blocker|Rejected|Failure>
 SOURCE: $SOURCE
 RECIPE: axon4to5-<component>
-FILES_CHANGED: [<path>, ...]
 NOTES: <one short paragraph — why this result, what to look at next>
 ```
 
