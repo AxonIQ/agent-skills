@@ -9,6 +9,16 @@ disable-model-invocation: true
 
 # axon4to5-migrate
 
+## Goal
+
+> Fully (or as most as possible) compiling, green-test codebase on AF5, **same architecture as AF4**.
+> No DCB. No new patterns. Legacy event storage preserved.
+> The migration preserves the project's existing configuration style: a Spring Boot
+> project stays on Spring auto-config (recipes use `@Component` / `@Bean`
+> idioms); a plain framework-configuration project stays on the direct
+> `Configurer` API (recipes use `EventSourcingConfigurer` /
+> `MessagingConfigurer` / `CommandHandlingModule` / `EventSourcedEntityModule`).
+
 ## Available recipes (auto-listed)
 
 !`./scripts/list-recipes.sh`
@@ -33,13 +43,13 @@ disable-model-invocation: true
 
 These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
 
-1. Parse `framework`, `configuration`, `mode`, `execution` from `$ARGUMENTS`.
+1. **Parse** — read `framework`, `configuration`, `mode`, `execution` from `$ARGUMENTS`.
     - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
     - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
     - If `mode` is missing or ∉ {`single`, `project`} → STOP and report unsupported mode.
     - `execution` defaults to `inline` if missing. If present and ∉ {`inline`, `subagent`} → STOP and report unsupported
       execution.
-2. **Run the bulk-rewrite step** — internally invoke `axon4to5-openrewrite` via the `Skill` tool, passing
+2. **OpenRewrite** — internally invoke `axon4to5-openrewrite` via the `Skill` tool, passing
    `framework=$framework`. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a
    partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass).
 
@@ -53,15 +63,15 @@ Migrate ONE element (one aggregate, one event processor, etc.) using exactly one
 
 Steps (after the common pre-steps):
 
-1. Match user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's `applicable`
-   block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `id` + `title` +
-   `description`. If ambiguous → ask user via `AskUserQuestion` to pick (show `title` to the user; dispatch by `id`). If
-   no `applicable` block matches and description is also unclear → STOP and report.
-2. `Read` the chosen recipe file under [`references/recipes/`](references/recipes/) (`<name>/RECIPE.md`) and execute it
-   per the **Recipe sub-flow** ([`FLOW.md`](references/recipes/FLOW.md), already loaded). Recipe-local auxiliary files (
-   examples, fixtures, supporting docs) live alongside it in the same `<name>/` directory.
-3. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
-4. Render the report (see Queue flow § Render report).
+1. **Match** — map user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's
+   `applicable` block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `id` +
+   `title` + `description`. If ambiguous → ask user via `AskUserQuestion` to pick (show `title` to the user; dispatch by
+   `id`). If no `applicable` block matches and description is also unclear → STOP and report.
+2. **Execute** — `Read` the chosen recipe file under [`references/recipes/`](references/recipes/) (`<name>/RECIPE.md`)
+   and execute it per the **Recipe sub-flow** ([`FLOW.md`](references/recipes/FLOW.md), already loaded). Recipe-local
+   auxiliary files (examples, fixtures, supporting docs) live alongside it in the same `<name>/` directory.
+3. **Verify** — behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
+4. **Report** — render the report (see Queue flow § Render report).
 
 MUST NOT:
 
@@ -77,21 +87,21 @@ Migrate **everything in the working directory** that any recipe in the catalog d
 
 Steps (after the common pre-steps):
 
-1. **Discovery** — for each recipe in the auto-listed catalog, evaluate its `applicable` predicates across the codebase
+1. **Discover** — for each recipe in the auto-listed catalog, evaluate its `applicable` predicates across the codebase
    to produce candidate sources.
     - `execution=inline` → orchestrator scans inline using `Grep` / `Glob` / `Read`.
     - `execution=subagent` → dispatch one `Explore` subagent **per recipe** (parallel batch via a single `Agent` tool
       message with multiple calls). Each agent receives the recipe's `applicable` block + `id` and returns a list of
       FQNs / file paths. Read-only — no edits.
-2. **Enqueue** every `(recipe, source)` candidate. Deduplication is recipe's concern (handled inside its Recipe
+2. **Enqueue** — every `(recipe, source)` candidate. Deduplication is recipe's concern (handled inside its Recipe
    sub-flow); orchestrator does not collapse items across recipes.
-3. **Drain the queue** — for each item run the Recipe sub-flow:
+3. **Drain** — for each item run the Recipe sub-flow:
     - `execution=inline` → run in main session, sequentially.
     - `execution=subagent` → dispatch each item to a `general-purpose` subagent. Batch independent items in a single
       `Agent` tool message so they run in parallel. Subagent receives `(recipe path, source, framework, configuration)`
       and the full Recipe sub-flow spec; returns one result block (`RESULT:` line + NOTES). Orchestrator parses and
       records.
-4. Render the report (see Queue flow § Render report).
+4. **Report** — render the report (see Queue flow § Render report).
 
 MUST NOT:
 
@@ -110,23 +120,25 @@ queue depends on the mode.
 
 ```mermaid
 flowchart TD
-    A[Skill invoked] --> ORW[["<b>Bulk-rewrite step</b><br/>(internal: Skill axon4to5-openrewrite,<br/>framework=$framework, idempotent)"]]
+    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration,<br/>mode, execution"]
+    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal: Skill axon4to5-openrewrite,<br/>framework=$framework, idempotent)"]]
     ORW -- fail --> XORW[STOP: bulk-rewrite failed]
     ORW -- ok --> B["! list-recipes.sh<br/>(recipes catalog)"]
     B --> C{mode}
 %% mode-specific producers — all feed the same queue
-    C -- single --> P1["Match request+source<br/>→ enqueue 1 item"]
-    C -- project --> P2["<b>Discovery</b><br/>execution=inline: Grep/Glob inline<br/>execution=subagent: 1 Explore agent<br/>per recipe (parallel batch)<br/>scan project per applicable<br/>→ enqueue N items"]
+    C -- single --> P1["<b>Match</b><br/>request+source<br/>→ enqueue 1 item"]
+    C -- project --> P2["<b>Discover</b><br/>execution=inline: Grep/Glob inline<br/>execution=subagent: 1 Explore agent<br/>per recipe (parallel batch)<br/>scan project per applicable<br/>→ <b>Enqueue</b> N items"]
     C -- other --> X[STOP: unsupported mode]
     P1 --> Q[(Migration queue)]
     P2 --> Q
 %% shared processing loop — items stay in the queue, state transitions write back to it
-    Q --> L{any pending<br/>items in queue?}
+    Q --> L{<b>Drain</b><br/>any pending<br/>items in queue?}
     L -- yes --> INP["pick next pending →<br/>mark in-progress in queue"]
-    INP --> W[["Run recipe sub-flow on that item<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
-    W --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
+    INP --> W[["<b>Execute</b> recipe sub-flow on item<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
+    W --> VER["<b>Verify</b><br/>behavior preserved<br/>(no DCB, keep AggregateBased<br/>EventStorageEngine)"]
+    VER --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
     DONE --> Q
-    L -- no --> RPT["Render report &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
+    L -- no --> RPT["<b>Report</b> &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
 ```
 
 > The `[[Run recipe sub-flow]]` node is the **nested** sub-flow defined in
@@ -165,19 +177,19 @@ apply-condition.
 
 Catalog (one file per topic; `.adoc`):
 
-| Path                                                                                              | Topic                                               |
-|---------------------------------------------------------------------------------------------------|-----------------------------------------------------|
-| [`aggregates/index.adoc`](references/docs/paths/aggregates/index.adoc)                            | Aggregate migration entry point                     |
+| Path                                                                                                       | Topic                                               |
+|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| [`aggregates/index.adoc`](references/docs/paths/aggregates/index.adoc)                                     | Aggregate migration entry point                     |
 | [`aggregates/configuration-migration.adoc`](references/docs/paths/aggregates/configuration-migration.adoc) | Aggregate Spring/Configurer wiring                  |
 | [`aggregates/multi-entity-migration.adoc`](references/docs/paths/aggregates/multi-entity-migration.adoc)   | Aggregates with child entities (`@AggregateMember`) |
 | [`aggregates/polymorphism-migration.adoc`](references/docs/paths/aggregates/polymorphism-migration.adoc)   | Polymorphic aggregates                              |
-| [`configuration.adoc`](references/docs/paths/configuration.adoc)                                  | Global Axon configuration / Configurer              |
-| [`messages.adoc`](references/docs/paths/messages.adoc)                                            | Command / Event / Query message changes             |
-| [`event-store.adoc`](references/docs/paths/event-store.adoc)                                      | Event Store engine + APIs                           |
-| [`snapshotting.adoc`](references/docs/paths/snapshotting.adoc)                                    | Snapshot trigger + storage                          |
-| [`serializers.adoc`](references/docs/paths/serializers.adoc)                                      | Serializer registration + payload formats           |
-| [`interceptors.adoc`](references/docs/paths/interceptors.adoc)                                    | Command / Event / Query handler interceptors        |
-| [`projectors-event-processors.adoc`](references/docs/paths/projectors-event-processors.adoc)      | Projection / Event Processor wiring                 |
-| [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                      | Event sequencing policies                           |
-| [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                      | Dead-Letter Queue                                   |
-| [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                  | Test fixtures migration                             |
+| [`configuration.adoc`](references/docs/paths/configuration.adoc)                                           | Global Axon configuration / Configurer              |
+| [`messages.adoc`](references/docs/paths/messages.adoc)                                                     | Command / Event / Query message changes             |
+| [`event-store.adoc`](references/docs/paths/event-store.adoc)                                               | Event Store engine + APIs                           |
+| [`snapshotting.adoc`](references/docs/paths/snapshotting.adoc)                                             | Snapshot trigger + storage                          |
+| [`serializers.adoc`](references/docs/paths/serializers.adoc)                                               | Serializer registration + payload formats           |
+| [`interceptors.adoc`](references/docs/paths/interceptors.adoc)                                             | Command / Event / Query handler interceptors        |
+| [`projectors-event-processors.adoc`](references/docs/paths/projectors-event-processors.adoc)               | Projection / Event Processor wiring                 |
+| [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                               | Event sequencing policies                           |
+| [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                               | Dead-Letter Queue                                   |
+| [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                           | Test fixtures migration                             |
