@@ -1,128 +1,130 @@
 # Recipe execution contract
 
-The **orchestrator-owned** specification for executing any recipe in `references/recipes/`. Recipes never re-implement this — they fill in the `§ Section`s that nodes in the diagram bind to (see `_template.md`).
+The orchestrator-owned spec for executing any recipe in `references/recipes/`. The pseudocode below is the source of truth. The Mermaid sketch shows the topology only.
 
-**The sub-flow diagram below is the source of truth.** Every function lives there exactly once, carrying its full signature, recipe-section binding, and one-line behavior — read it as the interface. The TS blocks above and below the diagram only define the *types* it references and the *durable state* it threads.
+How a recipe (`aggregate.md`, …) plugs in:
 
-Retry budget = **1** additional `applyMigrationPlan` call (≤ 2 Applies total).
+- Every **recipe-authored** function has the same name as a markdown heading in the recipe file. At runtime the LLM fulfills the call by reading that section's prose.
+- **Orchestrator-owned** functions are generic and never overridden.
+- State is **checkpointed after every mutation** — durable execution. Storage (in-memory, file, DB, event log, …) is implementation-defined and intentionally absent from this contract.
+- Retry budget = at most **2 Applies** (`state.applyCount` ∈ {0,1,2}). Research re-entry and `consultAxon5` are FREE.
 
-## Types
-
-```ts
-type Source     = string;                           // FQN or file path; from skill invocation
-type FilePath   = string;
-type FQN        = string;
-type Scope      = Set<FilePath | FQN>;              // monotonic — only grows during Research
-type References = {                                 // subset of recipe playbook currently loaded
-  migrationPaths: Section[];                        // from § readReferences → Migration Paths
-  toolbox:        Section[];                        // from § readReferences → Toolbox
-  examples:       Section[];                        // from § readReferences → Examples
-};
-type FailureOutput = {
-  failedCheck: 'compile' | 'isolatedtest' | 'invariant';
-  stderr:      string;                              // raw tool output, used by classifyFailure
-};
-type CheckResult = { state: 'green' } | { state: 'red'; output: FailureOutput };
-type Plan = Edit[];                                 // ordered; sufficient to flip all red → green
-type Edit = { path: FilePath; description: string };
-type FailureCause = 'scope_incomplete' | 'knowledge_gap';
-type Result = 'Rejected' | 'Blocker' | 'Success' | 'Failure';
-```
-
-## Sub-flow
+## Flow
 
 ```mermaid
-flowchart TD
-    S(["recipe(source: Source)"]) --> S1
-
-    S1["<b>isApplicable(source) → boolean</b><br/>§ isApplicable · surface check on <code>source</code> alone (annotations, type markers); outside Research"]
-    S1 -- false --> RJ[/"Rejected"/]
-    S1 -- true --> S2
-
-    subgraph RESEARCH ["Research · fixed-point loop · scope grows monotonically, never shrinks"]
-        direction TB
-        S2["<b>defineScope(source, prev?) → Scope</b><br/>§ defineScope · enumerates source + owned types; re-entry only adds revealed items"]
-        S3["<b>readReferences(scope) → References</b><br/>§ readReferences · loads only entries whose read-condition matches a construct in scope"]
-        SQ["<b>referencesRevealMore(scope, refs) → boolean</b><br/>implicit · inspects loaded refs for in-scope candidates not yet in scope"]
-        S2 --> S3 --> SQ
-        SQ -- "true · free re-entry" --> S2
-    end
-
-    SQ -- false --> S4
-
-    S4["<b>hasBlocker(scope, refs) → boolean</b><br/>§ hasBlocker (known blockers) + missing entry in § readReferences → Migration Paths"]
-    S4 -- true --> BL[/"Blocker"/]
-    S4 -- false --> S5
-
-    S5["<b>checkSuccessCriteria(scope) → CheckResult</b><br/>§ checkSuccessCriteria · compile + axon4to5-isolatedtest + invariants; same body pre/post-Apply"]
-    S5 -- green --> SC[/"Success"/]
-    S5 -- "red · applyCount = 0" --> S6
-    S5 -- "red · applyCount = 1" --> RC
-    S5 -- "red · applyCount = 2" --> FL[/"Failure"/]
-
-    RC["<b>classifyFailure(lastFailure) → FailureCause</b><br/>generic · unknown symbol / untouched related file ⇒ scope_incomplete; Axon 5 API misuse ⇒ knowledge_gap"]
-    RC -- scope_incomplete --> S2
-    RC -- knowledge_gap --> CTX
-
-    CTX["<b>consultAxon5(lastFailure, refs) → References</b><br/>free · Axon 5 classpath + context7 MCP; extends refs in place"]
-    CTX --> S6
-
-    S6["<b>buildMigrationPlan(scope, refs) → Plan</b><br/>reuses § readReferences → Migration Paths + Toolbox · ordered edits, no mutations yet"]
-    S6 --> S7
-
-    S7["<b>applyMigrationPlan(plan) → Edit[]</b><br/>§ applyMigrationPlan · negative constraints; edits within scope only, refuses drive-by refactors · applyCount++"]
-    S7 --> S5
-
+flowchart LR
+    A([isApplicable]) -- false --> RJ[/"Rejected"/]
+    A -- true --> R[["Research loop"]]
+    R --> B{hasBlocker}
+    B -- true --> BL[/"Blocker"/]
+    B -- false --> AP[["Apply loop · budget 2"]]
+    AP -- green --> SC[/"Success"/]
+    AP -- "red, budget exhausted" --> FL[/"Failure"/]
     classDef result fill:#eef,stroke:#557,stroke-width:1px;
     class RJ,BL,SC,FL result;
 ```
 
-## Orchestrator state
+## State
 
-Execution is **durable**: state survives across function invocations and process boundaries, so any node can resume from the last persisted value. *How* the orchestrator persists this state (in-memory, file, DB, event log, …) is out of scope for this contract — recipes only see the shape.
-
-```ts
-interface State {
-  source:      Source;                   // from skill arg; immutable
-  scope:       Scope;                    // grows via defineScope (free re-entry)
-  references:  References;               // extended by readReferences + consultAxon5 (free)
-  applyCount:  0 | 1 | 2;                // bounds retry — only applyMigrationPlan increments
-  lastFailure: FailureOutput | null;     // set by checkSuccessCriteria on red
+```text
+state = {
+  source,        # FQN or path of the thing to migrate — immutable
+  scope,         # set of files/types in scope — grows monotonically
+  refs,          # loaded playbook entries (Migration Paths / Toolbox / Examples)
+  applyCount,    # 0..2 — only applyMigrationPlan increments
+  lastFailure,   # set by checkSuccessCriteria on red
+  files,         # accumulated file paths actually changed
 }
+
+Verdict = "Rejected" | "Blocker" | "Success" | "Failure"
 ```
 
-Retry budget lives entirely in `applyCount`. `defineScope` re-entry and `consultAxon5` are free.
+## Functions
 
-## Return values
+```text
+# Recipe-authored — LLM fills body from the markdown heading of the same name.
+isApplicable(source)                  -> bool                          # ## isApplicable · outside Research
+defineScope(source, prev?)            -> Scope                         # ## defineScope · monotonic
+readReferences(scope)                 -> Refs                          # ## readReferences · read-condition match
+referencesRevealMore(scope, refs)     -> bool                          # implicit · read-conditions in ## readReferences
+hasBlocker(scope, refs)               -> bool                          # ## hasBlocker · also "missing Migration Path"
+checkSuccessCriteria(scope)           -> {green} | {red, error}        # ## checkSuccessCriteria · same body pre/post-Apply
+buildMigrationPlan(scope, refs)       -> Plan                          # reuses ## readReferences → Migration Paths + Toolbox
+applyMigrationPlan(plan)              -> Edits                         # ## applyMigrationPlan · filter by negative constraints
+notes(verdict, state)                 -> str                           # ## Result → matching subsection
 
-The graph terminates at one of four parallelogram nodes. Each emits the same block; only `RESULT:` differs.
+# Orchestrator-owned — generic, never overridden by recipes.
+writeEdits(edits)                     -> [FilePath]                    # apply edits to workspace
+checkpoint(state)                                                      # persist state (durable) — after every mutation
+classifyFailure(error)                -> "scope_incomplete"|"knowledge_gap"
+                                                                       #   unknown symbol / untouched file ⇒ scope_incomplete
+                                                                       #   Axon 5 API misuse / wrong overload ⇒ knowledge_gap
+consultAxon5(error, refs)             -> Refs                          # fetch cited Axon 5 API from classpath + context7 MCP · FREE
+```
+
+## recipe()
+
+```python
+def recipe(source):
+    if not isApplicable(source):
+        return done("Rejected")
+
+    state.scope = defineScope(source)
+    research()                                          # fixed-point — free
+
+    if hasBlocker(state.scope, state.refs):
+        return done("Blocker")
+
+    while True:                                         # Apply loop — budget = 2
+        check = checkSuccessCriteria(state.scope)
+        if check.green:
+            return done("Success")
+        if state.applyCount >= 2:
+            return done("Failure")
+        state.lastFailure = check.error
+
+        # Free detour, FIRST failed Apply only.
+        if state.applyCount == 1:
+            if classifyFailure(state.lastFailure) == "scope_incomplete":
+                state.scope = defineScope(source, state.scope)
+                research()
+            else:                                       # "knowledge_gap"
+                state.refs = consultAxon5(state.lastFailure, state.refs)
+
+        plan  = buildMigrationPlan(state.scope, state.refs)
+        edits = applyMigrationPlan(plan)                # negative constraints applied
+        state.files += writeEdits(edits)
+        state.applyCount += 1
+
+def research():
+    # Load only refs whose read-condition matches scope.
+    # scope grows monotonically until refs reveal nothing new.
+    while True:
+        state.refs = readReferences(state.scope)
+        if not referencesRevealMore(state.scope, state.refs):
+            return
+        state.scope = defineScope(source, state.scope)
+```
+
+> `checkpoint(state)` is omitted from the body above for readability — assume it runs after every line that mutates `state`. That is what "durable execution" means here.
+
+## Result emission
+
+The orchestrator emits this block; calling skills parse the `RESULT:` line only.
 
 ```yaml
 RESULT:        Success | Blocker | Rejected | Failure
 SOURCE:        <fully qualified name or path of source>
 RECIPE:        axon4to5-<component>
-FILES_CHANGED: [<path>, ...]
-NOTES:         <one short paragraph — why this result, what to look at next>
+FILES_CHANGED: [<path>, ...]                   # = state.files
+NOTES:         <one short paragraph>           # = notes(verdict, state)
 ```
 
-The orchestrator parses the `RESULT:` line; the rest is human-readable context.
+Each verdict is reached at exactly one point in `recipe()`:
 
-| Terminal      | Fired by                                              |
-|---------------|-------------------------------------------------------|
-| `Rejected`    | `isApplicable` → false                                |
-| `Blocker`     | `hasBlocker` → true                                   |
-| `Success`     | `checkSuccessCriteria` → green                        |
-| `Failure`     | `checkSuccessCriteria` → red, `applyCount === 2`      |
-
-## Invariants
-
-- **`isApplicable` sits outside Research** — cheap surface check on `source` alone; don't pay the Research cost for the wrong recipe.
-- **Scope before References** (inside Research) — `scope` drives *which* sections `readReferences` loads.
-- **Research is a fixed-point loop** — exits only when `referencesRevealMore` returns false; `scope` is monotonically increasing.
-- **`checkSuccessCriteria` is the single check** — same body pre- and post-Apply; visit context is encoded in `applyCount`.
-- **`Blocker` fires only from `hasBlocker`** — emitted after Research stabilizes. Downstream functions never short-circuit to `Blocker`; partial work either passes `checkSuccessCriteria` or counts as `Failure`.
-- **Apply loop is `checkSuccessCriteria → buildMigrationPlan → applyMigrationPlan → checkSuccessCriteria`** with retry budget on `applyCount`. `defineScope` re-entry and `consultAxon5` are free.
-- **Two retry routes converge at `applyMigrationPlan`**:
-  - `scope_incomplete` → `defineScope` extends scope, Research re-stabilizes, eventually re-Apply.
-  - `knowledge_gap` → `consultAxon5` extends references, straight to `buildMigrationPlan`, then re-Apply.
-- **Recipe owns content; orchestrator owns control flow.** A recipe never decides "retry" or "skip a function" — it only fills the `§` sections bound in the diagram nodes.
+| Verdict     | Reached at                                              |
+|-------------|---------------------------------------------------------|
+| `Rejected`  | `if not isApplicable(source)` — before Research.        |
+| `Blocker`   | `if hasBlocker(...)` — after Research stabilizes.       |
+| `Success`   | `if check.green` — top of the Apply loop.               |
+| `Failure`   | `if state.applyCount >= 2` — budget exhausted on red.   |
