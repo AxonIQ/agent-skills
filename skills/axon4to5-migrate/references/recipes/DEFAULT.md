@@ -39,6 +39,53 @@ Short, scannable bullets. Reference `file:line` whenever possible.
 - **Rejected ⏭️** — NOTES: which `# Applicable` predicate failed and the observed fact that caused it. LEARNINGS (optional): only if rejection itself was unexpected (e.g. `$SOURCE` looked like an aggregate at first glance but turned out to be a projector after closer inspection).
 - **Failure ❌** — NOTES: failing `# Success Criteria` items + the last error **verbatim** (compiler / test / exception tail — do not paraphrase). LEARNINGS: nearly always present here — failure means something didn't work, and the next iteration needs the hypothesis.
 
+## Success Criteria baseline
+
+Per-recipe `# Success Criteria` inherits these checks. Recipes may **add** criteria (e.g. recipe-specific structural invariants) but MUST NOT remove the baseline. Aggregation rule: **all criteria match** (AND); recipe extensions keep AND unless the recipe explicitly overrides.
+
+### Baseline criteria — always in effect
+
+1. **Compile-clean** — every file in `# Scope` (main + test sources) compiles against Axon 5 dependencies. Missing-symbol errors against files OUTSIDE `# Scope` mean the scope is too narrow — re-research at FLOW.md S2, do NOT silence with excludes.
+2. **Tests green** — if `# Scope` contains test classes, every `@Test` method passes. Zero `@Test` methods in scope counts as criterion not-applicable (not match) — surface "no test coverage" as a **Learning** in the result block.
+3. **No silent behavioural regressions in the scoped slice** — assertions in migrated tests reflect AF5 semantics (record-style `payload()` / `metaData()` accessors, AF5 exception types). A flipped expectation that matches AF5 reality counts as match; silently weakened assertions do NOT.
+
+### Verification — `axon4to5-isolatedtest` Skill (default mechanism)
+
+Recipes MUST verify (1) and (2) by invoking the `axon4to5-isolatedtest` Skill — do NOT hand-craft `./mvnw -P...` / `./gradlew :test...` commands. The Skill scopes compile+test to one self-contained build profile / Gradle source-set per target, derived from `# Source` and `# Scope`.
+
+Invocation template (recipes reuse verbatim; fill brackets from current scope):
+
+```yaml
+Skill: axon4to5-isolatedtest
+Inputs:
+  target-name: <SimpleClassName>          # simple class name of $SOURCE (PascalCase). Drives the scope id.
+  build-file: <abs path to pom.xml | build.gradle(.kts)>   # the module that owns $SOURCE, not the reactor parent.
+  main-sources: [<repo-relative paths to every main file in # Scope>]
+  test-sources: [<repo-relative paths to every test file in # Scope>]   # [] when no test class exists.
+  extra-deps:  [<axon5 coordinates needed by the slice, e.g. org.axonframework:axon-modelling>]
+  cleanup: false                          # set true ONLY on the recipe's final green run before commit.
+```
+
+Behaviour:
+
+- Adds / augments an `isolated-<TargetName>` Maven profile (or Gradle source-set). Idempotent — re-invocation augments include lists, never replaces.
+- Returns compile result + test counts. A red compile or red test flips the recipe's S5 check to **mismatch**.
+- `cleanup: true` removes the scope iff compile + tests are both green; on non-green runs the scope is always kept.
+
+**Multi-module:** `build-file` MUST point to the module that owns `$SOURCE`, never the reactor parent `pom.xml`.
+
+### Idempotency / pre-Apply check
+
+`# Success Criteria` is evaluated **on first visit to FLOW.md S5** (before any Apply) AND after each Apply. If the baseline criteria already match on the first visit:
+
+- Recipe returns **Success** with `NOTES: edits=none (idempotent)` per FLOW.md.
+- Do NOT ask the user "skip vs deep-verify" — FLOW.md owns the loop; no extra decision point at this stage.
+
+### Out of scope for the baseline
+
+- Project-wide `clean verify` / full-module test run — happens once at the orchestrator's FINALIZE step after every `isolated-*` scope is cleaned up. Not a recipe-level Success Criterion.
+- Cross-recipe verification (e.g. "the projector still receives events from the migrated aggregate") — recipe boundaries are deliberately narrow; integration concerns belong to the orchestrator.
+
 ## Blocker Options baselines
 
 On `Result: Blocker`, the recipe MUST enumerate continuation paths in an **Options** list (see FLOW.md § Result). The three baseline options below are **always** present in every Blocker result — recipes do not need to restate them, but must not remove them. Recipes MAY extend the list when there is a genuine recipe-specific path.
