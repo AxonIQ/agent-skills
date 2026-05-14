@@ -6,7 +6,7 @@ argument-hint: $SOURCE
 
 # axon4to5-<component>
 
-> Authoring template for a single recipe. The orchestrator binds each section below by **its heading** to the `Recipe section` column in `_contract.md`. Keep the section names exactly as written; everything inside them is recipe-specific content. Do not describe control flow, retries, or result emission here — those live in `_contract.md`.
+> Authoring template for a single recipe. The orchestrator binds each section below by **its heading** to the diagram nodes in the `## Recipe execution contract` section of `SKILL.md`. Keep the section names exactly as written; everything inside them is recipe-specific content. Do not describe control flow, retries, or result emission here — those live in `SKILL.md`.
 >
 > Each section explains *what the section is for* and *what format it must be in*. `<example>` blocks are drawn from the original aggregate-recipe sketch.
 
@@ -26,6 +26,16 @@ What counts as "owned" by `$SOURCE` for this recipe.
 - `$SOURCE` aggregate
 - Commands and events of the aggregate
 - Everything that is needed to make the `Success Criteria` pass. But be conservative, only what is needed!
+</example>
+
+## Blocker
+
+Constructs the recipe explicitly declares as **unmigrateable** — could be due to no known migration path, a case too complex for this recipe, or a recipe-specific exclusion. If any of these is found in scope, the recipe emits `Blocker`. Each entry: one line "what it is + how to spot it + why we can't migrate".
+
+<example>
+- `@Deadline` handlers — Deadlines API is being redesigned in Axon 5; no stable migration path yet.
+- `@CommandHandlerInterceptor` on aggregate methods — no direct Axon 5 equivalent; requires manual restructuring outside this recipe's competence.
+- `ConflictResolver` parameter on handlers — DCB-only concept in Axon 5; preserving Axon 4 semantics needs manual rewrite.
 </example>
 
 ## Out of Scope
@@ -98,15 +108,17 @@ Available resources, read them only if the read-condition is met.
 
 ## Gotchas
 
-Known constructs with no Axon 5 migration path. Each entry: one line "what it is + where to spot it".
+Free-text notes accumulated from previous migrations and iterations — lessons learned, edge cases discovered, things that surprised the author. Not a rigid format; bullets, paragraphs, or short stories all welcome. The recipe (and the LLM running it) may consult these any time relevant — typically while planning or adjusting.
 
 <example>
-<!-- TODO: Fill during iterations. -->
+- Spring `@Configuration` classes wired the old `Repository` directly — after the migration, that bean disappears; check Spring config before claiming Success.
+- First attempt at `Order` aggregate failed because a `@MetaData` field on the command was silently dropped — remember to verify metadata propagation after the rename.
+- The isolated test sometimes fails on Windows due to file-locking on the event store — re-run once before treating it as a real failure.
 </example>
 
 ## Result
 
-Per-outcome `NOTES` guidance the recipe author should write into the result block. The block format itself is fixed by `_contract.md`.
+Per-outcome `NOTES` guidance the recipe author should write into the result block. The block format itself is fixed by `SKILL.md` (`## Recipe execution contract` → `### Result emission`).
 
 ### Success
 
