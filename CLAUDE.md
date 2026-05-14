@@ -17,6 +17,11 @@ solutions etc. with AskUserQuestion tool.
 Do not write how to do things that the LLM model should already know, or do not explain well-known concepts, focus on
 Axon Framework specific stuff.
 
+**Never put forward-looking / roadmap content (e.g. "future modes", "planned bulk mode", "TODO when we add X") into
+`SKILL.md` or any reference file the skill loads.** SKILL.md must describe only what is implemented today, so the LLM
+doesn't act on imagined capabilities. Park such ideas in a `PLANS.md` placed next to the skill's local `CLAUDE.md` (
+i.e. inside the skill directory). `PLANS.md` is for humans — it MUST NOT be referenced from `SKILL.md`.
+
 Use [guidelines.md](.knowledge/docs/guidelines.md).
 
 **Recurring patterns:**
