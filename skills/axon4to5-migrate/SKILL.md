@@ -60,6 +60,7 @@ Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved 
 | Blocker | Auto-select `skip` — leave `$SOURCE` in current partial state, queue moves on. |
 | Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
 | Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
+| OpenRewrite step completes | Immediately continue to mode-specific producer. Do NOT pause or end session. |
 
 ## Durability
 
@@ -78,11 +79,8 @@ These run **before** any mode-specific logic — independent of whether `mode=si
     - `max-subagents` defaults to `0` if missing. If present and not a non-negative integer → STOP.
     - `auto` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP.
 2. **OpenRewrite** — **skipped entirely when `skip-openrewrite=true`.** Otherwise, internally invoke
-   `axon4to5-openrewrite` via the `Skill` tool, passing `framework=$framework`. This is a step of this orchestrator, not
-   a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure
-   (no gap-filling on a broken bulk pass). When skipped, surface that fact in the eventual report (Notes or Learnings)
-   so the caller knows the queue ran against unprocessed AF4 (or already-partially-migrated) sources and the recipes did
-   all the work themselves.
+   `axon4to5-openrewrite` via the `Skill` tool, passing `--framework $framework --commit false`. Do NOT pass `--commit true` or omit `--commit`; DURABILITY's `on:openrewrite-done` hook owns the single combined commit. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass). When skipped, surface that fact in the eventual report (Notes or Learnings) so the caller knows the queue ran against unprocessed AF4 (or already-partially-migrated) sources and the recipes did all the work themselves.
+   **`auto=true`: after this step returns (success or skip), immediately continue to the mode-specific producer — do NOT end the session or pause.**
 
 Only after pre-steps complete does the mode-specific producer below run.
 

@@ -77,7 +77,7 @@ Every hook that mutates `progress.md` commits the change in the same op. Code-be
 |------|---------------------|--------|----------------|
 | `on:session-start` | Before pre-steps | Read `progress.md`; resume or fresh. | — |
 | `on:args-parsed` | After Parse validates | Init state dir if absent; write Selection frame (framework, configuration, mode, execution — **not** `source`). Resume + frame mismatch → AskUserQuestion (resume / start-over / abort) **before** writing. | `chore(af5): record selection frame` |
-| `on:openrewrite-done` | After pre-step #2 | Write outcome. Resume + already `success` → skip pre-step entirely (no new commit). | `chore(af5): record openrewrite <status>` |
+| `on:openrewrite-done` | After pre-step #2 | Write outcome to `progress.md`. If status=`success`: stage **all** working-tree changes with `git add -A` (covers OpenRewrite recipe edits + `progress.md`); commit with canonical message (substitute `<framework>` from resolved arg). Resume + already `success` → skip pre-step entirely (no new commit). | `chore(af5): apply Axon 4 → 5 OpenRewrite migration (--framework <framework>)` |
 | `on:queue-built` | After producer (Match / Discover+Enqueue) | Snapshot queue. Resume → merge: keep prior statuses; add only new items. | `chore(af5): build queue (<N> items)` |
 | `on:item-start` | Drain pick | Status → `in-progress`. | `chore(af5): start <source>` |
 | `on:item-result` | After FLOW.md `## Result` emitted | Status per outcome emoji; update notes col. | `chore(af5): record <status> for <source>` |
@@ -92,7 +92,8 @@ DURABILITY observes; SKILL/FLOW/BLOCKER never call it explicitly.
 
 ## Commit rules
 
-- `git commit <explicit-paths>` only. Never `git add -A`, `--amend`, `--no-verify`, `push`, co-author lines.
+- `git commit <explicit-paths>` only. Never `--amend`, `--no-verify`, `push`, co-author lines.
+- Exception: `on:openrewrite-done` (status=`success`) uses `git add -A` to stage recipe-wide changes alongside `progress.md` in the one combined commit.
 - `git status --porcelain` before each commit. Unexpected paths → AskUserQuestion (reuse existing channel).
 - State-write failure → surface, continue. Do not corrupt code state.
 
@@ -162,10 +163,10 @@ sequenceDiagram
     S->>D: on:args-parsed
     D->>F: write Selection args
     D->>G: commit (chore: selection args)
-    S->>S: OpenRewrite
+    S->>S: OpenRewrite (--commit false)
     S->>D: on:openrewrite-done
-    D->>F: write status
-    D->>G: commit (chore: openrewrite <status>)
+    D->>F: write status to progress.md
+    D->>G: commit git add -A → chore(af5): apply Axon 4→5 OpenRewrite migration (--framework <fw>)
     S->>S: producer (Match / Discover)
     S->>D: on:queue-built
     D->>F: write queue
