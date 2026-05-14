@@ -135,15 +135,28 @@ flowchart TD
     Q --> L{<b>Drain</b><br/>any pending<br/>items in queue?}
     L -- yes --> INP["pick next pending →<br/>mark in-progress in queue"]
     INP --> W[["<b>Execute</b> recipe sub-flow on item<br/>execution=inline: main session<br/>execution=subagent: general-purpose<br/>agent per item (parallel batch)"]]
-    W --> VER["<b>Verify</b><br/>behavior preserved<br/>(no DCB, keep AggregateBased<br/>EventStorageEngine)"]
-    VER --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⚠ Blocker | ⏭ Rejected | ❌ Failure)"]
+    W --> R{<b>RESULT?</b>}
+    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>per BLOCKER_RESOLUTION.md<br/>(orchestrator-side fixup<br/>using the recipe's NOTES)"]]
+    BR --> BRQ{<b>Resolved?</b><br/>budget = 1<br/>attempt per item}
+    BRQ -- yes --> W
+    BRQ -- "no / budget exhausted" --> BLK["mark item → blocked<br/>attach RESULT=Blocker + NOTES<br/>(🚧 caller must resolve)"]
+    R -- "Blocker (already retried)" --> BLK
+    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>(no DCB, keep AggregateBased<br/>EventStorageEngine)"]
+    VER --> DONE["mark item → done in queue<br/>attach RESULT + NOTES + files_changed<br/>(✅ Success | ⏭ Rejected | ❌ Failure)"]
     DONE --> Q
+    BLK --> Q
     L -- no --> RPT["<b>Report</b> &amp; END<br/>list of done items from queue:<br/>(recipe, source, RESULT, NOTES,<br/>files_changed)"]
 ```
 
-> The `[[Run recipe sub-flow]]` node is the **nested** sub-flow defined in
+> The `[[Execute recipe sub-flow]]` node is the **nested** sub-flow defined in
 > [`references/recipes/FLOW.md`](references/recipes/FLOW.md) (loaded at skill start). The queue only reacts to the
 > recipe's emitted result.
+>
+> The `[[Resolve blocker]]` node executes the orchestrator-side blocker-fixup playbook in
+> [`references/recipes/BLOCKER_RESOLUTION.md`](references/recipes/BLOCKER_RESOLUTION.md). Budget is **one** resolution
+> attempt per item: if it succeeds, the same item re-enters the recipe sub-flow once; if it fails or a second Blocker
+> comes back from the re-attempt, the item is marked blocked and the queue moves on (the queue never halts on a single
+> blocker — caller resolves and re-invokes the skill).
 
 ## Recipe sub-flow
 
