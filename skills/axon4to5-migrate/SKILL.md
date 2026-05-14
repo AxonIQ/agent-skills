@@ -2,7 +2,7 @@
 name: axon4to5-migrate
 description: >-
   Migrate Axon Framework 4 project to Axon Framework 5 by filling gaps left by the OpenRewrite bulk migration. Preserves behavior (no DCB, keeps AggregateBasedEventStorageEngine).
-argument-hint: "framework=<axon|axoniq> configuration=<native|spring> context=<single|project> [source=<class|file|fqn>]"
+argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [source=<class|file|fqn>]"
 allowed-tools: Bash(./scripts/list-recipes.sh)
 disable-model-invocation: true
 ---
@@ -13,7 +13,7 @@ disable-model-invocation: true
 
 This skill is the **orchestrator** of an Axon 4 → 5 migration. It owns the whole end-to-end flow. One of its internal steps — the bulk mechanical rewrites — is delegated to `axon4to5-openrewrite` (invoked via the `Skill` tool). Everything *after* that bulk pass is the orchestrator's own work: **filling the gaps** OpenRewrite can't handle (Aggregate restructuring, event sourcing patterns, projection wiring, anything needing semantic understanding).
 
-`axon4to5-openrewrite` is not a separate stage the user runs — it is a step *of this skill*, executed automatically on every invocation regardless of `context`. Idempotent, safe to re-run.
+`axon4to5-openrewrite` is not a separate stage the user runs — it is a step *of this skill*, executed automatically on every invocation regardless of `mode`. Idempotent, safe to re-run.
 
 ## Available recipes (auto-listed)
 
@@ -23,24 +23,24 @@ This skill is the **orchestrator** of an Axon 4 → 5 migration. It owns the who
 
 - `framework` (**required**): which Axon flavor to migrate. Currently supported values: `axon`, `axoniq`. Any other value → STOP.
 - `configuration` (**required**): how the application wires Axon. Currently supported values: `native`, `spring`. Any other value → STOP.
-- `context` (required): what gets migrated in one invocation.
+- `mode` (required): what gets migrated in one invocation.
   - `single` — one element (a class, e.g. an Aggregate). Requires `source`.
   - `project` — the whole application (default: current working directory). `source` ignored.
-- `source` (required for `context=single`): hint identifying the thing to migrate (class name, file path, FQN).
+- `source` (required for `mode=single`): hint identifying the thing to migrate (class name, file path, FQN).
 
-## Pre-steps (common to every context)
+## Pre-steps (common to every mode)
 
-These run **before** any context-specific logic — independent of whether `context=single`, `project`, or anything added later.
+These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
 
-1. Parse `framework`, `configuration`, `context` from `$ARGUMENTS`.
+1. Parse `framework`, `configuration`, `mode` from `$ARGUMENTS`.
    - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
    - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
-   - If `context` is missing or ∉ {`single`, `project`} → STOP and report unsupported context.
+   - If `mode` is missing or ∉ {`single`, `project`} → STOP and report unsupported mode.
 2. **Run the bulk-rewrite step** — internally invoke `axon4to5-openrewrite` via the `Skill` tool, passing `framework=$framework`. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass).
 
-Only after pre-steps complete does the context-specific producer below run.
+Only after pre-steps complete does the mode-specific producer below run.
 
-## Contexts
+## Modes
 
 ### `single`
 
@@ -64,18 +64,18 @@ MUST NOT:
 ## Queue flow
 
 `$SOURCE` is referenced throughout the recipe sub-flow as the argument passed to the skill from `source`.
-Every context produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty queue depends on the context.
+Every mode produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty queue depends on the mode.
 
 ```mermaid
 flowchart TD
     A[Skill invoked] --> ORW[["<b>Bulk-rewrite step</b><br/>(internal: Skill axon4to5-openrewrite,<br/>framework=$framework, idempotent)"]]
     ORW -- fail --> XORW[STOP: bulk-rewrite failed]
     ORW -- ok --> B["! list-recipes.sh<br/>(recipes catalog)"]
-    B --> C{context}
+    B --> C{mode}
 
-    %% context-specific producers — all feed the same queue
+    %% mode-specific producers — all feed the same queue
     C -- single --> P1["Match request+source<br/>→ enqueue 1 item"]
-    C -- other --> X[STOP: unsupported context]
+    C -- other --> X[STOP: unsupported mode]
     P1 --> Q[(Migration queue)]
 
     %% shared processing loop
@@ -90,9 +90,9 @@ flowchart TD
     REC2 --> Q
     REC3 --> Q
     REC4 --> Q
-    L -- yes --> M{context policy}
+    L -- yes --> M{mode policy}
 
-    %% empty-queue behavior per context
+    %% empty-queue behavior per mode
     M -- single --> E["Report &amp; END"]
 ```
 
@@ -100,8 +100,8 @@ flowchart TD
 
 ### Queue-level result handling
 
-| Result     | Queue action                | `single` context end-state |
-|------------|-----------------------------|----------------------------|
+| Result     | Queue action                | `single` mode end-state |
+|------------|-----------------------------|-------------------------|
 | `Success`  | mark item done, drain next  | Report ✅                |
 | `Blocker`  | record + drain next         | Report ⚠ with reason    |
 | `Rejected` | record + drain next         | Report ⏭ with reason    |
