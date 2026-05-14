@@ -1,0 +1,228 @@
+{
+  "iteration": "iteration-2",
+  "with_skill": {
+    "all_pass_count": 1,
+    "total_evals": 1,
+    "mean_assertion_pass_rate": 1.0,
+    "mean_total_tokens": 37607,
+    "mean_duration_ms": 22113
+  },
+  "without_skill": {
+    "all_pass_count": 0,
+    "total_evals": 1,
+    "mean_assertion_pass_rate": 0.6842105263157895,
+    "mean_total_tokens": 30740,
+    "mean_duration_ms": 22628
+  },
+  "evals": [
+    {
+      "eval_id": 1,
+      "eval_name": "aggregate-heroes-dwelling",
+      "recipe": "aggregate",
+      "with_skill": {
+        "passed": 19,
+        "total": 19,
+        "all_pass": true,
+        "total_tokens": 37607,
+        "duration_ms": 22113
+      },
+      "without_skill": {
+        "passed": 13,
+        "total": 19,
+        "all_pass": false,
+        "total_tokens": 30740,
+        "duration_ms": 22628
+      }
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "aggregate-heroes-calendar",
+      "recipe": "aggregate",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "event-processor-heroes-creature",
+      "recipe": "event-processor",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "command-gateway-heroes-recruit",
+      "recipe": "command-gateway",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 5,
+      "eval_name": "command-gateway-heroes-builddwelling-mcp",
+      "recipe": "command-gateway",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 6,
+      "eval_name": "query-gateway-heroes-mcp",
+      "recipe": "query-gateway",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 7,
+      "eval_name": "query-handler-heroes-getbyid",
+      "recipe": "query-handler",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 8,
+      "eval_name": "event-storage-engine-heroes-entityscan",
+      "recipe": "event-storage-engine",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 9,
+      "eval_name": "event-storage-engine-heroes-gameconfig",
+      "recipe": "event-storage-engine",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 10,
+      "eval_name": "event-storage-engine-heroes-yaml",
+      "recipe": "event-storage-engine",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    },
+    {
+      "eval_id": 11,
+      "eval_name": "saga-bike-rental-payment",
+      "recipe": "saga",
+      "with_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      },
+      "without_skill": {
+        "passed": null,
+        "total": null,
+        "all_pass": false,
+        "total_tokens": null,
+        "duration_ms": null
+      }
+    }
+  ]
+}

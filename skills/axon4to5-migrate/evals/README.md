@@ -1,60 +1,117 @@
-# Evals — executable, self-contained
+# Evals — functional, with-skill vs baseline
 
-Real AF4↔AF5 file pairs are bundled into `evals/fixtures/`. The runner greps each AF5 fixture for `require:` patterns (must appear) and `forbid:` patterns (must NOT appear). One bash runner + one `.case` file per scenario + one manifest + one build script.
+These evals **actually run the skill**. For each test case, two Agent subagents migrate the same AF4 file: one reads the skill's recipe, one works from built-in AF4→AF5 knowledge only. A grader then greps both outputs for AF5 must-haves / forbidden AF4 leftovers. The benchmark shows the skill's lift over the baseline.
 
-## Run
+## Layout
+
+```
+evals/
+├── evals.json          # test cases: prompt + assertions per AF4 fixture
+├── manifest.tsv        # source-of-truth list of files bundled into fixtures/
+├── fixtures/           # AF4 inputs + AF5 references (copied via build.sh)
+├── build.sh            # populates fixtures/ from .knowledge/repositories/
+├── grade.py            # one-eval grader: outputs/<file> → grading.json
+├── run.py              # orchestrator: prep, grade, aggregate, status
+├── README.md           # this file
+└── workspace/
+    └── iteration-N/
+        └── eval-<name>/
+            ├── eval_metadata.json
+            ├── with_skill/   { inputs/  outputs/  grading.json  timing.json }
+            └── without_skill/{ inputs/  outputs/  grading.json  timing.json }
+```
+
+## Loop
 
 ```bash
-# From repo root
-./skills/axon4to5-migrate/evals/run.sh             # all cases
-./skills/axon4to5-migrate/evals/run.sh aggregate   # filter by name substring
+# 1) build fixtures (one-time, or after upstream changes)
+./build.sh
+./build.sh check                                    # exit 1 on drift
+
+# 2) prep — copies AF4 input, prints two ready-to-paste subagent prompts
+./run.py prep --iteration 1 --filter aggregate-heroes-dwelling
+
+# 3) execute — driving Claude spawns Agent subagents with the printed prompts.
+#    The with_skill subagent reads references/<recipe>.md.
+#    The without_skill subagent has no access to the skill files.
+#    Each writes its migrated file to outputs/<filename>.
+
+# 4) record timing — for each completed subagent, capture total_tokens + duration_ms
+#    into the run's timing.json (the driving session does this from Agent notifications).
+
+# 5) grade — greps each output against the eval's assertions
+./run.py grade --iteration 1
+
+# 6) aggregate — produces benchmark.json + benchmark.md for the iteration
+./run.py aggregate --iteration 1
+
+# any time:
+./run.py status --iteration 1                       # which evals have outputs / grading?
 ```
 
-Exit code: `0` = every case passed, `1` = at least one failed.
+## Case schema (`evals.json`)
 
-## Refresh fixtures from upstream
-
-The skill ships its own copy of every referenced example. `manifest.tsv` lists every source path; `build.sh` does the copying.
-
-```bash
-./skills/axon4to5-migrate/evals/build.sh        # copy from .knowledge/repositories/ into evals/fixtures/
-./skills/axon4to5-migrate/evals/build.sh check  # verify hashes (no copy) — exit 1 on drift
+```json
+{
+  "skill_name": "axon4to5-migrate",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "aggregate-heroes-dwelling",
+      "recipe": "aggregate",
+      "input": "evals/fixtures/axon4/heroes/Dwelling.java",
+      "output_filename": "Dwelling.java",
+      "prompt": "...migrate INPUT_PATH to AF5; save to OUTPUT_PATH...",
+      "assertions": [
+        {"text": "...", "type": "grep_require", "pattern": "@EventSourced"},
+        {"text": "...", "type": "grep_forbid",  "pattern": "@AggregateIdentifier"}
+      ]
+    }
+  ]
+}
 ```
 
-If upstream examples change, `build.sh check` will report drift; re-running `build.sh` refreshes the bundle.
+`INPUT_PATH` / `OUTPUT_PATH` are placeholders that `run.py prep` substitutes with workspace-relative paths before printing the subagent prompt.
 
-## Case file format
+Assertion types:
+- `grep_require` — pattern (literal substring) MUST appear in the produced output file.
+- `grep_forbid` — pattern MUST NOT appear.
+
+## What the benchmark looks like
+
+`benchmark.md` shows pass-rate, mean tokens, mean wall-clock for each configuration, plus a per-eval table:
 
 ```
-recipe:  <recipe-name>                      # informational
-af4:     evals/fixtures/<…>/<file>          # baseline (informational)
-af5:     evals/fixtures/<…>/<file>          # required — grepped by runner
-require: <literal substring>                # must appear in af5
-forbid:  <literal substring>                # must NOT appear in af5
-```
+## with_skill
+- passed all-assertions: 1 / 2
+- mean assertion pass rate: 94.74%
+- mean total_tokens: 33,284
+- mean wall-clock: 17.4s
 
-Lines starting with `#` are comments. Blank lines are ignored. Multiple `require:` / `forbid:` per case.
+## without_skill
+- passed all-assertions: 0 / 2
+- mean assertion pass rate: 75.88%
+- mean total_tokens: 28,986
+- mean wall-clock: 22.9s
 
-## Current coverage
-
-| Case | Recipe | What it audits |
+| Eval | with_skill | without_skill |
 |---|---|---|
-| `aggregate-heroes-dwelling` | aggregate | `@EventSourced`, `EventAppender`, `@EntityCreator`, snapshotting B1 dropped, all AF4 imports gone. |
-| `aggregate-heroes-calendar` | aggregate | Second aggregate — different `tagKey`, same shape. |
-| `event-processor-heroes-creature` | event-processor | `@Namespace`, `@SequencingPolicy(type = MetadataSequencingPolicy.class)`, class-level `CommandGateway` → method-parameter `CommandDispatcher`, no naked `.join()` / `.get()`. |
-| `command-gateway-heroes-recruit` | command-gateway | Import-only swap in a Spring controller. Gateway stays. |
-| `command-gateway-heroes-builddwelling-mcp` | command-gateway | Future-returning MCP tool — `commandGateway.send` chained, no blocking. |
-| `query-gateway-heroes-mcp` | query-gateway | Sync callback bridges via `.orTimeout(30, TimeUnit.SECONDS).join()`. |
-| `query-handler-heroes-getbyid` | query-handler | Import-only `@QueryHandler` rewrite, body untouched. |
-| `event-storage-engine-heroes-entityscan` | event-storage-engine | Mandatory `@EntityScan(org.axonframework, io.axoniq.framework, …)` (A.JPA.5). |
-| `event-storage-engine-heroes-gameconfig` | event-storage-engine | `SequencingPolicy` + correlation-provider package moves, `e.getMetaData()` → `e.metadata()`, `Optional` return. |
-| `event-storage-engine-heroes-yaml` | event-storage-engine | YAML `axon.serializer.*` → `axon.converter.*`, per-processor `sequencing-policy:` removed. |
-| `saga-bike-rental-payment` | saga | Shape B outcome: `@Component` + `@Scheduled` replacing `@DeadlineHandler`, all AF4 saga imports gone. |
+| aggregate-heroes-dwelling | ❌ 17/19 | ❌ 13/19 |
+| query-handler-heroes-getbyid | ✅ 6/6 | ❌ 5/6 |
+```
+
+When `with_skill` fails an assertion, it's a real signal that the recipe's instructions weren't precise enough for the agent to land the exact AF5 shape — an actionable lead for tightening the recipe.
+
+When `without_skill` passes while `with_skill` fails, the skill is hurting more than helping — investigate.
+
+## Coverage
+
+11 test cases covering every recipe (`aggregate` ×2, `event-processor`, `command-gateway` ×2, `query-gateway`, `query-handler`, `event-storage-engine` ×3, `saga`). Drawn from real AF4↔AF5 pairs across heroes / gamerental / bike-rental-extended.
 
 ## Add a case
 
-1. Find a real before/after pair in `.knowledge/repositories/axon-examples/axon{4,5}/`.
-2. Add two rows to `manifest.tsv` (af4 source + af5 source → `evals/fixtures/…`).
-3. Run `./build.sh` to bundle.
-4. Add a `cases/<recipe>-<short-name>.case` file with `require:` / `forbid:` patterns.
-5. Run `./run.sh` — the new case should pass.
+1. Pair an AF4 source with its AF5 reference in `.knowledge/repositories/axon-examples/axon{4,5}/`.
+2. Add the AF4 file to `manifest.tsv` and run `./build.sh` to bundle it.
+3. Add an entry to `evals.json` with a prompt + `grep_require` / `grep_forbid` assertions derived from the AF5 reference.
+4. `./run.py prep --filter <new-eval-name>`, spawn the printed subagents, grade, aggregate.

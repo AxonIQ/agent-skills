@@ -1,0 +1,105 @@
+{
+  "eval_id": 1,
+  "eval_name": "aggregate-heroes-dwelling",
+  "recipe": "aggregate",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate the Axon Framework 4 aggregate at INPUT_PATH to AF5 following references/aggregate.md. Pinned decisions: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. Blocker B1 (snapshotTriggerDefinition): user picked accept-drop \u2014 drop the attribute. Steps 3-14 + Path A. Don't run scoped tests; just produce the migrated file. Save the rewritten Java to OUTPUT_PATH. Do not write any other files.",
+  "input": "evals/fixtures/axon4/heroes/Dwelling.java",
+  "output_filename": "Dwelling.java",
+  "assertions": [
+    {
+      "text": "Spring stereotype @EventSourced is applied (Path A)",
+      "type": "grep_require",
+      "pattern": "@EventSourced"
+    },
+    {
+      "text": "tagKey attribute is set on @EventSourced",
+      "type": "grep_require",
+      "pattern": "tagKey"
+    },
+    {
+      "text": "AF5 EventSourced import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.extension.spring.stereotype.EventSourced"
+    },
+    {
+      "text": "AF5 @EventSourcingHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.EventSourcingHandler"
+    },
+    {
+      "text": "AF5 @EntityCreator import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.eventsourcing.annotation.reflection.EntityCreator"
+    },
+    {
+      "text": "AF5 @CommandHandler import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.commandhandling.annotation.CommandHandler"
+    },
+    {
+      "text": "AF5 EventAppender import landed",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.gateway.EventAppender"
+    },
+    {
+      "text": "@CommandHandler methods take EventAppender as a parameter",
+      "type": "grep_require",
+      "pattern": "EventAppender eventAppender"
+    },
+    {
+      "text": "eventAppender.append(...) replaces AggregateLifecycle.apply(...)",
+      "type": "grep_require",
+      "pattern": "eventAppender.append"
+    },
+    {
+      "text": "AF4 snapshotTriggerDefinition attribute gone (B1 accept-drop)",
+      "type": "grep_forbid",
+      "pattern": "@Aggregate(snapshotTriggerDefinition"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier removed",
+      "type": "grep_forbid",
+      "pattern": "@AggregateIdentifier"
+    },
+    {
+      "text": "AF4 AggregateLifecycle references removed",
+      "type": "grep_forbid",
+      "pattern": "AggregateLifecycle"
+    },
+    {
+      "text": "AF4 @CreationPolicy annotation removed",
+      "type": "grep_forbid",
+      "pattern": "@CreationPolicy"
+    },
+    {
+      "text": "AF4 Spring @Aggregate import removed",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.spring.stereotype.Aggregate"
+    },
+    {
+      "text": "AF4 @AggregateIdentifier import removed",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.modelling.command.AggregateIdentifier"
+    },
+    {
+      "text": "AF4 @CreationPolicy import removed",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.modelling.command.CreationPolicy"
+    },
+    {
+      "text": "AF4 @CommandHandler import removed",
+      "type": "grep_forbid",
+      "pattern": "import org.axonframework.commandhandling.CommandHandler;"
+    },
+    {
+      "text": "AF4 @EventSourcingHandler import removed",
+      "type": "grep_forbid",
+      "pattern": "import org.axonframework.eventsourcing.EventSourcingHandler;"
+    },
+    {
+      "text": "AF4 AggregateLifecycle static import removed",
+      "type": "grep_forbid",
+      "pattern": "import static org.axonframework.modelling.command.AggregateLifecycle"
+    }
+  ]
+}

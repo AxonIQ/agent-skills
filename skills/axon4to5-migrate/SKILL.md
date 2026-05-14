@@ -57,31 +57,50 @@ User passes a file path or FQ class. Read the file once; for each iterative/one-
 
 `config-reads` is checked LAST among the iterative rows because most gateway-injecting / handler classes also have an AF4 `Configuration` import lying around; `config-reads` only wins when the file is genuinely a configuration-reader.
 
-## Recipe Output — six results, one schema
+## Recipe communication protocol
 
-Every recipe emits one fenced ```yaml block:
+Recipes are **pausable workflows**. Each recipe-invocation may emit one of two response types:
+
+| Response | When | Recipe state |
+|---|---|---|
+| **🔒 `await decision <key>`** | Recipe hit a declared decision point that isn't yet resolved in `inputs.decisions` | alive — resumes after orchestrator returns the answer (no state lost; partial edits stay on disk) |
+| **`output { result }`** | Recipe finished (success / skipped / rejected / blocked / failed) | terminal |
+
+The recipe **never calls `AskUserQuestion` directly**. It defers all user-facing prompts to the orchestrator via `await decision`. The orchestrator picks the resolution strategy from its **resolver_mode** (orthogonal to the source-mode SINGLE/PHASED/DEBUG):
+
+| Resolver mode | Behavior on `await decision` |
+|---|---|
+| `interactive` (default) | already pinned → reuse; auto-policy fires → use; else `AskUserQuestion` |
+| `automatic` | already pinned → reuse; auto-policy fires → use; else fail the run (no user to ask — CI guardrail) |
+| `dry-run` *(planned)* | stub unresolved decisions as `pause-migration`; never edit files; produce report |
+
+Recipe authors declare auto-policies in each recipe's `## Decision points` section using a small DSL — e.g. `pinned.license == "axoniq-commercial": <option>` / `fallback: ask-user`. Full contract: [references/_template.md](references/_template.md).
+
+### Output schema — five results
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class | file path | "n/a">
 reason: <one short line>                # required for everything except success
-decisions: { <recipe-specific keys> }
+decisions:                              # complete audit trail of decisions resolved during this run
+  <recipe-specific keys>
+files_touched:                          # explicit — drives `git add`
+  - <repo-relative path>
 route_to: <recipe>                      # OPTIONAL, only on rejected
-notes: <optional>
+notes: <free text>                      # cite blockers.md#B<n> when blocked; surface tool output when failed
 ```
-
-The orchestrator derives the rest from `result:`:
 
 | `result:` | Orchestrator action |
 |---|---|
-| `success` | commit code + `progress.md`; next item. |
+| `success` | commit `files_touched` + `progress.md`; next item. |
 | `skipped` | no commit; next item. |
-| `rejected` | no commit; if `route_to:` set, re-route; else next. |
-| `needs-decision` | `AskUserQuestion` with `notes` options. fix → re-run recipe; defer → commit `progress.md` only; stop → HALT. |
-| `blocked` | comment-out AF4 surface + `TODO[AF5 migration: <blocker-key>]`. Commit code + `progress.md` if any edits; else commit `progress.md` only. Record blocker key in Pinned-decisions; next. |
+| `rejected` | no commit; if `route_to:` set, re-route via routing table; else next. |
+| `blocked` | recipe commented-out AF4 surface + `TODO[AF5 migration: <key>]` markers; commit `files_touched` + `progress.md`; record blocker in Pinned-decisions; next. |
 | `failed` | no commit; surface `reason` + `notes`; `AskUserQuestion`: hand off to `debug` / pause / stop. |
 
-Blocker keys (`B1`..`B10`) live in [references/blockers.md](references/blockers.md). Recipes invoke the matching AskUserQuestion from there; one place for "AF5 gaps".
+`needs-decision` is **not** a `result:` value — decision points are handled via `await decision` mid-run, never as a terminal output.
+
+Blocker keys (`B1`..`B10`) live in [references/blockers.md](references/blockers.md). Each recipe's `## Decision points` section enumerates which blockers it can surface and the auto-policy for each.
 
 ## Orchestrator flow
 
@@ -98,12 +117,13 @@ flowchart TD
     InnerLoop{next unit in batch?}
     Classify[[classify unit → row]]
     Recipe[[recipe.execute<br/>Preflight · Procedure · EndCondition]]
+    AwaitDecision{recipe emitted<br/>🔒 await decision?}
+    Resolve[resolve_await<br/>pinned · auto-policy · interactive]
     Act{output.result}
 
-    Commit[/commit code + progress.md/]
+    Commit[/commit files_touched + progress.md/]
     NoCommit[no commit]
-    CommitBlocked[/commit comment-out + TODO/]
-    Ask[AskUserQuestion]
+    CommitBlocked[/commit comment-out + TODO + progress.md/]
 
     Checkpoint{checkpoint<br/>phased / debug only<br/>continue · pause · stop}
 
@@ -116,18 +136,19 @@ flowchart TD
     Empty -->|yes| WrapUp
     Empty -->|no| InnerLoop
 
-    InnerLoop -->|yes| Classify --> Recipe --> Act
+    InnerLoop -->|yes| Classify --> Recipe --> AwaitDecision
     InnerLoop -->|done| Checkpoint
 
-    Act -->|success| Commit --> InnerLoop
-    Act -->|skipped / rejected| NoCommit --> InnerLoop
-    Act -->|blocked| CommitBlocked --> InnerLoop
-    Act -->|needs-decision| Ask
-    Act -->|failed| Halt
+    AwaitDecision -->|yes| Resolve
+    AwaitDecision -->|no — output emitted| Act
 
-    Ask -->|fix| Recipe
-    Ask -->|defer| InnerLoop
-    Ask -->|stop| Halt
+    Resolve -->|answer| Recipe
+
+    Act -->|success| Commit --> InnerLoop
+    Act -->|skipped| NoCommit --> InnerLoop
+    Act -->|rejected| NoCommit
+    Act -->|blocked| CommitBlocked --> InnerLoop
+    Act -->|failed| Halt
 
     Checkpoint -->|continue / single| NextBatch
     Checkpoint -->|pause / stop| Halt
@@ -146,9 +167,9 @@ flowchart TD
 | `next_batch` (phased) | discovery greps walk the project read-only |
 | `next_batch` (debug) | parses compile output read-only |
 | `classify (unit)` | inspects a single file; emits a recipe selection — no edits |
-| `recipe.execute` | recipe's Preflight + Procedure run as analysis + edit proposal — **only when the recipe declares a `Subagent guidelines` section AND its Procedure does NOT use `AskUserQuestion`** (those prompts must reach the main conversation) |
+| `recipe.execute` | recipe's Preflight + Procedure run as analysis + edit proposal — **only when the recipe declares `## Subagent guidelines` AND every `## Decision points` entry can resolve via auto-policy or pre-pinned state** (no `fallback: ask-user` left unresolved at fan-out time). Otherwise run in the main session so `await decision` reaches a real `AskUserQuestion`. |
 
-Everything else is **orchestrator-owned**: `ensure_state` / `INIT` issue `AskUserQuestion` for pinned decisions; `Commit` / `CommitBlocked` own git; `Ask` is interactive; `Checkpoint` is user-facing; `Finalize` decides on red builds.
+Everything else is **orchestrator-owned**: `ensure_state` / `INIT` issue `AskUserQuestion` for pinned project decisions; `Resolve` decides between auto-policy / pinned / interactive; `Commit` / `CommitBlocked` own git; `Checkpoint` is user-facing; `Finalize` decides on red builds.
 
 ### Procedural sketch (for code-style readers)
 
@@ -162,17 +183,36 @@ while True:
     if not batch: break
 
     for unit in batch:
-        row    = classify(unit)
-        output = recipe.execute(row, unit)
-        act(output)                       # flat switch on output.result — see table above
+        row     = classify(unit)
+        inputs  = build_inputs(unit, row, pinned, decisions={})
+        while True:
+            response = recipe.execute(row, inputs)
+            if response is AwaitDecision:
+                answer = resolve_await(response, pinned, resolver_mode)
+                inputs.decisions[response.key] = answer
+                continue                    # recipe resumes from where it paused
+            act(response.output)            # terminal — flat switch on output.result
+            break
 
     if mode in {phased, debug}:
         AskUserQuestion: continue / pause / stop   # checkpoint between batches
 
 wrap_up()                                 # FINALIZE iff progress.md shows every routing row done; otherwise STOP
+
+
+resolve_await(await, pinned, resolver_mode):
+    if await.key in pinned.decisions:
+        return pinned.decisions[await.key]
+    answer = evaluate_auto_policy(await, pinned)   # see _template.md DSL
+    if answer == ASK_USER:
+        if resolver_mode == "automatic":
+            raise UnresolvableDecision(await.key)   # CI guardrail
+        answer = AskUserQuestion(await.question, await.options)
+    persist_to_progress_md(await.key, answer)
+    return answer
 ```
 
-`next_batch` is the only mode-specific code. Everything below it is identical across SINGLE, PHASED, and DEBUG.
+`next_batch` is the only source-mode-specific code; `resolve_await` is the only resolver-mode-specific code. Everything else is identical across all mode combinations.
 
 ### One-shots
 
@@ -242,13 +282,22 @@ After every non-trivial commit, suggest `/clear` — recipe boundaries especiall
 
 ## Evals
 
-Self-contained. Real AF4↔AF5 file pairs are **bundled** into `evals/fixtures/` via [evals/manifest.tsv](evals/manifest.tsv) + [evals/build.sh](evals/build.sh). [evals/run.sh](evals/run.sh) greps each `.case` file's `require:` / `forbid:` patterns against the bundled AF5 fixture.
+**Functional, with-skill vs baseline.** For each eval the loop:
+
+1. **prep** — `run.py prep` copies the AF4 fixture into a fresh workspace dir and prints two ready-to-paste subagent prompts (one with the skill loaded, one baseline).
+2. **execute** — the driving Claude session spawns Agent subagents with those prompts; each writes its migrated AF5 file to `outputs/`.
+3. **grade** — `grade.py` greps each output against the eval's assertions (`grep_require` / `grep_forbid`), writes `grading.json`.
+4. **aggregate** — `run.py aggregate` collates pass-rate / tokens / wall-clock across with_skill vs without_skill into `benchmark.{json,md}`.
+
+Fixtures are bundled in `evals/fixtures/` via [evals/manifest.tsv](evals/manifest.tsv) + [evals/build.sh](evals/build.sh); the skill stays self-contained without depending on `.knowledge/repositories/`.
 
 ```bash
-./skills/axon4to5-migrate/evals/run.sh             # all cases
-./skills/axon4to5-migrate/evals/run.sh aggregate   # filter by name substring
-./skills/axon4to5-migrate/evals/build.sh           # refresh fixtures from upstream
-./skills/axon4to5-migrate/evals/build.sh check     # verify hashes; non-zero on drift
+./evals/build.sh                                    # refresh fixtures from upstream
+./evals/build.sh check                              # verify hashes; non-zero on drift
+./evals/run.py prep --iteration 1 --filter <name>   # set up workspace + print prompts
+./evals/run.py grade --iteration 1                  # grade every output present
+./evals/run.py aggregate --iteration 1              # render benchmark.{json,md}
+./evals/run.py status --iteration 1                 # which evals have outputs / grading?
 ```
 
-See [evals/README.md](evals/README.md) for the case format and coverage table.
+Test cases live in [evals/evals.json](evals/evals.json). See [evals/README.md](evals/README.md) for the schema and how to add a case.
