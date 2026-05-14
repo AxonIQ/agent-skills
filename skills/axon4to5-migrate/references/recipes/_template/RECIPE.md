@@ -138,9 +138,13 @@ Free-text notes accumulated from previous migrations and iterations — lessons 
 
 ## Result
 
-**Recipe-specific augmentation only.** Baseline `NOTES` content per outcome is defined in `references/recipes/DEFAULT.md`; that always applies first. Add anything below only when this recipe needs to record fields the default does not cover (e.g., a recipe-specific decision the LLM made, an artifact path, a follow-up the caller should know about). The result block format itself (`RESULT/SOURCE/RECIPE/NOTES`) is fixed by FLOW.md.
+**Recipe-specific augmentation only.** Baseline **Notes** / **Learnings** / **Options** content per outcome is defined in `references/recipes/DEFAULT.md`; that always applies first. Add anything below only when this recipe needs to record fields the default does not cover (e.g., a recipe-specific decision the LLM made, an artifact path, a follow-up the caller should know about). The result block format itself (markdown with `**Result:** / **Source:** / **Recipe:** / **Notes:** / **Learnings:** / **Options:**`) is fixed by FLOW.md § Result.
+
+When emitting any outcome, the recipe MUST say **"return <OUTCOME>"** (one of `SUCCESS`, `BLOCKER`, `REJECTED`, `FAILURE`) immediately before the result block — this is the orchestrator's signal that the sub-flow has terminated. Then output the markdown block per the FLOW.md schema.
 
 ### Success
+
+Say **"return SUCCESS"**, then emit the result block. **Notes** is required; **Learnings** is optional (include only if surprises encountered).
 
 <example>
 <!-- TODO: Fill during iterations. -->
@@ -148,17 +152,34 @@ Free-text notes accumulated from previous migrations and iterations — lessons 
 
 ### Blocker
 
+Say **"return BLOCKER"**, then emit the result block. **Notes** is required, **Options** is required (include the three baselines from `DEFAULT.md` plus any recipe-specific extensions). **Learnings** is optional.
+
 <example>
-<!-- TODO: Fill during iterations. -->
+return BLOCKER
+
+> **Result:** 🚧 Blocker
+> **Source:** `<fqn or file path>`
+> **Recipe:** axon4to5-<component>
+>
+> **Notes:** <one-paragraph summary — what is blocking, where, and what the caller needs to decide>
+>
+> **Options:**
+> - [ ] **skip** — keep `$SOURCE` in current partial state; queue moves on.
+> - [ ] **revert** — undo this recipe's edits to `$SOURCE`; return to pre-recipe state.
+> - [ ] **solve-manually** — pause; caller fixes by hand, then re-invokes.
 </example>
 
 ### Rejected
+
+Say **"return REJECTED"**, then emit the result block. **Notes** is required (which `# Applicable` predicate failed). **Learnings** optional.
 
 <example>
 <!-- TODO: Fill during iterations. -->
 </example>
 
 ### Failure
+
+Say **"return FAILURE"**, then emit the result block. **Notes** is required (failing Success Criteria + last error verbatim). **Learnings** nearly always present — record the hypothesis for the next iteration.
 
 <example>
 <!-- TODO: Fill during iterations. -->
