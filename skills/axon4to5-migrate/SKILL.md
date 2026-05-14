@@ -120,6 +120,10 @@ Steps (after the common pre-steps):
       records.
 4. **Report** — render the report (see Queue flow § Render report).
 
+**Context hygiene** — after every 5 items drained, emit this tip once (then reset counter):
+
+> 💡 Context is growing. Run `/clear` and re-invoke the skill — it resumes automatically from `.axon4to5-migration/progress.md`, no work is lost.
+
 MUST NOT:
 
 - Spawn a subagent under `execution=inline`.
