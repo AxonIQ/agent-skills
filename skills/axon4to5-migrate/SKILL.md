@@ -1,7 +1,7 @@
 ---
 name: axon4to5-migrate
 description: >-
-  Migrate Axon Framework 4 project to Axon Framework 5 by filling gaps left by the OpenRewrite bulk migration. Preserves behavior (no DCB, keeps AggregateBasedEventStorageEngine).
+  Migrate Axon Framework 4 project to Axon(iq) Framework 5.
 argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>]"
 allowed-tools: Bash(./scripts/list-recipes.sh)
 disable-model-invocation: true
