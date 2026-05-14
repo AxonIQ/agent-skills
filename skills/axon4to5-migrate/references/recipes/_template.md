@@ -1,7 +1,7 @@
 ---
 name: axon4to5-<component>
 description: <one line, starts with "Migrates a single ...">
-argument-hint: <Source>
+argument-hint: $SOURCE
 ---
 
 # axon4to5-<component>
@@ -12,18 +12,18 @@ argument-hint: <Source>
 
 ## Input
 
-What `<Source>` identifies — fully qualified class name or file path. State the shape the recipe expects.
+What `$SOURCE` identifies — fully qualified class name or file path. State the shape the recipe expects.
 
 <example>
-- `<Source>` (required) — fully qualified class name or file path of the Axon 4 Aggregate to migrate (the class annotated with `@Aggregate` or containing `@AggregateIdentifier`). All commands, events, and members of this aggregate are in scope for migration.
+- `$SOURCE` (required) — fully qualified class name or file path of the Axon 4 Aggregate to migrate (the class annotated with `@Aggregate` or containing `@AggregateIdentifier`). All commands, events, and members of this aggregate are in scope for migration.
 </example>
 
 ## Scope
 
-What counts as "owned" by `<Source>` for this recipe.
+What counts as "owned" by `$SOURCE` for this recipe.
 
 <example>
-- `<Source>` aggregate
+- `$SOURCE` aggregate
 - Commands and events of the aggregate
 - Everything that is needed to make the `Success Criteria` pass. But be conservative, only what is needed!
 </example>
@@ -36,7 +36,7 @@ Negative constraints — things the recipe must refuse to touch even if tempted.
 - Sibling aggregates, projections, sagas
 - `application.properties` / Spring config beans
 - Logging changes, package renames, formatting
-- Anything that doesn't move a red `Success Criteria` item to green
+- Anything that doesn't flip a mismatched `Success Criteria` item to a matching state
 </example>
 
 ## Prerequisites
@@ -49,12 +49,12 @@ Assumptions about the project before the recipe runs. The orchestrator does not 
 
 ## Applicable
 
-Predicates evaluated against `<Source>`'s surface (annotations / type markers). Each predicate is a single observable fact. State the decision rule (AND / OR / heuristic) explicitly. The recipe should also tolerate partial migration (some Axon 5 patterns already applied, but `Success Criteria` not yet green).
+Predicates evaluated against `$SOURCE`'s surface (annotations / type markers). Each predicate is a single observable fact. State the decision rule (AND / OR / heuristic) explicitly. The recipe should also tolerate partial migration (some Axon 5 patterns already applied, but `Success Criteria` not yet matching).
 
 <example>
 It's possible that some work was already done - annotation changed etc. So you must also recognize it's already looks like an Axon Framework 5 aggregate, but the `Success Criteria` are not met.
 
-1. Check if the `<Source>` is `State Based` aggregate, not `Event Sourced`.
+1. Check if the `$SOURCE` is `State Based` aggregate, not `Event Sourced`.
     1. yes: return `Rejected` output
     2. no: continue
 2. Check if it's an Aggregate and has `@EventSourcingHandler`.
@@ -64,7 +64,7 @@ It's possible that some work was already done - annotation changed etc. So you m
 
 ## Success Criteria
 
-Concrete, verifiable checks (compile output, isolated test result, type re-reads). Recipe authors must phrase each criterion so a re-evaluation answers "green or red" deterministically.
+Concrete, verifiable checks (compile output, isolated test result, type re-reads). Each criterion must answer `match` or `mismatch` deterministically. State the **aggregation rule** explicitly — does the recipe require all criteria to match, a subset, or weighted? The recipe owns the verdict on whether the migration is done.
 
 <example>
 If any of the following is not true, then the success criteria are not met.
@@ -72,6 +72,8 @@ If any of the following is not true, then the success criteria are not met.
 1. No compilation errors in the Aggregate and commands, events.
 2. No compilation errors in the Aggregate Test file (if exists). Do not add tests if not exist.
 3. **Always** invoke via the `Skill` tool `axon4to5-isolatedtest` and check that the test passes.
+
+Aggregation rule: all three criteria must match.
 </example>
 
 ## References
