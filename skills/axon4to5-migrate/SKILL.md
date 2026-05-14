@@ -39,6 +39,10 @@ disable-model-invocation: true
       item → `general-purpose` subagent (parallel batches). Useful for `project` mode on large codebases.
 - `source` (required for `mode=single`): hint identifying the thing to migrate (class name, file path, FQN).
 
+## Durability
+
+**ALWAYS `Read` [`references/DURABILITY.md`](references/DURABILITY.md) FIRST — before pre-steps.** Mandatory. It defines the state files under `.axon4to5-migration/`, the hooks observed across pre-steps + queue + recipe results + caller decisions, and the commit protocol. Reads `progress.md` on entry to decide resume vs fresh.
+
 ## Pre-steps (common to every mode)
 
 These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
