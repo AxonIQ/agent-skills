@@ -75,8 +75,14 @@
         {
           "target": "source",
           "type": "grep_forbid",
-          "pattern": "JpaEventStorageEngine",
-          "text": "AF4 JpaEventStorageEngine removed"
+          "pattern": "jpa.JpaEventStorageEngine",
+          "text": "AF4 JpaEventStorageEngine import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "JpaEventStorageEngine.builder",
+          "text": "AF4 JpaEventStorageEngine.builder() removed"
         },
         {
           "target": "result",
