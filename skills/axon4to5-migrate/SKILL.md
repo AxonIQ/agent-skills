@@ -2,7 +2,7 @@
 name: axon4to5-migrate
 description: >-
   Migrate Axon Framework 4 project to Axon Framework 5 — preserves behavior (do not introduce DCB, keep AggregateBasedEventStorageEngine etc).
-argument-hint: "mode=<single> [source=<class|file|fqn>]"
+argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single> [source=<class|file|fqn>]"
 allowed-tools: Bash(./scripts/list-recipes.sh)
 disable-model-invocation: true
 ---
@@ -15,10 +15,10 @@ disable-model-invocation: true
 
 ## Inputs
 
+- `framework` (**required**): which Axon flavor to migrate. Currently supported values: `axon`, `axoniq`. Any other value → STOP.
+- `configuration` (**required**): how the application wires Axon. Currently supported values: `native`, `spring`. Any other value → STOP.
 - `mode` (required): currently only `single`.
 - `source` (optional, mode=single): user-supplied hint identifying the thing to migrate (class name, file path, FQN).
-
-`$SOURCE` is referenced throughout the recipe sub-flow as the argument passed in from `source`.
 
 ## Modes
 
@@ -28,7 +28,10 @@ Migrate ONE element (one aggregate, one handler, etc.) using exactly one recipe 
 
 Steps:
 
-1. Parse `mode` from `$ARGUMENTS`. If `mode != single` → STOP and report unsupported mode.
+1. Parse `framework`, `configuration`, `mode` from `$ARGUMENTS`.
+   - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
+   - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
+   - If `mode != single` → STOP and report unsupported mode.
 2. Match user's request + `source` to ONE recipe in the auto-listed set (by `name` + `description`). If ambiguous → ask user via `AskUserQuestion` to pick. If no match → STOP and report.
 3. `Read` the chosen recipe file (`references/recipes/<name>.md`) and execute it per the **Recipe sub-flow** below.
 4. Verify behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
@@ -36,12 +39,15 @@ Steps:
 
 MUST NOT:
 
+- Run without all three required parameters resolved to a supported value.
 - Run multiple recipes in one invocation.
 - Migrate more than the single source named by the user.
+- Migrate anything outside the supported `(framework, configuration)` matrix — the rest of the codebase stays untouched.
 - Introduce DCB or swap event storage engine.
 
 ## Queue flow
 
+`$SOURCE` is referenced throughout the recipe sub-flow as the argument passed to the skill from `source`.
 Every mode produces a **queue** of `(recipe, source)` items. A single processing loop drains it. What happens on empty queue depends on the mode.
 
 ```mermaid
