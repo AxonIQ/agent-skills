@@ -11,9 +11,9 @@ argument-hint: $SOURCE
 >
 > Each section explains *what the section is for* and *what format it must be in*. `<example>` blocks are drawn from the original aggregate-recipe sketch.
 
-## Input
+## Source
 
-What `$SOURCE` identifies — fully qualified class name or file path. State the shape the recipe expects.
+What `$SOURCE` is for this recipe — fully qualified class name or file path. State the shape the recipe expects. Read by FLOW.md S1 before evaluating `# Applicable`.
 
 <example>
 - `$SOURCE` (required) — fully qualified class name or file path of the Axon 4 Aggregate to migrate (the class annotated with `@Aggregate` or containing `@AggregateIdentifier`). All commands, events, and members of this aggregate are in scope for migration.
@@ -31,12 +31,18 @@ What counts as "owned" by `$SOURCE` for this recipe.
 
 ## Blocker
 
-Constructs the recipe explicitly declares as **unmigrateable** — could be due to no known migration path, a case too complex for this recipe, or a recipe-specific exclusion. If any of these is found in scope, the recipe emits `Blocker`. Each entry: one line "what it is + how to spot it + why we can't migrate".
+Things the recipe declares as **unresolvable from inside the recipe** — the caller must fix them before re-running. Two categories, both emit `Blocker`:
+
+1. **In-scope unmigrateable constructs** — no known migration path, case too complex for this recipe, or recipe-specific exclusion.
+2. **Unmet project-level prerequisites** — facts about the project the recipe assumes hold (build state, classpath, dependencies). The recipe does not enforce these proactively; it surfaces them as `Blocker` when a Success Criterion or Apply step would otherwise hit them blind.
+
+Each entry: one line "what it is + how to spot it + why this recipe can't proceed".
 
 <example>
 - `@Deadline` handlers — Deadlines API is being redesigned in Axon 5; no stable migration path yet.
 - `@CommandHandlerInterceptor` on aggregate methods — no direct Axon 5 equivalent; requires manual restructuring outside this recipe's competence.
 - `ConflictResolver` parameter on handlers — DCB-only concept in Axon 5; preserving Axon 4 semantics needs manual rewrite.
+- Project does not compile pre-migration — prerequisite; caller must restore a green build before this recipe can verify Success Criteria.
 </example>
 
 ## Out of Scope
@@ -48,14 +54,6 @@ Negative constraints — things the recipe must refuse to touch even if tempted.
 - `application.properties` / Spring config beans
 - Logging changes, package renames, formatting
 - Anything that doesn't flip a mismatched `Success Criteria` item to a matching state
-</example>
-
-## Prerequisites
-
-Assumptions about the project before the recipe runs. The orchestrator does not enforce these — the recipe may treat a missing prerequisite as a `Rejected` cause.
-
-<example>
-- ``
 </example>
 
 ## Applicable
@@ -89,13 +87,9 @@ Aggregation rule: all three criteria must match.
 
 ## References
 
-Recipe playbook. Three subsections; each entry has an explicit *apply-condition* (a fact about scope that triggers loading the entry).
+Recipe playbook — pointers to the **Migration paths catalog**. Each entry has an explicit *apply-condition* (a fact about scope that triggers loading the entry). Read by FLOW.md S3 (Research) and re-consulted at S6 (Plan Migration).
 
 <example>
-Available resources, read them only if the apply-condition is met.
-
-### Migration Paths
-
 Pick entries from the **Migration paths catalog** (see `SKILL.md` § Migration paths catalog — `references/docs/paths/*.adoc`). Each entry MUST declare an **apply-condition** — a fact about current scope that triggers loading the file.
 
 Format:
@@ -106,13 +100,29 @@ Format:
 ```
 
 Do NOT copy content from the catalog into the recipe — only the path and the apply-condition. Do NOT invent paths; only use files that exist under `references/docs/paths/`.
+</example>
 
-### Toolbox
+## Toolbox
 
-<!-- TODO: Fill during iterations. -->
+Recipe-specific scripts, prompts, pre-baked transformations, or step-by-step procedures consulted at FLOW.md S6 (Plan Migration) — anything NOT already covered by a migration path in `# References`. Each entry has an *apply-condition*. The baseline tool ("use migration paths to assemble the plan") is always in effect and does NOT need to be listed here (see `references/recipes/DEFAULT.md` § Toolbox baseline).
 
-### Examples
+<example>
+- name: Migration procedure
+  apply-condition: always
+  steps:
+    1. Rename the aggregate class from `*Aggregate` suffix to `*Entity` (Axon 5 naming).
+    2. Replace `@Aggregate` with `@EventSourcedEntity`.
+    3. For each `@CommandHandler` constructor → factory method returning the entity.
+    4. For each `@EventSourcingHandler` → keep signature, verify state mutation pattern matches Axon 5.
+    5. Re-wire repository injection points (Axon 5 uses `EventSourcingRepository<Entity, Id>` directly).
+    6. Run the isolated test via `axon4to5-isolatedtest` skill.
+</example>
 
+## Examples
+
+Worked examples the LLM can imitate at FLOW.md S6 (Plan Migration). Each entry MUST declare an *apply-condition* — a fact about current scope that triggers loading the example.
+
+<example>
 <!-- TODO: Fill during iterations. -->
 </example>
 
@@ -128,7 +138,7 @@ Free-text notes accumulated from previous migrations and iterations — lessons 
 
 ## Result
 
-Per-outcome `NOTES` guidance the recipe author should write into the result block. The block format itself is fixed by `SKILL.md` (§ Result emission).
+**Recipe-specific augmentation only.** Baseline `NOTES` content per outcome is defined in `references/recipes/DEFAULT.md`; that always applies first. Add anything below only when this recipe needs to record fields the default does not cover (e.g., a recipe-specific decision the LLM made, an artifact path, a follow-up the caller should know about). The result block format itself (`RESULT/SOURCE/RECIPE/NOTES`) is fixed by FLOW.md.
 
 ### Success
 
@@ -139,13 +149,13 @@ Per-outcome `NOTES` guidance the recipe author should write into the result bloc
 ### Blocker
 
 <example>
-The migration spotted a part that has no clear migration path (like Deadlines).
+<!-- TODO: Fill during iterations. -->
 </example>
 
 ### Rejected
 
 <example>
-The migration is not applicable to this component.
+<!-- TODO: Fill during iterations. -->
 </example>
 
 ### Failure

@@ -6,7 +6,7 @@ Retry budget = **1** additional Apply (≤ 2 Applies total). Each diagram node n
 
 ```mermaid
 flowchart TD
-    S(["Recipe invoked with $SOURCE"]) --> S1{"<b>Applicable?</b><br/>read $SOURCE surface only<br/>(annotations / type markers)<br/>evaluate # Applicable rule<br/>(AND / OR / heuristic)"}
+    S(["Recipe invoked with $SOURCE"]) --> S1{"<b>Applicable?</b><br/>read $SOURCE surface per # Source<br/>(annotations / type markers)<br/>evaluate # Applicable rule<br/>(AND / OR / heuristic)"}
     S1 -- no --> RJ[/"RESULT: Rejected<br/>NOTES: which predicate failed"/]
     S1 -- yes --> S2
 
@@ -19,8 +19,8 @@ flowchart TD
         SQ -- "yes (extend scope)" --> S2
     end
 
-    SQ -- no --> S4{"<b>Blocker in scope?</b><br/>scope item the recipe<br/>declares as unmigrateable<br/>per # Blocker<br/>(no migration path, too complex,<br/>recipe-specific exclusions)"}
-    S4 -- yes --> BL[/"RESULT: Blocker<br/>NOTES: construct + location"/]
+    SQ -- no --> S4{"<b>Blocker present?</b><br/>per # Blocker:<br/>scope item declared unmigrateable<br/>OR unmet project prerequisite<br/>(caller must resolve, recipe halts)"}
+    S4 -- yes --> BL[/"RESULT: Blocker<br/>NOTES: construct + location<br/>or unmet prerequisite"/]
     S4 -- "no (no edits yet)" --> S5
 
     S5["<b>Check Success Criteria</b><br/>evaluate # Success Criteria<br/>using recipe's aggregation rule<br/>(all / subset / weighted)"]
@@ -34,7 +34,7 @@ flowchart TD
 
     subgraph PLAN_APPLY ["Plan-Apply (re-entered per iteration)"]
         direction TB
-        S6["<b>Plan Migration</b><br/>(re)compute the plan each visit<br/>using # References + # Toolbox + scope<br/>consult # Gotchas for past learnings<br/>edits sufficient to flip every<br/>mismatched criterion → match"]
+        S6["<b>Plan Migration</b><br/>(re)compute the plan each visit<br/>using # References + # Toolbox + # Examples + scope<br/>consult # Gotchas for past learnings<br/>edits sufficient to flip every<br/>mismatched criterion → match"]
         S7["<b>Apply Migration Plan</b><br/>execute edits within scope only<br/>respect # Out of Scope<br/>no drive-by refactors"]
         S6 --> S7
     end
@@ -46,7 +46,7 @@ flowchart TD
 
 ## Result
 
-Each recipe completes by returning **exactly one** result block. 
+Each recipe completes by returning **exactly one** result block.
 The orchestrator reads the `RESULT:` line to control the flow.
 
 ```
@@ -54,6 +54,44 @@ RESULT: <Success|Blocker|Rejected|Failure>
 SOURCE: $SOURCE
 RECIPE: axon4to5-<component>
 NOTES: <one short paragraph — why this result, what to look at next>
+```
+
+**NOTES content:** baseline per-outcome guidance is defined in `references/recipes/DEFAULT.md` (§ Result NOTES baselines) and always applies. Recipes may augment via their own `# Result` subsections when they have recipe-specific facts to record; they cannot override the baseline.
+
+### Example — Success
+
+```
+RESULT: Success
+SOURCE: com.example.order.OrderAggregate
+RECIPE: axon4to5-aggregate
+NOTES: 3 files changed (OrderAggregate.java, OrderAggregateTest.java, OrderCommandHandler.java); Success Criteria all match; isolated test passed.
+```
+
+### Example — Blocker
+
+```
+RESULT: Blocker
+SOURCE: com.example.order.OrderAggregate
+RECIPE: axon4to5-aggregate
+NOTES: @Deadline handler at OrderAggregate.java:142 — Deadlines API not yet stable in Axon 5; caller must resolve before re-running.
+```
+
+### Example — Rejected
+
+```
+RESULT: Rejected
+SOURCE: com.example.order.OrderProjection
+RECIPE: axon4to5-aggregate
+NOTES: Applicable predicate failed — class is annotated with @ProcessingGroup, not @Aggregate; this is a projection, not an aggregate.
+```
+
+### Example — Failure
+
+```
+RESULT: Failure
+SOURCE: com.example.order.OrderAggregate
+RECIPE: axon4to5-aggregate
+NOTES: Retry budget exhausted (2 Applies). Failing Success Criterion: isolated test. Last error: "EventSourcingHandler not invoked for OrderCreatedEvent; expected aggregate state=CREATED, was=null".
 ```
 
 ## Invariants
