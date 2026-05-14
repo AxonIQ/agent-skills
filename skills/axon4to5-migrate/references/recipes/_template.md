@@ -6,7 +6,7 @@ argument-hint: $SOURCE
 
 # axon4to5-<component>
 
-> Authoring template for a single recipe. The orchestrator binds each section below by **its heading** to the diagram nodes in the `## Recipe execution contract` section of `SKILL.md`. Keep the section names exactly as written; everything inside them is recipe-specific content. Do not describe control flow, retries, or result emission here — those live in `SKILL.md`.
+> Authoring template for a single recipe. The orchestrator binds each section below by **its heading** to the matching diagram node in `SKILL.md` (§ Recipe sub-flow). Keep the section names exactly as written; everything inside them is recipe-specific content. Do not describe control flow, retries, or result emission here — those live in `SKILL.md`.
 >
 > Each section explains *what the section is for* and *what format it must be in*. `<example>` blocks are drawn from the original aggregate-recipe sketch.
 
@@ -118,7 +118,7 @@ Free-text notes accumulated from previous migrations and iterations — lessons 
 
 ## Result
 
-Per-outcome `NOTES` guidance the recipe author should write into the result block. The block format itself is fixed by `SKILL.md` (`## Recipe execution contract` → `### Result emission`).
+Per-outcome `NOTES` guidance the recipe author should write into the result block. The block format itself is fixed by `SKILL.md` (§ Result emission).
 
 ### Success
 
