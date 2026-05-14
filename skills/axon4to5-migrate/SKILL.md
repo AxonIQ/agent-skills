@@ -2,7 +2,7 @@
 name: axon4to5-migrate
 description: >-
   Migrate Axon Framework 4 project to Axon(iq) Framework 5.
-argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>]"
+argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>] [max-subagents=<0..N>] [auto=<true|false>]"
 disable-model-invocation: true
 ---
 
@@ -47,6 +47,19 @@ Use Glob to find all `references/recipes/*/RECIPE.md` (skip dirs starting with `
       item → `general-purpose` subagent (parallel batches). Useful for `project` mode on large codebases.
 - `source` (required for `mode=single`): hint identifying the thing to migrate (class name, file path, FQN).
 - `skip-openrewrite` (optional, default `false`): when `true`, the orchestrator SKIPS Pre-step 2 (the OpenRewrite bulk pass) and goes straight to the mode-specific producer. Use this when (a) OpenRewrite Phase 1 has already been run separately on the tree, (b) the caller is exercising a recipe in isolation (e.g. evals — subagents cannot recursively invoke another Skill), or (c) the project is not built with Maven/Gradle so the OpenRewrite plugin is unreachable. Values: `true` / `false`. Any other value → STOP. The downstream recipe must still tolerate both AF4-shaped and partially-migrated sources (see each recipe's `# Applicable` predicates).
+- `max-subagents` (optional, default `0`): max parallel `general-purpose` subagents for item processing in the drain loop. `mode=project` only — ignored for `mode=single`. `0` = inline (no subagents, sequential). `N > 0` = dispatch up to N items simultaneously as subagents; **BLOCKER_RESOLUTION always runs in main session** regardless of this value. Any non-integer or value < 0 → STOP.
+- `auto` (optional, default `false`): when `true`, never calls `AskUserQuestion` — all interactive decisions resolved automatically (see `## Auto mode`). Values: `true` / `false`. Any other value → STOP.
+
+## Auto mode (`auto=true`)
+
+Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved choice emits `⚙️ auto: <decision>` so the log stays auditable.
+
+| Decision point | Auto action |
+|---|---|
+| Ambiguous recipe match (`mode=single`) | Pick first candidate by `applicable` score. |
+| Blocker | Auto-select `skip` — leave `$SOURCE` in current partial state, queue moves on. |
+| Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
+| Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
 
 ## Durability
 
@@ -56,13 +69,14 @@ Use Glob to find all `references/recipes/*/RECIPE.md` (skip dirs starting with `
 
 These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
 
-1. **Parse** — read `framework`, `configuration`, `mode`, `execution`, `skip-openrewrite` from `$ARGUMENTS`.
+1. **Parse** — read `framework`, `configuration`, `mode`, `execution`, `skip-openrewrite`, `max-subagents`, `auto` from `$ARGUMENTS`.
     - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
     - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
     - If `mode` is missing or ∉ {`single`, `project`} → STOP and report unsupported mode.
-    - `execution` defaults to `inline` if missing. If present and ∉ {`inline`, `subagent`} → STOP and report unsupported
-      execution.
+    - `execution` defaults to `inline` if missing. If present and ∉ {`inline`, `subagent`} → STOP and report unsupported execution.
     - `skip-openrewrite` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP and report unsupported value.
+    - `max-subagents` defaults to `0` if missing. If present and not a non-negative integer → STOP.
+    - `auto` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP.
 2. **OpenRewrite** — **skipped entirely when `skip-openrewrite=true`.** Otherwise, internally invoke
    `axon4to5-openrewrite` via the `Skill` tool, passing `framework=$framework`. This is a step of this orchestrator, not
    a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure
@@ -113,11 +127,8 @@ Steps (after the common pre-steps):
 2. **Enqueue** — every `(recipe, source)` candidate. Deduplication is recipe's concern (handled inside its Recipe
    sub-flow); orchestrator does not collapse items across recipes.
 3. **Drain** — for each item run the Recipe sub-flow:
-    - `execution=inline` → run in main session, sequentially.
-    - `execution=subagent` → dispatch each item to a `general-purpose` subagent. Batch independent items in a single
-      `Agent` tool message so they run in parallel. Subagent receives `(recipe path, source, framework, configuration)`
-      and the full Recipe sub-flow spec; returns one result block (`RESULT:` line + NOTES). Orchestrator parses and
-      records.
+    - `max-subagents=0` (default) → inline, main session, sequentially.
+    - `max-subagents=N` → dispatch up to N items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Subagent receives `(recipe path, source, framework, configuration, auto)` and the full Recipe sub-flow spec; returns one result block (`RESULT:` line + NOTES). **BLOCKER_RESOLUTION always in main session** — subagent returns `Blocker` result, orchestrator resolves (auto or interactive), then re-dispatches to subagent if needed.
 4. **Report** — render the report (see Queue flow § Render report).
 
 **Context hygiene** — after every 5 items drained, emit this tip once (then reset counter):

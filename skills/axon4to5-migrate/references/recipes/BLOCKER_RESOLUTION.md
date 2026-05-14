@@ -23,3 +23,11 @@ For now, this node is a **single step**: present the recipe's **Options** list t
 - One resolution attempt per item. If the re-entered sub-flow returns **Blocker** again, mark the item blocked immediately — no second `AskUserQuestion`.
 - Do NOT edit source files directly from this node. `revert` uses git; everything else goes back through the recipe sub-flow.
 - Do NOT invent options the recipe did not list. If the recipe omitted a baseline option by mistake, fail loudly rather than silently substituting.
+
+## Auto mode (`auto=true`)
+
+Skip `AskUserQuestion`. Auto-select `skip` for every blocker. Emit:
+
+> ⚙️ auto: Blocker on `<$SOURCE>` → skip
+
+Record in `progress.md` decisions log as `auto-skip`. Queue moves on. No re-entry into the recipe sub-flow.
