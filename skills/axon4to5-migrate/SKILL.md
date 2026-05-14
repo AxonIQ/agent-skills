@@ -128,7 +128,11 @@ Steps (after the common pre-steps):
    sub-flow); orchestrator does not collapse items across recipes.
 3. **Drain** — for each item run the Recipe sub-flow:
     - `max-subagents=0` (default) → inline, main session, sequentially.
-    - `max-subagents=N` → dispatch up to N items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Subagent receives `(recipe path, source, framework, configuration, auto)` and the full Recipe sub-flow spec; returns one result block (`RESULT:` line + NOTES). **BLOCKER_RESOLUTION always in main session** — subagent returns `Blocker` result, orchestrator resolves (auto or interactive), then re-dispatches to subagent if needed.
+    - `max-subagents=N` → main session acts as **coordinator**. Dispatches up to N pending items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Each subagent executes ONE recipe sub-flow and returns a result block (`RESULT:` line + NOTES).
+      - ✅ Success / ⏭ Rejected / ❌ Failure → main records result, immediately dispatches next pending item. **No pause.**
+      - 🚧 Blocker → **BLOCKER_RESOLUTION in main session**: `AskUserQuestion` if `auto=false`; auto-skip if `auto=true`. Resolved → re-dispatch same item to a new subagent. Not resolved → mark blocked, dispatch next pending item.
+      - Main session never pauses unless waiting for user input on a blocker (`auto=false`).
+      - **Fallback** — if a subagent cannot be spawned (Agent tool unavailable or dispatch fails), process that item inline in the main session and continue.
 4. **Report** — render the report (see Queue flow § Render report).
 
 **Context hygiene** — after every 5 items drained, emit this tip once (then reset counter):

@@ -1,0 +1,311 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "event-store",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate skill with the event-store recipe in single mode. Coverage: Spring Boot + JPA (Success, explicit @Bean + @EntityScan required), Spring Boot + Axon Server (Success, explicit @Bean AggregateBasedAxonServerEventStorageEngine), native + Axon Server (Success, registerEventStorageEngine on EventSourcingConfigurer), and Mongo blocker (Blocker B1). Fixtures live in evals/fixtures/synthetic/.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spring-jpa-explicit-bean",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. EventStoreConfigSpringJpa.java is an AF4 Spring Boot configuration class with `EmbeddedEventStore` + `JpaEventStorageEngine`. Apply the event-store recipe (JPA backend, Spring Boot path): (1) delete the `EmbeddedEventStore` @Bean and the `EventStorageEngine storageEngine()` @Bean; (2) add a new `@Bean EventStorageEngine eventStorageEngine(EntityManagerFactory, EventConverter)` returning `new AggregateBasedJpaEventStorageEngine(new JpaTransactionalExecutorProvider(entityManagerFactory), eventConverter, UnaryOperator.identity())`; (3) add AF5 imports; (4) also add `@EntityScan(basePackages = {\"com.example\", \"org.axonframework\", \"io.axoniq.framework\"})` as a comment NOTE since there is no main application class in the fixture — note in Result that caller must add @EntityScan to their @SpringBootApplication class. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "EventStoreConfigSpringJpa.java rewritten: EmbeddedEventStore deleted, explicit @Bean AggregateBasedJpaEventStorageEngine added with JpaTransactionalExecutorProvider + EventConverter; @EntityScan note in Result; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/EventStoreConfigSpringJpa.java"
+      ],
+      "expectations": [
+        "AggregateBasedJpaEventStorageEngine present",
+        "JpaTransactionalExecutorProvider present",
+        "EventConverter parameter present",
+        "No EmbeddedEventStore",
+        "No JpaEventStorageEngine",
+        "@Bean annotation on eventStorageEngine method",
+        "AF5 EventStorageEngine import",
+        "Result block marks Success with axon4to5-event-store"
+      ],
+      "category": "spring-jpa",
+      "fixture": "synthetic/EventStoreConfigSpringJpa.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "AggregateBasedJpaEventStorageEngine",
+          "text": "AF5 JPA engine present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "JpaTransactionalExecutorProvider",
+          "text": "JpaTransactionalExecutorProvider used"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "EventConverter",
+          "text": "EventConverter parameter present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Bean",
+          "text": "@Bean annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.eventsourcing.eventstore.EventStorageEngine",
+          "text": "AF5 EventStorageEngine import"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "EmbeddedEventStore",
+          "text": "AF4 EmbeddedEventStore removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "JpaEventStorageEngine",
+          "text": "AF4 JpaEventStorageEngine removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-store",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spring-axon-server-explicit-bean",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. EventStoreConfigSpringAxonServer.java is an AF4 Spring Boot @Configuration class with an `@Bean AxonServerEventStore`. Apply the event-store recipe (Axon Server backend, Spring Boot path): (1) delete the AF4 `@Bean AxonServerEventStore eventStore(...)` method; (2) add `@Bean EventStorageEngine storageEngine(AxonServerConnectionManager connectionManager, EventConverter eventConverter)` returning `new AggregateBasedAxonServerEventStorageEngine(connectionManager.getConnection(), eventConverter)`; (3) add AF5 imports (`io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager`, `io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine`, `org.axonframework.eventsourcing.eventstore.EventStorageEngine`, `org.axonframework.messaging.eventhandling.conversion.EventConverter`); (4) remove AF4 imports. No @EntityScan needed for Axon Server backend. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "EventStoreConfigSpringAxonServer.java: AF4 AxonServerEventStore @Bean deleted; explicit @Bean AggregateBasedAxonServerEventStorageEngine added; AF5 imports present; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/EventStoreConfigSpringAxonServer.java"
+      ],
+      "expectations": [
+        "AggregateBasedAxonServerEventStorageEngine present",
+        "AxonServerConnectionManager parameter present",
+        "EventConverter parameter present",
+        "No AxonServerEventStore",
+        "AF5 EventStorageEngine import",
+        "Result block marks Success with axon4to5-event-store"
+      ],
+      "category": "spring-axon-server",
+      "fixture": "synthetic/EventStoreConfigSpringAxonServer.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "AggregateBasedAxonServerEventStorageEngine",
+          "text": "AF5 Axon Server engine present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "AxonServerConnectionManager",
+          "text": "AxonServerConnectionManager parameter present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "EventConverter",
+          "text": "EventConverter parameter present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.eventsourcing.eventstore.EventStorageEngine",
+          "text": "AF5 EventStorageEngine import"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "AxonServerEventStore",
+          "text": "AF4 AxonServerEventStore removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-store",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "native-axon-server-configurer",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE skip-openrewrite=true`. EventStoreConfigNativeAxonServer.java is an AF4 native (non-Spring) configuration class using `DefaultConfigurer.defaultConfiguration()` + `configurer.configureEventStore(config -> AxonServerEventStore.builder()...)`. Apply the event-store recipe (Axon Server backend, native path): (1) replace `DefaultConfigurer.defaultConfiguration()` with `EventSourcingConfigurer.create()`; (2) replace `configurer.configureEventStore(...)` with `configurer.registerEventStorageEngine(config -> { AxonServerConnectionManager manager = config.getComponent(AxonServerConnectionManager.class); return new AggregateBasedAxonServerEventStorageEngine(manager.getConnection(), config.getComponent(EventConverter.class)); })`; (3) replace `buildConfiguration()` with `build()` and change return type to `AxonConfiguration`; (4) add AF5 imports; (5) remove AF4 imports. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "EventStoreConfigNativeAxonServer.java: DefaultConfigurer replaced with EventSourcingConfigurer; registerEventStorageEngine with AggregateBasedAxonServerEventStorageEngine; buildConfiguration() replaced with build(); AF5 imports; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/EventStoreConfigNativeAxonServer.java"
+      ],
+      "expectations": [
+        "EventSourcingConfigurer present",
+        "registerEventStorageEngine present",
+        "AggregateBasedAxonServerEventStorageEngine present",
+        "No DefaultConfigurer",
+        "No configureEventStore",
+        "No AxonServerEventStore",
+        "build() present (not buildConfiguration)",
+        "Result block marks Success with axon4to5-event-store"
+      ],
+      "category": "native-axon-server",
+      "fixture": "synthetic/EventStoreConfigNativeAxonServer.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "native",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "EventSourcingConfigurer",
+          "text": "EventSourcingConfigurer present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "registerEventStorageEngine",
+          "text": "registerEventStorageEngine call present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "AggregateBasedAxonServerEventStorageEngine",
+          "text": "AF5 Axon Server engine present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "DefaultConfigurer",
+          "text": "AF4 DefaultConfigurer removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "AxonServerEventStore",
+          "text": "AF4 AxonServerEventStore removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "configureEventStore",
+          "text": "AF4 configureEventStore removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-store",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "spring-mongo-blocker",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. EventStoreConfigMongoBlocker.java is an AF4 Spring Boot configuration with `MongoEventStorageEngine`. The event-store recipe detects B1 (MongoEventStorageEngine — no AF5 release of axon-mongo). Source MUST stay byte-identical — no AggregateBasedJpaEventStorageEngine, no AggregateBasedAxonServerEventStorageEngine added. Emit Blocker B1 with Options (move-to-axon-server / move-to-jpa / pause-migration / skip / revert / solve-manually). Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "MongoEventStorageEngine detected; source untouched; Result: 🚧 Blocker B1.",
+      "files": [
+        "evals/fixtures/synthetic/EventStoreConfigMongoBlocker.java"
+      ],
+      "expectations": [
+        "Result block marks Blocker",
+        "Notes reference B1 or MongoEventStorageEngine",
+        "Source untouched: MongoEventStorageEngine still present",
+        "No AggregateBasedJpaEventStorageEngine added",
+        "No AggregateBasedAxonServerEventStorageEngine added",
+        "Recipe identifier axon4to5-event-store present"
+      ],
+      "category": "spring-mongo-blocker",
+      "fixture": "synthetic/EventStoreConfigMongoBlocker.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Blocker",
+      "expected_blocker": "B1",
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-store",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MongoEventStorageEngine",
+          "text": "Source untouched: MongoEventStorageEngine still present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "AggregateBasedJpaEventStorageEngine",
+          "text": "No AF5 JPA engine added (source untouched)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "AggregateBasedAxonServerEventStorageEngine",
+          "text": "No AF5 Axon Server engine added (source untouched)"
+        }
+      ]
+    }
+  ]
+}
