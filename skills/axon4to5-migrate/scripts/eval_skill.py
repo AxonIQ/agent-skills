@@ -188,6 +188,24 @@ def main() -> None:
         if token not in playbook:
             fail(f"missing route: {token}")
 
+    rule_tokens = [
+        "AggregateLifecycle.apply",
+        "@EventSourcedEntity",
+        "EventAppender",
+        "@ProcessingGroup",
+        "@Namespace",
+        "CommandDispatcher",
+        "streamingQuery",
+        "subscriptionQuery",
+        "interceptOnDispatch",
+        "AggregateBasedJpaEventStorageEngine",
+        "EventSourcingConfigurer",
+        "AxonTestFixture",
+    ]
+    for token in rule_tokens:
+        if token not in playbook:
+            fail(f"missing migration rule token: {token}")
+
     samples = {
         "aggregate": "import org.axonframework.spring.stereotype.Aggregate; @Aggregate class A {}",
         "command-handler": "import org.axonframework.commandhandling.CommandHandler; class H { @CommandHandler void h(C c){} }",

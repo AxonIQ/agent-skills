@@ -54,6 +54,106 @@ Route a mixed file by its most invasive Axon role: saga, aggregate,
 command-handler, event-processor, query-handler, gateways, interceptors,
 configuration, event storage, tests.
 
+## Migration Rules
+
+Use these rules when applying a row. Preserve package boundaries and business
+names. Do not introduce DCB unless the project already owns that design.
+
+### Aggregate
+
+| AF4 | AF5 rule |
+|---|---|
+| `org.axonframework.spring.stereotype.Aggregate` | Use `@EventSourced(tagKey=..., idType=...)` for Spring-style examples or `@EventSourcedEntity(tagKey=...)` for framework config examples. |
+| `org.axonframework.commandhandling.CommandHandler` | Use `org.axonframework.messaging.commandhandling.annotation.CommandHandler`. |
+| `AggregateLifecycle.apply(event)` | Add `EventAppender` to the command handler and call `eventAppender.append(event)`. |
+| constructor command handler | Make it static when the AF5 entity is created from the emitted event; otherwise keep an instance handler plus `@EntityCreator` no-arg constructor. |
+| `@AggregateIdentifier` | Convert to `tagKey` / `idType`; keep the same stream identity and command routing key. |
+| `@EventSourcingHandler` mutates state | Keep mutation, or return a new immutable entity when the AF5 example does that. |
+
+Preserve invariants, command names, exception types, return values, deleted or
+closed flags, aggregate members, and subtype routing. If aggregate member
+routing cannot be mapped confidently, block instead of flattening the model.
+
+### Command Handler
+
+Use this only for non-aggregate handlers. Change the annotation import to AF5
+messaging, keep the Spring/component boundary, and preserve validation, return
+type, exception type, transaction boundary, metadata reads, and repository side
+effects. If the handler manually folds or appends an event stream through AF4
+`EventStore`, also run the `event-storage-engine` row for that file.
+
+### Event Processor
+
+| AF4 | AF5 rule |
+|---|---|
+| `org.axonframework.eventhandling.EventHandler` | Use `org.axonframework.messaging.eventhandling.annotation.EventHandler`. |
+| `@ProcessingGroup("x")` | Add `@Namespace("x")`; if missing, derive a stable namespace from the component name. |
+| `@DisallowReplay` / reset behavior | Preserve replay semantics with AF5 replay/reset annotations or config. |
+| `SequencingPolicy` bean | Prefer AF5 `@SequencingPolicy`; keep the same key. |
+| gateway call from processor | Inject `CommandDispatcher`; send command plus metadata and return/compose the result. |
+| `QueryUpdateEmitter` | Keep all emitted query types, predicates, initial/update contract, and ordering. |
+
+Do not merge processors just because they share an event type. Preserve
+processor mode, token store/DLQ needs, idempotency, and side effects.
+
+### Gateways
+
+| AF4 | AF5 rule |
+|---|---|
+| `org.axonframework.commandhandling.gateway.CommandGateway` | Use `org.axonframework.messaging.commandhandling.gateway.CommandGateway`. |
+| `org.axonframework.queryhandling.QueryGateway` | Use `org.axonframework.messaging.queryhandling.gateway.QueryGateway`. |
+| `commandGateway.send(cmd)` | Keep async shape; add expected response type when AF5 compile requires it. |
+| `queryGateway.query(name/payload, ..., ResponseType)` | Prefer typed query object + response class only when the AF5 example uses that pattern; otherwise preserve query name and response shape. |
+| `streamingQuery` | Keep streaming behavior, e.g. `Flux.from(queryGateway.streamingQuery(query, Type.class))`. |
+| `subscriptionQuery` | Preserve initial result, update stream, close behavior, and response types. |
+| Reactor/Kotlin gateway extensions | Preserve `Mono`/`Flux` or Kotlin extension shape; do not silently convert to blocking. |
+
+### Query Handler
+
+Use `org.axonframework.messaging.queryhandling.annotation.QueryHandler`.
+Preserve query name, payload type, response type, null/empty behavior,
+pagination/sorting, streaming results, and subscription initial/update contract.
+If a class has both `@EventHandler` and `@QueryHandler`, migrate it as an
+`event-processor` first and keep the query methods in that component.
+
+### Interceptors
+
+Map AF4 `MessageDispatchInterceptor` to AF5 dispatch interception and
+`MessageHandlerInterceptor` to AF5 handler interception. Preserve registration
+target, order, message type, metadata mutation, correlation data, exception or
+rejection behavior, and `ProcessingContext` access. If the old interceptor
+depends on mutable AF4 message internals, block with a TODO rather than faking
+equivalence.
+
+### Configuration
+
+Migrate build deps first, then wiring. Keep Maven/Gradle style unchanged. For
+Spring examples, keep Spring auto-config unless explicit AF4 config exists. For
+framework-config examples, use AF5 config modules. Migrate or decide on:
+serializer, command/event/query bus interceptors, event processor mode, DLQ,
+token store, metrics/tracing, transaction manager, entity manager, and Axon
+Server enablement. Custom serializer, Mongo/JDBC/Kafka/tracing, replay,
+upcasters, and DLQ are decisions; do not rewrite silently.
+
+### Event Storage
+
+For JPA-backed examples, register an explicit
+`AggregateBasedJpaEventStorageEngine` bean using `JpaTransactionalExecutorProvider`
+and `EventConverter`. Keep aggregate stream semantics, event conversion,
+transaction boundary, and append/read ordering. Direct `EventStore.readEvents`
+or manual single-stream transactions must be mapped explicitly; do not replace
+them with generic publish/subscribe behavior.
+
+### Tests
+
+Convert `AggregateTestFixture` / `SagaTestFixture` to `AxonTestFixture` only
+after the production target compiles. Register entities with
+`EventSourcingConfigurer.create().registerEntity(EventSourcedEntityModule...)`
+or use the Spring `ApplicationConfigurer` pattern from the AF5 example. Disable
+or configure Axon Server consistently with the repo. Keep given/when/then
+expectations, exception assertions, result payload assertions, metadata, and
+event order.
+
 ## Recipe Checklist
 
 For any row:
