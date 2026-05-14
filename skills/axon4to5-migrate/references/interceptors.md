@@ -4,25 +4,66 @@ Atomic migration of ONE class implementing `MessageDispatchInterceptor` or `Mess
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target_test` — FQ test class (optional)
-- `wiring` — `spring-boot` | `framework-config` (pinned)
+```yaml
+target: <FQ class>                                 # required
+target_test: <FQ test class>                       # optional
+wiring: spring-boot | framework-config              # pinned project decision
+decisions: { ... }                                  # see ## Decision points
+```
 
 ## Preflight
 
-1. Compile clean?
-2. If test class exists, run scoped tests.
-3. All green → `AskUserQuestion`: Skip / Deep verify.
+1. For each entry in `## Decision points` with `trigger: detected-at-preflight`, run its Detection. If it fires AND the key isn't in `inputs.decisions` → **🔒 await decision** for that key.
+2. **Reject mismatched classes**: if the candidate also declares `@CommandHandler` / `@EventHandler` / `@QueryHandler` / `@SagaEventHandler`, this isn't an interceptor recipe target — `output { result: rejected, route_to: <handler recipe>, reason: "handler annotations present" }`, exit.
+3. **Reject annotation-based `@MessageHandlerInterceptor`** declared inside a handler class — NOT functional in AF5 < 5.2.0. `output { result: blocked }` with `notes: "annotation-based interceptor not in AF5 < 5.2.0; leave commented, defer"`.
+4. Idempotency: compile clean? tests green? → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
 
-## In scope
+## Decision points
 
-ONE class that `implements MessageDispatchInterceptor<…>` AND/OR `MessageHandlerInterceptor<…>` (AF4 location `org.axonframework.messaging.*`). Plus matching framework-config registration sites (`MessagingConfigurer.register*Interceptor(...)`).
+### single-component-scoping
 
-## Out of scope
+- **Trigger**: triggered-in-procedure (only on Path A — Spring Boot — when the candidate's name or comments suggest single-component intent, e.g. `OrderAggregateInterceptor`)
+- **Question**: > "Interceptor `<name>` looks scoped to one component (per its name/comments). Spring auto-discovery applies it globally by message type. Confirm scoping intent?"
+- **Options**:
+    - `apply-globally` *(Recommended when AF4 had it global)* — leave `@Component`; AF5 `InterceptorAutoConfiguration` discovers by `Message` type
+    - `scope-to-component-via-factory` — use `HandlerInterceptorFactory.of(...)` to scope to one component (replaces the implicit AF4 scope)
+    - `pause-migration` — stop; user clarifies intent first
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `apply-globally` → leave `@Component` annotation as-is; no factory wrapping
+    - `scope-to-component-via-factory` → emit a `@Bean HandlerInterceptorFactory<...>` wrapping the interceptor; remove `@Component` from the impl class
+    - `pause-migration` → `output { result: blocked }`, exit
 
-- Classes carrying `@CommandHandler` / `@EventHandler` / `@QueryHandler` methods alongside the interceptor interface → `result: rejected`, `next: route-to:<handler recipe>`.
-- Annotation-based `@MessageHandlerInterceptor` methods declared inside a handler class — NOT functional in AF5 < 5.2.0; flag in `learnings.md`, leave commented per orchestrator anti-pattern.
-- Component-specific scoping via `HandlerInterceptorFactory.of(...)` — surfaced via `AskUserQuestion`, never auto-picked.
+### ordering
+
+- **Trigger**: triggered-in-procedure (only on Path A — Spring Boot — when multiple interceptors of the same `Message` type exist in the project AND AF4 relied on registration insertion order)
+- **Detection**: count of classes implementing the same `MessageHandlerInterceptor<M>` / `MessageDispatchInterceptor<M>` for the same `M`; if > 1, trigger fires.
+- **Question**: > "Multiple `<message type>` interceptors exist in the project. AF5 auto-discovery has no implicit ordering. Preserve AF4 insertion order via `@Order`?"
+- **Options**:
+    - `preserve-via-@Order` *(Recommended when AF4 relied on order)* — add `@Order(N)` to each interceptor; recipe asks user for the ordinal
+    - `accept-undefined-order` — leave ordering to Spring's default; potential behavior change if AF4 relied on it
+    - `pause` — stop; user audits interceptor interactions first
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `preserve-via-@Order` → ask follow-up for ordinal; add `@Order(N)` import + annotation
+    - `accept-undefined-order` → no annotation added; record in `output.notes`
+    - `pause` → `output { result: blocked }`, exit
+
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight idempotency check finds clean compile + green tests)
+- **Question**: > "Interceptor appears already migrated. Skip or deep-verify?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue to Procedure if any silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit with `result: skipped`.
+    - `deep-verify` → continue.
 
 ## FQN cheat sheet
 
@@ -35,7 +76,7 @@ ONE class that `implements MessageDispatchInterceptor<…>` AND/OR `MessageHandl
 | `CurrentUnitOfWork.get()` body call | replaced by injected `context` |
 | `uow.onCommit(...)` / `onPrepareCommit(...)` / `onRollback(...)` | `context.runOnAfterCommit(...)` / `runOnPreInvocation(...)` / `onError(...)` |
 | Return type `Object` / `BiFunction<Integer, M, M>` | `MessageStream<?>` (call `chain.proceed(message, context)`) |
-| `Configurer.registerCommandHandlerInterceptor(...)` | `MessagingConfigurer.registerCommandHandlerInterceptor(...)` (same method names; the configurer type moves) |
+| `Configurer.registerCommandHandlerInterceptor(...)` | `MessagingConfigurer.registerCommandHandlerInterceptor(...)` (method names unchanged; configurer type moves) |
 
 ## Procedure
 
@@ -72,18 +113,18 @@ Rewrite via the injected `context`:
 
 ### Step 5 — Pick path from pinned `wiring`
 
-### Path A — Spring Boot
+#### Path A — Spring Boot (`wiring == spring-boot`)
 
 - Leave `@Component` alone. `InterceptorAutoConfiguration` auto-discovers by the generic `Message` type — `<CommandMessage>` against command bus, `<EventMessage>` against event bus, `<Message<?>>` against all three.
-- **Single-component scoping** — if the user's intent (visible in name like `OrderAggregateInterceptor` or revealed in comments) is to apply only to one entity, `AskUserQuestion`: `apply-globally` *(Recommended — matches AF4 if AF4 had it global)* / `scope-to-component-via-factory` (`HandlerInterceptorFactory.of(...)`) / `pause-migration`.
-- **Ordering** — if multiple interceptors of same message type exist and AF4 relied on registration order, `AskUserQuestion`: `preserve-via-@Order` *(Recommended)* / `accept-undefined-order` / `pause`. Only on `preserve-via-@Order` add `@Order(N)`.
+- **🔒 await decision** [`single-component-scoping`](#single-component-scoping) only if the class name / comments suggest scoped intent.
+- **🔒 await decision** [`ordering`](#ordering) only if multiple interceptors of the same `Message` type exist in the project.
 
-### Path B — framework Configurer
+#### Path B — framework Configurer (`wiring == framework-config`)
 
 - Grep registration sites: `register(Command|Event|Query)?(Handler|Dispatch)Interceptor` in framework-config sources.
 - Rewrite AF4 `Configurer.registerCommandHandlerInterceptor(...)` → AF5 `MessagingConfigurer.registerCommandHandlerInterceptor(...)`. Method names unchanged; the configurer type moves.
 - Re-grep after the event-storage-engine recipe ran — it may have deferred some registrations.
-- Component-specific scoping same `AskUserQuestion` as Path A.
+- Same `single-component-scoping` decision applies (in Path B, use `HandlerInterceptorFactory.of(...)` at the registration site).
 
 ### Step 6 — Test class
 
@@ -102,16 +143,20 @@ If a test exists:
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   variant: dispatch | handler | both
   registration-sites-migrated: <count> | "n/a (Path A — auto-discovery)"
-  ordering-decision: none-needed | order-annotations-added | undefined-accepted | paused
+  single-component-scoping: apply-globally | scope-to-component-via-factory | pause-migration | n/a
+  ordering: preserve-via-@Order | accept-undefined-order | pause | n/a
   unit-of-work-callsites: none | rewritten-to-processing-context
-notes: <…>
+files_touched:
+  - <repo-relative path>
+route_to: <handler recipe>                # only on rejected (handler annotations on class)
+notes: <free text>
 ```
 
 ## Subagent guidelines
@@ -120,11 +165,14 @@ notes: <…>
 subagent_type: general-purpose
 isolation: none
 parallelism: per-item
+on_unexpected_condition: keep-edits-and-fail
 prompt-framing: |
   Atomic per-interceptor rewrite. Do NOT touch handler classes.
-  If candidate also declares @CommandHandler/@EventHandler/@QueryHandler, return result:rejected
-  with next: route-to:<handler recipe>.
+  If candidate also declares @CommandHandler/@EventHandler/@QueryHandler, return
+  output { result: rejected, route_to: <handler recipe> } per Preflight rule.
 ```
+
+**Eligibility**: subagent-eligible only AFTER `single-component-scoping`, `ordering`, `skip-or-deep-verify` are resolved (each is `fallback: ask-user`).
 
 ## Reference pairs (AF4 → AF5)
 

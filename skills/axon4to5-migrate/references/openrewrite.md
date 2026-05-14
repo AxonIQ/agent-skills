@@ -8,43 +8,89 @@ The external skill owns build-tool detection (Maven/Gradle), recipe pinning, wra
 
 ## Inputs
 
-- `target` — project root path (Skill tool CWD).
-- `license` — `free-af5` → `--framework axon`; `axoniq-commercial` → `--framework axoniq`. Pinned at INIT.
-- `commit` — always `--commit false`; orchestrator owns the commit.
+```yaml
+target: <project root path>                   # Skill tool CWD
+license: free-af5 | axoniq-commercial          # pinned at INIT; required
+wiring: spring-boot | framework-config          # pinned (informational here)
+decisions: { ... }                              # see ## Decision points
+```
 
 ## Preflight
 
-- Already on AF5? Check `pom.xml` BOM / dep versions OR `build.gradle*`. AND `git log --oneline | grep af5-migration | head -5`.
-- Both clean → `result: skipped` (`already on AF5`). Re-run only if user explicitly asks.
+1. Idempotency: already on AF5? Check `pom.xml` BOM / dep versions OR `build.gradle*`. AND `git log --oneline | grep af5-migration | head -5`. Both clean → **🔒 await decision** [`already-migrated`](#already-migrated).
+2. Dirty git tree (un-committed changes) → **🔒 await decision** [`dirty-tree`](#dirty-tree).
+3. Path safety: validate `target` exists, has `pom.xml` OR `build.gradle*`, is a git repo. Refuse if path is the AxonFramework repo itself (`output { result: rejected, reason: "target is the AxonFramework repo — refusing to self-migrate" }`).
+
+## Decision points
+
+### already-migrated
+
+- **Trigger**: detected-at-preflight
+- **Detection**: BOM points at AF5 + git log contains af5-migration commits
+- **Question**: > "Project appears already on AF5. Re-run OpenRewrite anyway?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `re-run` — force-invoke external skill (rare; user wants to apply newer recipe version)
+- **Auto-policy**:
+    - `always: skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit with `result: skipped`.
+    - `re-run` → proceed to Procedure.
+
+### dirty-tree
+
+- **Trigger**: detected-at-preflight
+- **Detection**: `git status --porcelain` non-empty
+- **Question**: > "Working tree has uncommitted changes. OpenRewrite produces a broad diff that may conflict. How to handle?"
+- **Options**:
+    - `stash` — `git stash` before invoke; user restores manually after
+    - `commit-first` — abort; user commits / discards first, then re-runs
+    - `abort` — abort the whole migration
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `stash` → run `git stash` and proceed to Procedure.
+    - `commit-first` / `abort` → `output { result: rejected, reason: "dirty tree — user must clean up first" }`, exit.
+
+### license-classification
+
+- **Trigger**: triggered-in-procedure (only when `inputs.license` is unset — should be pinned at INIT but allow late classification)
+- **Detection** (in Procedure):
+    ```
+    grep -RE 'org\.axonframework' --include='pom.xml' --include='build.gradle*' <target>
+    grep -RE 'AxonServer|DistributedCommandBus|SequencedDeadLetterQueue|DeadLetter' --include='*.java' --include='*.kt' <target>/src
+    ```
+- **Question**: > "License not pinned. Classify based on project deps?"
+- **Options**:
+    - `free-af5` — `--framework axon`; no commercial dependencies detected
+    - `axoniq-commercial` — `--framework axoniq`; commercial signals present
+- **Auto-policy**:
+    - `<commercial signals present>: axoniq-commercial`         # detection-driven
+    - `<weak signals (auto-config only, no source refs)>: axoniq-commercial`
+    - `fallback: ask-user`
+- **Effect**:
+    - chosen value pinned to `decisions.license` and used to derive `--framework` argument.
+
+| Signal pattern | Suggested classification |
+|---|---|
+| `axon-server-connector`, `axon-distributed-commandbus-*`, source refs to `AxonServerConfiguration` / `DistributedCommandBus` / DLQ | `axoniq-commercial` |
+| Spring auto-config wires Axon Server profile but no source refs; commented-out DLQ snippets | `axoniq-commercial` (weak; ask user) |
+| Only core `axon-{messaging,modelling,eventsourcing}` / Spring Boot starter, no source refs | `free-af5` |
 
 ## Procedure
 
-1. **Validate target.** Path exists, has `pom.xml` OR `build.gradle*`, is a git repo. Refuse if path is the AxonFramework repo itself.
-2. **Clean tree.** Dirty → `AskUserQuestion`: stash / commit-first / abort.
-3. **Read pinned license.** If unset, run Step 3a then pin.
-4. **Invoke the external skill:**
+1. Preflight resolved decisions (`already-migrated`, `dirty-tree`, possibly `license-classification`).
+2. **Invoke the external skill:**
    ```
    Skill: axon4to5-openrewrite
    Arguments: --framework <axon | axoniq> --commit false
    ```
-5. **Read its report** — see "Reading the report".
-6. **Emit `## Output`.** Orchestrator owns the commit.
+   `--framework` derived from `decisions.license` / `inputs.license`: `free-af5` → `axon`, `axoniq-commercial` → `axoniq`.
+3. **Read its report** — see "Reading the report" below.
+4. **Emit `output`.** Orchestrator owns the commit.
 
-**STOP after step 5/6.** Do NOT run `mvn compile` / `mvn verify` / `./gradlew build`.
-
-### Step 3a — Inspect free-vs-commercial signals (only when license unset)
-
-```bash
-grep -RE 'org\.axonframework' --include='pom.xml' --include='build.gradle*' <target>
-grep -RE 'AxonServer|DistributedCommandBus|SequencedDeadLetterQueue|DeadLetter' \
-     --include='*.java' --include='*.kt' <target>/src 2>/dev/null
-```
-
-| Signal | Decision |
-|---|---|
-| `axon-server-connector`, `axon-distributed-commandbus-*`, source refs to `AxonServerConfiguration` / `DistributedCommandBus` / DLQ | `--framework axoniq` |
-| Spring auto-config wires Axon Server profile but no source refs; commented-out DLQ snippets | ask user (default `axoniq`) |
-| Only core `axon-{messaging,modelling,eventsourcing}` / Spring Boot starter, no source refs | `--framework axon` |
+**STOP after step 4.** Do NOT run `mvn compile` / `mvn verify` / `./gradlew build`.
 
 ## Reading the report
 
@@ -113,14 +159,18 @@ When in doubt, grep the diff for the AF5 counterpart before claiming "removed wi
 ## Output
 
 ```yaml
-result: success | skipped | failed | needs-decision
+result: success | skipped | rejected | blocked | failed
 target: <target project root>
 reason: <one short line>
 decisions:
   license: free-af5 | axoniq-commercial
   framework: axon | axoniq
+  already-migrated: skip | re-run | n/a
+  dirty-tree: stash | commit-first | abort | n/a
   bail-reason: <one-line from external skill | "n/a">
   behavior-changes-flagged: yes | no | "n/a"
+files_touched:
+  - <every file the external skill modified — read from `git diff --name-only` post-invoke>
 notes: <behavior-change warnings on success; external skill's bail message verbatim on failed>
 ```
 

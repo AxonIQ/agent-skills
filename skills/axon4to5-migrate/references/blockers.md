@@ -8,11 +8,11 @@ Master index of every AF5 feature gap the orchestrator must surface as `AskUserQ
 
 ## How a recipe uses this file
 
-1. In `## Preflight`, list every blocker key from the `Used by` column below that applies to the recipe's target.
-2. For each listed key, run the **Detection** grep.
-3. On a hit, run the verbatim **AskUserQuestion** and record the answer under the **Output decision key**.
-4. Apply **Effect** (`proceed` / `result: blocked` / `result: rejected` / `result: needs-decision`).
-5. The recipe never proceeds past `## Preflight` while any fired blocker is unresolved.
+1. In `## Decision points`, declare an entry referencing the relevant `B<n>` keys below.
+2. On Preflight, run the **Detection** grep for each.
+3. On a hit AND the key isn't yet in `inputs.decisions` → recipe emits **🔒 await decision**; orchestrator resolves (auto-policy or `AskUserQuestion`) and re-invokes.
+4. Recipe applies **Effect** based on `inputs.decisions.<key>` (`proceed` / `output { result: blocked }` / `output { result: rejected }`).
+5. The recipe never proceeds past `## Preflight` while any fired blocker is unresolved (await suspends the flow until the orchestrator returns the answer).
 
 ---
 

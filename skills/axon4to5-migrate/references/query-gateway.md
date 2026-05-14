@@ -8,21 +8,57 @@ Atomic migration of ONE class dispatching queries via `QueryGateway` from outsid
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target_test` — FQ test class (optional)
-- `wiring` — `spring-boot` | `framework-config` (pinned)
+```yaml
+target: <FQ class>                          # required
+target_test: <FQ test class>                # optional
+wiring: spring-boot | framework-config       # pinned
+decisions: { ... }                           # see ## Decision points
+```
 
 ## Preflight
 
-1. AF5 import `org.axonframework.messaging.queryhandling.gateway.QueryGateway` present?
-2. No `org.axonframework.messaging.responsetypes.*` imports?
-3. No `ResponseTypes.instanceOf` / `multipleInstancesOf` / `optionalInstanceOf`?
-4. No `queryGateway.scatterGather(...)` (removed in AF5; **not** a no-op — flag).
-5. Subscription queries pass plain `Class<I>` / `Class<U>`?
-6. No bare `.get()` / `.join()` without `.orTimeout(...)` at sync boundaries — most common diff post-recipe, real fix to apply.
-7. No AF4 named-query call sites `queryGateway.query("<name>", payload, …)` — apply rewrite even when 1–6 hold.
+1. For each entry in `## Decision points` with `trigger: detected-at-preflight`, run its Detection. If it fires AND the key isn't in `inputs.decisions` → **🔒 await decision** for that key.
+2. Idempotency — all clean:
+    - AF5 import `org.axonframework.messaging.queryhandling.gateway.QueryGateway` present?
+    - No `org.axonframework.messaging.responsetypes.*` imports?
+    - No `ResponseTypes.instanceOf` / `multipleInstancesOf` / `optionalInstanceOf`?
+    - Subscription queries pass plain `Class<I>` / `Class<U>`?
+    - No bare `.get()` / `.join()` without `.orTimeout(...)` at sync boundaries?
+    - No AF4 named-query call sites `queryGateway.query("<name>", payload, …)`?
 
-All clean → `AskUserQuestion`: Skip / Deep verify.
+    → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
+
+## Decision points
+
+### scatter-gather-removal
+
+- **Trigger**: detected-at-preflight
+- **Detection**:
+    ```
+    grep -nE 'queryGateway\.scatterGather\(' <target>
+    ```
+- **Question**: > "Class uses `queryGateway.scatterGather(...)` — removed in AF5 with NO drop-in replacement. How to handle?"
+- **Options**:
+    - `surface-and-defer` — recipe exits; user redesigns the scatter-gather flow (e.g., single broadcast handler aggregating internally)
+    - `pause-migration` — stop; user redesigns now before any rewrite
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - either choice → `output { result: blocked, reason: "scatterGather has no AF5 path; user must redesign" }`, exit. No edits.
+
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight idempotency check finds all 6 conditions clean)
+- **Question**: > "Class appears already migrated. Skip or deep-verify?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue if silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit
+    - `deep-verify` → continue
 
 ## In scope
 
@@ -139,13 +175,16 @@ If AF4 caller assumed single initial result, collapse with `.next()` / `.singleO
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   query-shape: single | stream | subscription
-notes: <…>
+  scatter-gather-removal: none | surface-and-defer | pause-migration
+files_touched:
+  - <repo-relative path>
+notes: <free text>
 ```
 
 ## Out of scope

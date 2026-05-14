@@ -6,14 +6,33 @@ Rare except for ops endpoints (reset, replay, DLQ inspection). When the candidat
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target-bus` — `command` | `query` | `event-processor` (required; picks the rewrite block)
-- `wiring` — `spring-boot` | `framework-config` (from pinned decisions)
+```yaml
+target: <FQ class>                                # required
+target-bus: command | query | event-processor      # required; picks the rewrite block
+wiring: spring-boot | framework-config              # pinned
+decisions: { ... }                                  # see ## Decision points
+```
 
 ## Preflight
 
-1. Compile clean? If yes → `AskUserQuestion` Skip / Deep verify.
-2. No need to consult [blockers.md](blockers.md) — this recipe has no AF5 gaps.
+1. Compile clean → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
+2. No global blockers — this recipe has no AF5 gaps.
+
+## Decision points
+
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight finds clean compile)
+- **Question**: > "Class appears already migrated. Skip or deep-verify?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue if silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit
+    - `deep-verify` → continue
 
 ## Procedure
 
@@ -110,13 +129,16 @@ extra-deps: [axon-messaging, axon-configuration]
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   target-bus: command | query | event-processor
   dlq-sites-flagged: [<file:line>, …] | none      # event-processor only
+files_touched:
+  - <repo-relative path>
+notes: <free text>
 ```
 
 ## Reference pair (AF4 → AF5)

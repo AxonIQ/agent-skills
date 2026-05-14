@@ -2,44 +2,125 @@
 
 Atomic migration of ONE class with `@EventHandler` methods.
 
-> If the candidate is a Spring `@Component` that **reads** `EventProcessingConfiguration` (rather than declaring `@EventHandler`), use [configuration-reads.md](config-reads.md) instead.
+> If the candidate is a Spring `@Component` that **reads** `EventProcessingConfiguration` (rather than declaring `@EventHandler`), use [config-reads.md](config-reads.md) instead.
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target_test` — FQ test class (optional; auto `<target>Test`)
-- `wiring` — `spring-boot` | `framework-config` (from pinned decisions)
+```yaml
+target: <FQ class>                                          # required
+target_test: <FQ test class>                                # optional; defaults to <target>Test
+wiring: spring-boot | framework-config                       # pinned project decision
+decisions: { ... }                                           # see ## Decision points
+```
 
 ## Preflight
 
-1. Read [not-supported.md](blockers.md), run Detection greps. Resolve blockers before proceeding.
-2. Same `mcp__ide__getDiagnostics` / `axon4to5-isolatedtest` pattern as other recipes — Skip/Deep-verify on green.
+1. For each entry in `## Decision points` with `trigger: detected-at-preflight`, run its Detection. If it fires AND the key isn't in `inputs.decisions` → **🔒 await decision** for that key.
+2. Sweep external configuration tied to this processor (the AF4 `@ProcessingGroup` name + paths below). The sweep populates context for later Procedure steps AND triggers Decision points for the blocker keys.
+3. Idempotency: `mcp__ide__getDiagnostics` / `axon4to5-isolatedtest` (`test-sources: []`); if clean + tests green → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
 
-## Procedure
-
-### Step 1 — Locate
-
-Use user-named target, else first file matching `@ProcessingGroup` or AF4 `@EventHandler` AND one of: `CommandGateway` field / AF4 `@DisallowReplay` / AF4 `@MetaDataValue`.
-
-### Step 2 — Sweep external configuration tied to this processor
+### Configuration sweep targets
 
 Grep for the AF4 `@ProcessingGroup("…")` name across the repo:
 
 - Spring YAML/properties (Path A only): `axon.eventhandling.processors.<group>.*`.
 - Java/Kotlin config (both paths): `registerSequencingPolicy`, `registerListenerInvocationErrorHandler`, `registerErrorHandler`, `registerDeadLetterQueue*`, `registerEnqueuePolicy`, `registerTokenStore`, `MongoTokenStore`, `org.axonframework.extensions.{mongo,kafka}`, `KafkaPublisher`, `StreamableKafkaMessageSource`, `KafkaMessageSourceConfigurer`.
 
-Where each finding goes:
+Where each finding routes:
 
-| Finding | Action |
+| Finding | Routes to |
 |---|---|
-| `sequencing-policy` / `registerSequencingPolicy` / `@Bean SequencingPolicy` | Step 7 here — annotate class + delete AF4 source inline. |
-| `registerListenerInvocationErrorHandler` / `registerErrorHandler` / `@Bean ListenerInvocationErrorHandler` | Step 11 — fold into `.customized(... errorHandler ...)`. |
-| `registerPooledStreaming…` / `registerSubscribing…` / `assignHandlerTypesMatching` | Step 10 — `@Bean EventProcessorDefinition` (A) or `eventProcessing(…)` chain (B). |
-| DLQ wiring (`registerDeadLetterQueue*` / `axon…dlq.*` / `@Bean SequencedDeadLetterQueue`) | **OUT OF SCOPE** — Axoniq commercial recipe. Leave AF4 wiring; flag in Output `notes`. NOT a blocker. |
-| `MongoTokenStore` / `registerTokenStore(MongoTokenStore…)` | **Blocker B1** — JPA / pause / accept-stays-af4. |
-| `org.axonframework.extensions.kafka.*` | **Blocker B3** — accept-stays-af4 / pause / remove-feature-first. |
+| `sequencing-policy` / `registerSequencingPolicy` / `@Bean SequencingPolicy` | Step 7 (annotate class + delete AF4 source inline) |
+| `registerListenerInvocationErrorHandler` / `registerErrorHandler` / `@Bean ListenerInvocationErrorHandler` | Step 11 (fold into `.customized(...errorHandler...)`) |
+| `registerPooledStreaming…` / `registerSubscribing…` / `assignHandlerTypesMatching` | Step 10 (Spring `@Bean EventProcessorDefinition` / `eventProcessing(...)` chain) |
+| DLQ wiring (`registerDeadLetterQueue*` / `axon…dlq.*` / `@Bean SequencedDeadLetterQueue`) | **OUT OF SCOPE** — Axoniq commercial recipe; leave AF4 wiring; record in `output.notes` as `dlq-sites-flagged` |
+| `MongoTokenStore` / `registerTokenStore(MongoTokenStore…)` | Decision point [`mongo-token-store`](#mongo-token-store) (B5) |
+| `org.axonframework.extensions.kafka.*` | Decision point [`axon-kafka`](#axon-kafka) (B7) |
+| `@SagaEventHandler` / `@StartSaga` / `@EndSaga` / `@Saga` on the class | Decision point [`saga-handler-detected`](#saga-handler-detected) (B6) |
 
-If nothing found → AF5 defaults apply; skip Step 7.
+If nothing found → AF5 defaults apply; Step 7 is a no-op.
+
+## Decision points
+
+### mongo-token-store
+
+- **Trigger**: detected-at-preflight (during config sweep)
+- **Detection**:
+    ```
+    grep -RnE 'MongoTokenStore|registerTokenStore.*Mongo|org\.axonframework\.extensions\.mongo' --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' <project root>
+    ```
+- **Question**: > "Project uses `MongoTokenStore` (no AF5 release of `axon-mongo`). Token data can be rebuilt by replay from the event store, but this is a deliberate user decision. How to handle?"
+- **Options**:
+    - `move-to-jpa-token-store` — code rewrite to AF5 `JpaTokenStore`; user runs replay from event store
+    - `pause-migration` — user replaces token store (incl. data plan) before resuming
+    - `accept-stays-af4` — keep token-store slice on AF4 deps; recipe exits
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `move-to-jpa-token-store` → proceed; surface for `event-storage-engine` to replace the bean. `output.notes` notes "user accepts replay-from-event-store as the token-data plan".
+    - `pause-migration` / `accept-stays-af4` → `output { result: blocked, reason: "mongo-token-store deferred — see blockers.md#B5" }`, exit.
+- **Reference**: [blockers.md#B5](blockers.md#B5).
+
+### saga-handler-detected
+
+- **Trigger**: detected-at-preflight
+- **Detection**:
+    ```
+    grep -RlnE '@SagaEventHandler\b|@StartSaga\b|@EndSaga\b|@Saga\b' --include='*.java' --include='*.kt' <candidate>
+    ```
+- **Question**: > "Candidate has saga annotations — this is a saga, not an event-processor. Route to saga recipe?"
+- **Options**:
+    - `wrong-recipe-skip` *(Recommended)* — orchestrator re-routes this candidate to the `saga` slot; this recipe exits untouched
+    - `pause-migration` — user removes saga first
+- **Auto-policy**:
+    - `always: wrong-recipe-skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `wrong-recipe-skip` → `output { result: rejected, route_to: saga, reason: "saga handlers detected" }`, exit. No edits.
+    - `pause-migration` → `output { result: blocked }`, exit.
+- **Reference**: [blockers.md#B6](blockers.md#B6).
+
+### axon-kafka
+
+- **Trigger**: detected-at-preflight (during config sweep)
+- **Detection**:
+    ```
+    grep -RnE 'org\.axonframework\.extensions\.kafka|axon-kafka|KafkaPublisher|StreamableKafkaMessageSource|KafkaMessageSourceConfigurer' --include='*.java' --include='*.kt' --include='*.yml' --include='*.yaml' --include='*.properties' --include='pom.xml' --include='*.gradle*' <project>
+    ```
+- **Question**: > "Project uses `axon-kafka` (no AF5 release). KafkaPublisher / StreamableKafkaMessageSource / KafkaMessageSourceConfigurer reference AF4-only APIs. How to handle?"
+- **Options**:
+    - `accept-stays-af4` — Kafka slice stays AF4; affected modules won't compile against AF5
+    - `pause-migration` — user replaces Kafka integration (native Kafka client + custom `EventBus` adapter, or move publication to Axon Server)
+    - `remove-feature-first` — user deletes Kafka wiring now; re-introduces non-Axon Kafka later
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - any non-`none` choice → `output { result: blocked, reason: "axon-kafka deferred — see blockers.md#B7" }`, exit. No edits. `output.notes` records "user accepts axon-kafka has no AF5 path; Kafka slice is user's responsibility, out-of-band".
+- **Reference**: [blockers.md#B7](blockers.md#B7).
+
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight idempotency check finds clean compile + green tests)
+- **Question**: > "Target appears already migrated. Skip or deep-verify against AF4 baseline?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue to Procedure if any silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → `output { result: skipped }`, exit.
+    - `deep-verify` → continue to Procedure.
+
+## Procedure
+
+### Step 1 — Locate
+
+User-named target, else first file matching `@ProcessingGroup` or AF4 `@EventHandler` AND one of: `CommandGateway` field / AF4 `@DisallowReplay` / AF4 `@MetaDataValue`.
+
+### Step 2 — Confirm sweep results
+
+Preflight already populated the sweep context. If `decisions.mongo-token-store`, `decisions.axon-kafka`, or `decisions.saga-handler-detected` are unresolved → re-emit the corresponding await (defensive; Preflight should have caught it).
 
 ### Step 3 — `@ProcessingGroup` → `@Namespace`
 
@@ -71,9 +152,9 @@ In-context steps:
        return commandDispatcher.send(new MyCommand(e.id()));
    }
    ```
-4. Update import to AF5 `CommandDispatcher`.
+4. Update import to AF5 `CommandDispatcher` (`org.axonframework.messaging.commandhandling.gateway.CommandDispatcher`).
 
-If the gateway is used both in- and out-of-handler context, flag as **mixed class** in Output notes and schedule `command-gateway` as a follow-up pass.
+If the gateway is used both in- and out-of-handler context, flag as **mixed class** in `output.notes` and schedule `command-gateway` as a follow-up pass.
 
 ### Step 6 — Blocking `sendAndWait(…)` → async `send(…)`
 
@@ -124,7 +205,7 @@ After gateway removed: now-empty constructors / unused private fields / stale AF
 
 ### Step 9 — Helper-class metadata imports (out of scope)
 
-If `commandDispatcher.send(cmd, helperOut)` doesn't compile because helper still returns AF4 `MetaData`, **flag** to user as follow-up. Helper lives elsewhere; do NOT edit here. AF5 type: `org.axonframework.messaging.core.Metadata`.
+If `commandDispatcher.send(cmd, helperOut)` doesn't compile because helper still returns AF4 `MetaData`, **flag** in `output.notes` as follow-up. Helper lives elsewhere; do NOT edit here. AF5 type: `org.axonframework.messaging.core.Metadata`.
 
 ### Step 10 — Rewrite external configuration (per path)
 
@@ -198,7 +279,7 @@ FQNs:
 Rules:
 - `PropagatingErrorHandler.instance()` survives — re-import.
 - Custom AF4 `ErrorHandler` impls need own signature migration.
-- **`ListenerInvocationErrorHandler` impls are orphaned** — fold logic into the single `ErrorHandler` OR delete if it was a thin logging wrapper. **Flag** for the user; never silently drop.
+- **`ListenerInvocationErrorHandler` impls are orphaned** — fold logic into the single `ErrorHandler` OR delete if it was a thin logging wrapper. **Flag** in `output.notes`; never silently drop.
 - `registerDefaultErrorHandler(factory)` — apply resolved handler to every processor definition in this class; flag other config classes.
 - Delete the AF4 `register*ErrorHandler` calls once `.errorHandler(...)` lands.
 
@@ -220,7 +301,7 @@ Rules:
 
 1. Zero compile errors in the class + its primary test class.
 2. If test class exists, scoped tests pass via `axon4to5-isolatedtest` with:
-   ```
+   ```yaml
    target-name: <ProcessorSimpleName>
    main-sources: [<Processor>.java]
    test-sources: [<Processor>Test.java]    # [] if no tests
@@ -230,29 +311,44 @@ Rules:
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   processing-group: <name | "n/a">
   event-handler-mode: subscribing | tracking | "n/a"
-  processor-definition-migrated: true | false                # Step 10
-  error-handler-folded: none | propagating | custom | listener-invocation-orphaned   # Step 11
-  dlq-sites-flagged: [<file:line>, …] | none                 # Step 2 sweep — surfaced
-  mongo-token-store: none | move-to-jpa-token-store | pause-migration | accept-stays-af4   # B1
-  saga-handler-detected: none | wrong-recipe-skip | pause-migration                          # B2
-  axon-kafka: none | accept-stays-af4 | pause-migration | remove-feature-first              # B3
-notes: <verbatim AskUserQuestion options for needs-decision>
+  processor-definition-migrated: true | false
+  error-handler-folded: none | propagating | custom | listener-invocation-orphaned
+  dlq-sites-flagged: [<file:line>, …] | none
+  mongo-token-store: none | move-to-jpa-token-store | pause-migration | accept-stays-af4
+  saga-handler-detected: none | wrong-recipe-skip | pause-migration
+  axon-kafka: none | accept-stays-af4 | pause-migration | remove-feature-first
+files_touched:
+  - <repo-relative path>
+route_to: saga                                # only when saga-handler-detected = wrong-recipe-skip
+notes: <free text — cite blockers.md#B<n> when blocked>
 ```
 
-`saga-handler-detected: wrong-recipe-skip` → `result: rejected` with `next: route-to:saga`.
-
-## Variants
+## Variants (Procedure shape, not decision points)
 
 - **Pure projector (no command dispatch).** Steps 1–4 + 8–12 only. Skip 5–7. Return type stays `void`.
 - **Saga-like with non-handler dispatch.** Class also exposes a public method dispatching outside `ProcessingContext`. Keep `CommandGateway` for that path AND add `CommandDispatcher` parameter on in-context handlers. Both coexist.
-- **Mixed `@EventHandler` + `@QueryHandler`.** Out of scope here — surface in Output notes; orchestrator schedules `query-handler` afterwards.
+- **Mixed `@EventHandler` + `@QueryHandler`.** Out of scope here — surface in `output.notes`; orchestrator schedules `query-handler` afterwards.
+
+## Subagent guidelines
+
+```yaml
+subagent_type: general-purpose
+isolation: none
+parallelism: per-item
+on_unexpected_condition: keep-edits-and-fail
+prompt-framing: |
+  READ-ONLY analysis + edit of ONE event-processor target. Apply Steps 1–12 per ## Procedure
+  using inputs.decisions (all blockers pre-resolved). Do NOT call AskUserQuestion.
+```
+
+**Eligibility**: subagent-eligible only AFTER `mongo-token-store`, `axon-kafka`, `saga-handler-detected`, `skip-or-deep-verify` are resolved (each is `fallback: ask-user` so main session must resolve interactively unless pinned).
 
 ## Anti-patterns
 
@@ -265,4 +361,4 @@ Bundled in [evals/fixtures/](../evals/fixtures/):
 
 - **Projector + in-handler dispatch (`@ProcessingGroup` → `@Namespace`, `CommandGateway` → `CommandDispatcher`, `@SequencingPolicy` on class):** `axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java` ↔ `axon5/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java`.
 - **Pure projection (`@EventHandler` only, no command dispatch):** `axon4/heroes/DwellingReadModelProjector.java` ↔ `axon5/heroes/DwellingReadModelProjector.java`.
-- **Spring `@Component` reading `EventProcessingConfiguration` (read-side variant — handled by [configuration-reads.md](config-reads.md)):** `axon4/heroes/StreamProcessorsOperations.java` ↔ `axon5/heroes/StreamProcessorsOperations.java`.
+- **Spring `@Component` reading `EventProcessingConfiguration` (read-side variant — handled by [config-reads.md](config-reads.md)):** `axon4/heroes/StreamProcessorsOperations.java` ↔ `axon5/heroes/StreamProcessorsOperations.java`.

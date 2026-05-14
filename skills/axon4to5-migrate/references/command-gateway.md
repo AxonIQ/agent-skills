@@ -8,19 +8,37 @@ Atomic migration of ONE class dispatching commands via `CommandGateway` from out
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target_test` — FQ test class (optional)
-- `wiring` — `spring-boot` | `framework-config` (pinned)
+```yaml
+target: <FQ class>                          # required
+target_test: <FQ test class>                # optional
+wiring: spring-boot | framework-config       # pinned
+decisions: { ... }                           # see ## Decision points
+```
 
 ## Preflight
 
-1. Already imports AF5 `org.axonframework.messaging.commandhandling.gateway.CommandGateway`?
-2. Zero compile problems AND no `.send(cmd, metadata)` line typed as `CompletableFuture`?
-3. Both clean → `AskUserQuestion`: Skip / Deep verify. Proceed only on Deep verify or failure.
+1. Already imports AF5 `org.axonframework.messaging.commandhandling.gateway.CommandGateway` AND zero compile problems AND no `.send(cmd, metadata)` line typed as `CompletableFuture` → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
+2. Class has handler annotations (`@EventHandler` / `@CommandHandler` / `@QueryHandler` / `@MessageHandlerInterceptor` / `@SagaEventHandler`) → `output { result: rejected, route_to: <handler recipe>, reason: "handler annotations present; gateway use is incidental" }`, exit.
+
+## Decision points
+
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight finds clean compile + AF5 import already in place)
+- **Question**: > "Class appears already migrated. Skip or deep-verify?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue if silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit
+    - `deep-verify` → continue
 
 ## In scope
 
-ONE class that imports AF4 `CommandGateway`, holds it as class-level dep, calls `.send(...)` / `.sendAndWait(...)`, AND is NOT a message-handling component (no `@EventHandler` / `@CommandHandler` / `@QueryHandler` / `@MessageHandlerInterceptor` / `@SagaEventHandler`).
+ONE class that imports AF4 `CommandGateway`, holds it as class-level dep, calls `.send(...)` / `.sendAndWait(...)`, AND is NOT a message-handling component (filtered by Preflight rejection).
 
 ## FQN cheat sheet
 
@@ -121,13 +139,16 @@ Do not introduce abstractions or refactors not required by the API change.
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   return-shape: mvc | scheduler | reactive
-notes: <…>
+files_touched:
+  - <repo-relative path>
+route_to: <handler recipe>      # only on rejected
+notes: <free text>
 ```
 
 ## Out of scope

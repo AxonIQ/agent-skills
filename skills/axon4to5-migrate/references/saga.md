@@ -34,30 +34,80 @@ A `@Component` with `@EventHandler` methods writes/reads a JPA-backed `*State` e
 
 ## Inputs
 
-- `target` — FQ saga class (required in single mode; informational from INIT triage)
+```yaml
+target: <FQ saga class>           # required (single mode) | informational (from INIT triage)
+wiring: spring-boot | framework-config
+decisions: { ... }                 # see ## Decision points
+```
 
 ## Preflight
 
-No "already migrated" path — once ported, the file is an event processor and saga grep won't match. Always proceed to the decision flow.
+No "already migrated" path — once ported, the file is an event processor and saga grep won't match. Always proceed to Decision points + Procedure.
+
+1. Detect deadline blocker per [`deadline-in-saga`](#deadline-in-saga) Decision point.
+2. **🔒 await decision** [`saga-disposition`](#saga-disposition) — main 4-way choice.
+3. If `decisions.saga-disposition == "migrate-to-event-handler-with-state"`, **🔒 await decision** [`saga-shape`](#saga-shape) — Shape A vs B.
+
+## Decision points
+
+### deadline-in-saga
+
+- **Trigger**: detected-at-preflight
+- **Detection**:
+    ```
+    grep -RnE '@DeadlineHandler|DeadlineManager|DeadlineMessage|deadlineManager\.schedule|cancelSchedule|cancelAllWithinScope' --include='*.java' --include='*.kt' <saga file> <saga package>
+    ```
+- **Question**: > "Saga uses `@DeadlineHandler` / `DeadlineManager`. AF5 has no successor; migration to event-handler-with-state requires out-of-band deadline replacement. Confirm detection?"
+- **Options**:
+    - `present` — saga has deadlines (gates the shape-A path)
+    - `absent` — saga has no deadlines
+- **Auto-policy**:
+    - `always: <derived from detection>`      # this is informational; pin from grep result
+    - `fallback: ask-user`
+- **Effect**:
+    - feeds the next decision (`saga-disposition` recommendations + `saga-shape` constraints)
+- **Reference**: [blockers.md#B4](blockers.md#B4).
+
+### saga-disposition
+
+- **Trigger**: detected-at-preflight (always — every saga needs a disposition)
+- **Question**: > "AF5 has no `Saga` SPI. How to handle this saga?"
+- **Options**:
+    - `migrate-to-event-handler-with-state` *(Recommended only when `decisions.deadline-in-saga == "absent"` AND association mechanics are simple)* — rewrite as `@Component` + `@EventHandler` (shape picked next)
+    - `accept-stays-af4` — saga stays AF4 deps; stabilization excludes from AF5 build path
+    - `pause-migration` — user removes saga / deadline dep first
+    - `remove-feature-first` — user redesigns as plain projection / handler before resuming
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `migrate-to-event-handler-with-state` → continue to `saga-shape` decision; recipe exits with `output { result: blocked, route_to: event-processor }` (the user / a follow-up `event-processor` run produces AF5 code).
+    - `accept-stays-af4` → `output { result: blocked, reason: "saga stays AF4 — exclude from AF5 build path" }`, exit.
+    - `pause-migration` / `remove-feature-first` → `output { result: blocked }`, exit. No edits.
+
+### saga-shape
+
+- **Trigger**: triggered-in-procedure (only when `decisions.saga-disposition == "migrate-to-event-handler-with-state"`)
+- **Question**: > "Pick the AF5 shape for this saga rewrite."
+- **Options**:
+    - `shape-a-injected-event-sourced-state` — `@Component` + nested `@EventSourced` state, rebuilt from events. Single-context, no deadlines.
+    - `shape-b-jpa-state-with-scheduler` — `@Component` + JPA state + own `ScheduledExecutorService` replacing deadlines. Needed when deadlines present or state has non-event fields or cross-context.
+- **Auto-policy**:
+    - `decisions.deadline-in-saga == "present": shape-b-jpa-state-with-scheduler`     # shape A doesn't support deadlines
+    - `fallback: ask-user`
+- **Effect**:
+    - `shape-a-injected-event-sourced-state` → `output { result: blocked, route_to: event-processor, reason: "user picks Shape A; rewrite via event-processor recipe" }`. Worked example A below documents the target shape.
+    - `shape-b-jpa-state-with-scheduler` → `output { result: blocked, route_to: event-processor, reason: "user picks Shape B; rewrite via event-processor recipe" }`. Worked example B below documents the target shape.
 
 ## Procedure
 
-1. **Detect deadline blocker:**
-   ```bash
-   grep -RnE '@DeadlineHandler|DeadlineManager|DeadlineMessage|deadlineManager\.schedule|cancelSchedule|cancelAllWithinScope' \
-        --include='*.java' --include='*.kt' <saga file> <saga package>
-   ```
-   Hits → `decisions.deadline-handler-in-saga = present`. Migration not feasible without out-of-band deadline replacement.
-2. **Detect saga shape:** `@Saga`, `@SagaEventHandler`, `@StartSaga`, `@EndSaga`, `SagaLifecycle.end(...)` / `.associateWith(...)`. `@SagaEventHandler(associationProperty = "...")` is the strongest signal AF5 has no direct equivalent.
-3. **`AskUserQuestion` — choose one:**
-   - `migrate-to-event-handler-with-state` *(recommended only when step 1 found NO deadline AND step 2 association mechanics are simple)*. Sub-choice:
-     - `shape-a-injected-event-sourced-state` (see Worked example A)
-     - `shape-b-jpa-state-with-scheduler` (see Worked example B)
-   - `accept-stays-af4` — saga stays AF4; stabilization excludes the files from AF5 build path.
-   - `pause-migration` — user removes saga / deadline dep first.
-   - `remove-feature-first` — user redesigns as plain projection / handler before resuming.
-4. Append dated entry to `learnings.md` (decision + FQN + reason).
-5. Emit Output. Orchestrator commits a decision-only record.
+This recipe **never edits saga code**. It surfaces decisions and emits a `blocked` Output that directs the orchestrator to either:
+- exit (any non-migrate disposition), OR
+- route to `event-processor` (when `saga-disposition == "migrate-to-event-handler-with-state"`); the user produces the AF5 code following Worked example A or B, then a follow-up `event-processor` invocation handles import / annotation rewrites.
+
+1. Preflight resolves `deadline-in-saga` and `saga-disposition`.
+2. If disposition is `migrate-to-event-handler-with-state`, also resolve `saga-shape`.
+3. Append dated entry to `learnings.md`: decision + FQN + reason + shape (if applicable).
+4. Emit `output { result: blocked, ... }`. Orchestrator commits a decision-only record (no `files_touched`).
 
 ## Worked example A — `@InjectEntity` + event-sourced state
 
@@ -293,30 +343,31 @@ public class PaymentSaga {
 
 ## End condition
 
-Never green automatically — no compile-time check the recipe can run. Orchestrator commits the recorded decision; actual saga rewrite (when `migrate-to-event-handler-with-state`) runs as a follow-up through the `event-processor` recipe.
+Never green automatically — this recipe edits nothing. The orchestrator commits the decision-only record. Actual saga rewrite (when `migrate-to-event-handler-with-state`) runs as a follow-up through the `event-processor` recipe with the bundled Worked example as the target shape.
 
 ## Output
 
-| AskUserQuestion answer | `result:` | `next:` |
-|---|---|---|
-| (not yet answered) | `needs-decision` | `ask-user` |
-| `accept-stays-af4` / `pause-migration` / `remove-feature-first` | `blocked` | `record-and-skip` |
-| `migrate-to-event-handler-with-state` | `blocked` | `route-to:event-processor` |
+This recipe **NEVER emits `result: success`** — the rewrite is the user's job (+ event-processor recipe follow-up). Every Output is `blocked` with different `route_to` / `reason`:
 
-This recipe NEVER emits `result: success` — the rewrite is the user's job + the event-processor recipe runs afterwards.
+| `decisions.saga-disposition` | `result:` | `route_to:` |
+|---|---|---|
+| `migrate-to-event-handler-with-state` | `blocked` | `event-processor` |
+| `accept-stays-af4` / `pause-migration` / `remove-feature-first` | `blocked` | *(none — orchestrator just records and moves on)* |
 
 ```yaml
-result: needs-decision | blocked
+result: blocked
 target: <FQ saga class | "n/a">
-reason: <one short line>
+reason: <one short line — quote the saga-disposition + shape if applicable>
 decisions:
-  saga: migrate-to-event-handler-with-state | accept-stays-af4 | pause-migration | remove-feature-first | pending
-  shape: shape-a-injected-event-sourced-state | shape-b-jpa-state-with-scheduler | n/a       # only when migrate
-  deadline-handler-in-saga: none | present                                                    # if present, shape MUST be B (or surface follow-up)
+  saga-disposition: migrate-to-event-handler-with-state | accept-stays-af4 | pause-migration | remove-feature-first
+  saga-shape: shape-a-injected-event-sourced-state | shape-b-jpa-state-with-scheduler | n/a
+  deadline-in-saga: none | present
+files_touched: []
+route_to: event-processor                # only when saga-disposition = migrate-to-event-handler-with-state
 notes: |
   When migrate: name target component class + nested state entity (Shape A) or JPA entity + repo (Shape B).
   When accept-stays-af4: list which AF4 deps stay.
-  When needs-decision: list verbatim AskUserQuestion options.
+  Cite blockers.md#B4 if deadline-in-saga = present.
 ```
 
 ## Caveats

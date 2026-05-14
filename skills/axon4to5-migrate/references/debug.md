@@ -6,8 +6,12 @@ Loop: compile → cluster errors by root cause → route ONE high-leverage clust
 
 ## Inputs
 
-- `target` — project dir (defaults to CWD if it has `pom.xml`/`build.gradle*`).
-- `scope` — optional `isolated-<X>` only when evidence says the build can't reach the migrated scope without it.
+```yaml
+target: <project dir>                        # defaults to CWD if it has pom.xml / build.gradle*
+scope: <isolated-X scope name>               # optional — only when evidence says compile can't reach migrated scope without it
+wiring: spring-boot | framework-config        # pinned (informational)
+decisions: { ... }                            # see ## Decision points
+```
 
 ## Preconditions
 
@@ -16,7 +20,38 @@ Loop: compile → cluster errors by root cause → route ONE high-leverage clust
 
 ## Preflight
 
-`./mvnw test-compile -DskipTests` (or `./gradlew testClasses -x test`) — if green → `result: skipped`.
+1. Compile: `./mvnw test-compile -DskipTests` (or `./gradlew testClasses -x test`) — if green → **🔒 await decision** [`already-green`](#already-green).
+
+## Decision points
+
+### already-green
+
+- **Trigger**: detected-at-preflight (only when initial compile is green)
+- **Question**: > "Project compile is already green. Skip debug mode?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `force-cluster` — proceed anyway (rare; user wants to inspect even on green)
+- **Auto-policy**:
+    - `always: skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit with `result: skipped`.
+    - `force-cluster` → continue to Procedure.
+
+### no-progress
+
+- **Trigger**: triggered-in-procedure (only when the same cluster is picked twice in a row without error count dropping)
+- **Question**: > "Last cluster routed to recipe `<X>` but error count didn't drop. How to proceed?"
+- **Options**:
+    - `surface-diagnostic-dump` — show user the raw compiler output; user decides next move
+    - `skip-and-stash` — defer this cluster; record in `learnings.md`; pick next cluster
+    - `stop` — halt debug loop
+- **Auto-policy**:
+    - `fallback: ask-user`
+- **Effect**:
+    - `surface-diagnostic-dump` → emit dump; resume loop next invocation
+    - `skip-and-stash` → record stash; pick next cluster
+    - `stop` → `output { result: failed, reason: "debug loop made no progress" }`, exit.
 
 ## Procedure
 
@@ -106,23 +141,29 @@ Build green for the chosen scope: main + test compile OK with no `isolated-*` sc
 ## Output
 
 ```yaml
-result: success | skipped | needs-decision | failed
+result: success | skipped | rejected | blocked | failed
 target: <project dir>
 reason: <one short line>
 decisions:
+  already-green: skip | force-cluster | n/a
+  no-progress: surface-diagnostic-dump | skip-and-stash | stop | n/a
   clusters-handled:
     - cluster: <signature>
       routed-to: <recipe>
       defer: <reason>                # if applicable
+files_touched:
+  - <any files debug itself edited via "Direct fixes (limited)">
+  # Most edits in debug mode happen via delegated recipes — their files_touched are recorded
+  # in their own commits, not in this output.
 notes: <non-obvious lessons for learnings.md>
 ```
 
-| State | `result:` | `next:` |
-|---|---|---|
-| Build went green | `success` | `proceed` |
-| Already green at Preflight | `skipped` | `proceed` |
-| "No progress" stop (same cluster twice) | `needs-decision` | `ask-user` |
-| Build still red, no recipe matches | `failed` | `halt` |
+| State | `result:` |
+|---|---|
+| Build went green after loop | `success` |
+| Already green at Preflight | `skipped` |
+| User chose `stop` on `no-progress` | `failed` |
+| Build still red, no recipe matches remaining clusters | `failed` |
 
 ## Report format (for triage/handoff)
 

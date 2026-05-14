@@ -4,18 +4,33 @@ Atomic migration of ONE class with `@QueryHandler` methods. In the simple case, 
 
 ## Inputs
 
-- `target` — FQ class (required)
-- `target_test` — FQ test class (optional)
-- `wiring` — `spring-boot` | `framework-config` (pinned)
+```yaml
+target: <FQ class>                          # required
+target_test: <FQ test class>                # optional
+wiring: spring-boot | framework-config       # pinned
+decisions: { ... }                           # see ## Decision points
+```
 
 ## Preflight
 
-1. `@QueryHandler` already from AF5 location?
-2. Compile clean?
+1. `@QueryHandler` already from AF5 location? Compile clean? → **🔒 await decision** [`skip-or-deep-verify`](#skip-or-deep-verify).
+2. Class also handles other AF4 message types via AF4 imports (`@CommandHandler` / `@EventHandler` from AF4 packages)? → `output { result: rejected, route_to: <handler recipe>, reason: "other AF4 handlers on class — run their recipes first" }`, exit. Exception: if all other annotations are already AF5 imports, this recipe finishes the unit.
 
-If yes → `AskUserQuestion`: Skip / Deep verify.
+## Decision points
 
-Without an explicit target, a class whose only query-handling import is already AF5 is not picked autonomously. With explicit target, no-op is still legitimate.
+### skip-or-deep-verify
+
+- **Trigger**: triggered-in-procedure (only when Preflight finds clean compile + AF5 import already in place)
+- **Question**: > "Class appears already migrated. Skip or deep-verify?"
+- **Options**:
+    - `skip` *(Recommended)* — `output { result: skipped }`
+    - `deep-verify` — diff vs AF4 baseline; continue if silent loss detected
+- **Auto-policy**:
+    - `pinned.resolver_mode == "automatic": skip`
+    - `fallback: ask-user`
+- **Effect**:
+    - `skip` → exit with `result: skipped`
+    - `deep-verify` → continue to Procedure
 
 ## In scope
 
@@ -108,13 +123,16 @@ If the bootstrap chain registers the AF4 form, replace in place. If you can't lo
 ## Output
 
 ```yaml
-result: success | skipped | rejected | needs-decision | blocked | failed
+result: success | skipped | rejected | blocked | failed
 target: <FQ class>
 reason: <one short line>
 decisions:
   path: A (Spring Boot) | B (framework Configurer)
   configurer-registration: auto-spring | added-explicit | surfaced-for-user   # Path B
-notes: <…>
+files_touched:
+  - <repo-relative path>
+route_to: <handler recipe>      # only on rejected
+notes: <free text>
 ```
 
 ## Reference pairs (AF4 → AF5)
