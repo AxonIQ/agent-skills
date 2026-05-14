@@ -1,85 +1,109 @@
 # Recipe execution contract
 
-This file is the **orchestrator-owned** specification for executing any recipe in `references/recipes/`. It defines control flow, state, and step-by-step contracts. Recipes never re-implement this — they only fill in the sections this contract references (see `_template.md`).
+This file is the **orchestrator-owned** specification for executing any recipe in `references/recipes/`. It defines control flow, state, and per-function contracts. Recipes never re-implement this — they only fill in the sections this contract references (see `_template.md`).
 
-Retry budget = **1** additional Apply (≤ 2 Applies total).
+The contract is modelled as a directed graph of typed functions. Each node carries its own `input` / `output` annotation and a short description of what it does. Retry budget = **1** additional `applyMigrationPlan` call (≤ 2 Applies total).
 
 ## Sub-flow
 
 ```mermaid
 flowchart TD
-    S(["Recipe invoked with &lt;Source&gt;"]) --> S1{"<b>1. Applicable?</b><br/>lightweight check on &lt;Source&gt;<br/>(annotations / type markers)<br/>recipe-defined rule"}
-    S1 -- no --> RJ[/"RESULT: Rejected<br/>(not the right recipe)"/]
-    S1 -- yes --> S2
+    S(["recipe(&lt;Source&gt;)"]) --> S1
 
-    subgraph RESEARCH ["Research (loops until scope stabilizes)"]
+    S1["<b>isApplicable</b><br/>input: &lt;Source&gt;<br/>runs predicates from § Applicable<br/>on &lt;Source&gt;'s surface only<br/>(annotations, type markers)<br/>output: bool"]
+    S1 -- false --> RJ[/"return Rejected"/]
+    S1 -- true --> S2
+
+    subgraph RESEARCH ["Research — fixed-point loop"]
         direction TB
-        S2["<b>2. Define Scope</b><br/>initial inventory:<br/>&lt;Source&gt; + owned types<br/>(commands, events, members)"]
-        S3["<b>3. Read References</b><br/>only sections matching<br/>constructs currently in scope<br/>(Migration Paths / Toolbox / Examples)"]
-        SQ{"References reveal<br/>extra files / types<br/>that belong in scope?"}
+        S2["<b>defineScope</b><br/>input: &lt;Source&gt;, &lt;Scope&gt;?<br/>enumerates &lt;Source&gt; + owned types per § Scope;<br/>on re-entry adds revealed items<br/>(monotonic — never shrinks)<br/>output: &lt;Scope&gt;"]
+        S3["<b>readReferences</b><br/>input: &lt;Scope&gt;<br/>loads only sections from § References<br/>whose read-condition matches a<br/>construct currently in &lt;Scope&gt;<br/>output: &lt;References&gt;"]
+        SQ["<b>referencesRevealMore</b><br/>input: &lt;Scope&gt;, &lt;References&gt;<br/>inspects loaded references for in-scope<br/>candidates not yet in &lt;Scope&gt;<br/>output: bool"]
         S2 --> S3 --> SQ
-        SQ -- "yes (extend scope)" --> S2
+        SQ -- true --> S2
     end
 
-    SQ -- no --> S4{"<b>4. Blocker in scope?</b><br/>constructs with no Migration Path<br/>e.g. Deadlines,<br/>custom interceptors,<br/>ConflictResolver"}
-    S4 -- yes --> BL[/"RESULT: Blocker<br/>NOTES: what was found + where"/]
-    S4 -- "no (no edits yet)" --> S5
+    SQ -- false --> S4
 
-    S5["<b>5. Check Success Criteria</b><br/>compile &lt;Source&gt; + owned<br/>compile matching test if exists<br/>Skill: axon4to5-isolatedtest<br/>behavior invariants"]
-    S5 --> S5Q{all green?}
-    S5Q -- yes --> SC[/"RESULT: Success<br/>NOTES: edits=none (idempotent)<br/>or files changed + follow-ups"/]
-    S5Q -- "no — never applied yet" --> S6
-    S5Q -- "no — retry available<br/>(budget = 1 attempt)" --> RC{"failure cause?<br/>(read compile / test output)"}
-    S5Q -- "no — retry exhausted" --> FL[/"RESULT: Failure<br/>NOTES: failing criteria<br/>+ last error verbatim"/]
+    S4["<b>hasBlocker</b><br/>input: &lt;Scope&gt;, &lt;References&gt;<br/>scans &lt;Scope&gt; for constructs with NO<br/>entry in Migration Paths;<br/>cross-checks § Gotchas<br/>output: bool"]
+    S4 -- true --> BL[/"return Blocker"/]
+    S4 -- false --> S5
 
-    RC -- "scope was incomplete<br/>(unknown symbols, untouched related file)" --> S2
-    RC -- "knowledge gap<br/>(Axon 5 API misunderstood)" --> CTX["<b>Consult Axon 5</b><br/>sources on classpath<br/>+ context7 MCP if available<br/>(extends References)"]
+    S5["<b>checkSuccessCriteria</b><br/>input: &lt;Scope&gt;<br/>runs each check from § Success Criteria<br/>(compile, axon4to5-isolatedtest, invariants);<br/>captures error text on red<br/>output: { state: green | red, output?: &lt;FailureOutput&gt; }"]
+    S5 -- green --> SC[/"return Success"/]
+    S5 -- "red &amp; applyCount = 0" --> S6
+    S5 -- "red &amp; applyCount = 1" --> RC
+    S5 -- "red &amp; applyCount = 2" --> FL[/"return Failure"/]
+
+    RC["<b>classifyFailure</b><br/>input: &lt;FailureOutput&gt;<br/>unknown symbol / untouched related file ⇒<br/>scope_incomplete;<br/>Axon 5 API misuse / wrong overload ⇒<br/>knowledge_gap<br/>output: scope_incomplete | knowledge_gap"]
+    RC -- scope_incomplete --> S2
+    RC -- knowledge_gap --> CTX
+
+    CTX["<b>consultAxon5</b><br/>input: &lt;FailureOutput&gt;, &lt;References&gt;<br/>fetches the Axon 5 API / type / annotation<br/>that &lt;FailureOutput&gt; mentions from classpath<br/>+ context7 MCP if available;<br/>extends &lt;References&gt;<br/>output: &lt;References&gt;"]
     CTX --> S6
 
-    S6["<b>6. Build Migration Plan</b><br/>bullet list of concrete edits<br/>derived from References<br/>+ scope inventory"]
-    S6 --> S7["<b>7. Apply Migration Plan</b><br/>edits within Scope only<br/>no drive-by refactors"]
-    S7 -- "(edits applied)" --> S5
+    S6["<b>buildMigrationPlan</b><br/>input: &lt;Scope&gt;, &lt;References&gt;<br/>ordered bullet list of concrete edits<br/>sufficient to flip every red criterion to green;<br/>no edits performed yet<br/>output: &lt;Plan&gt;"]
+    S6 --> S7
+
+    S7["<b>applyMigrationPlan</b><br/>input: &lt;Plan&gt;<br/>executes edits within &lt;Scope&gt; only;<br/>refuses drive-by refactors per § Out of Scope;<br/>increments applyCount<br/>output: &lt;Edits&gt;"]
+    S7 --> S5
 
     classDef result fill:#eef,stroke:#557,stroke-width:1px;
     class RJ,BL,SC,FL result;
 ```
 
+## Type glossary
+
+Angle-bracketed names are the data the orchestrator carries between function calls.
+
+| Type | Description |
+|------|-------------|
+| `<Source>` | Fully qualified class name or file path of the thing to migrate. Provided by the skill invocation. |
+| `<Scope>` | Set of files / types the recipe is allowed to touch. Monotonically grows during Research; never shrinks. |
+| `<References>` | Subset of the recipe's playbook (Migration Paths / Toolbox / Examples) currently loaded; extended in place by `consultAxon5`. |
+| `<FailureOutput>` | Compile / test output captured when `checkSuccessCriteria` returns red. Used to classify the failure cause. |
+| `<Plan>` | Ordered list of concrete edits sufficient to flip every red criterion to green. |
+| `<Edits>` | Mutations made to the workspace by the most recent Apply. Tracked for the result block's `FILES_CHANGED`. |
+
 ## Orchestrator state
 
-The orchestrator tracks the following state across steps. The recipe never tracks state — it only provides decision logic and content.
+Held between function calls. The recipe never tracks state itself.
 
 | Variable | Type | Initialized | Mutated by | Purpose |
 |----------|------|-------------|------------|---------|
-| `source` | string | invocation | — | `<Source>` identifier from skill arg |
-| `applicable` | bool | step 1 | — | gate for entering Research |
-| `scope` | set&lt;path/type&gt; | step 2 | step 2 (loop) | inventory of files/types in scope |
-| `references` | set&lt;ref section&gt; | step 3 | step 3 (loop) | playbook sections currently loaded |
-| `criteria_state` | green / red | step 5 | step 5 | last check result |
-| `apply_count` | 0..2 | 0 | step 7 | bounds retry; budget = 1 retry ⇒ max 2 |
-| `last_failure` | string | step 5 (red) | step 5 | compile/test output used for cause classification |
+| `source` | `<Source>` | invocation | — | identifier from skill arg |
+| `scope` | `<Scope>` | `defineScope` | `defineScope` (loop) | files/types in scope |
+| `references` | `<References>` | `readReferences` | `readReferences`, `consultAxon5` | loaded playbook subset |
+| `applyCount` | 0..2 | 0 | `applyMigrationPlan` | bounds retry; max 2 Applies |
+| `lastFailure` | `<FailureOutput>?` | `checkSuccessCriteria` (red) | `checkSuccessCriteria` | input to `classifyFailure` / `consultAxon5` |
 
-Apply consumes the retry budget; **scope extension and CTX do not** — only the next Apply does.
+Only `applyMigrationPlan` consumes the retry budget; `defineScope` re-entry and `consultAxon5` are free.
 
-## Step contract
+## Recipe section bindings
 
-Each row is one node in the mermaid above. "Recipe section" names the part of the recipe file the LLM consults at that step.
+Each function's body is driven by content the recipe author writes in a specific section. The diagram nodes name the section inline; this table is the index.
 
-| # | Node | Type | Recipe section | Pre | LLM operation | Post / Branches |
-|---|------|------|----------------|-----|---------------|-----------------|
-| 1 | Applicable? | decision | `§ Applicable` (predicates + decision rule) | `source` set | Read `<Source>` surface (annotations / type markers only — do NOT walk owned graph). Evaluate predicates with the rule the recipe declares (AND / OR / heuristic). | `applicable = true → step 2` · `false → emit Rejected (NOTES: which predicate failed)` |
-| 2 | Define Scope | action (loop body) | `§ Scope` (definition of what counts as "owned") | `applicable = true` | Enumerate `<Source>` + owned types per the recipe's scope rule. On re-entry from SQ, **add** newly-revealed items; never shrink. | `scope` updated → step 3 |
-| 3 | Read References | action (loop body) | `§ References` (`Migration Paths` / `Toolbox` / `Examples`, each with read-condition) | `scope` non-empty | Load only sections whose read-condition matches any construct currently in `scope`. Skip irrelevant sections. | `references` updated → SQ |
-| SQ | References reveal extra files/types? | decision | implicit — read-conditions in `§ References` | `references` updated | Inspect loaded references for in-scope candidates not yet in `scope`. | `yes → step 2 (extend)` · `no → step 4` |
-| 4 | Blocker in scope? | decision | `§ Gotchas` + absence of entry in `Migration Paths` | `scope` stable, `references` loaded | Scan `scope` for constructs that have **no** entry in loaded `Migration Paths`. Cross-check with `Gotchas`. | `yes → emit Blocker (NOTES: construct + location)` · `no → step 5` |
-| 5 | Check Success Criteria | action + decision | `§ Success Criteria` (concrete checks) | `scope` + `references` available | Run each check the recipe lists: (a) compile `<Source>` + owned, (b) compile matching test if exists, (c) Skill `axon4to5-isolatedtest`, (d) behavior invariants. Save compile/test output to `last_failure` on red. | `green → emit Success` · `red & apply_count = 0 → step 6` · `red & apply_count = 1 → RC` · `red & apply_count = 2 → emit Failure` |
-| RC | Failure cause? | decision | none (generic classification rule) | `last_failure` set | Read `last_failure`. Classify: unknown symbol / reference to untouched file ⇒ `scope_incomplete`; Axon 5 API misuse / wrong overload ⇒ `knowledge_gap`. | `scope_incomplete → step 2` · `knowledge_gap → CTX` |
-| CTX | Consult Axon 5 | action | none — uses Axon 5 source on classpath + `context7` MCP if available | `RC = knowledge_gap` | Fetch the specific Axon 5 API / type / annotation that `last_failure` references. Extend `references` with the new knowledge. | `references` extended → step 6 |
-| 6 | Build Migration Plan | action | `§ References` + `§ Toolbox` | `criteria_state = red` | Produce an ordered bullet list of concrete edits sufficient to flip every red criterion to green. No edits performed yet. | plan ready → step 7 |
-| 7 | Apply Migration Plan | action | `§ Out of Scope` (negative constraints) | plan ready | Execute edits **within `scope`** only. No drive-by refactors. | `apply_count++` → step 5 |
+| Function | Recipe section |
+|----------|----------------|
+| `isApplicable` | `§ Applicable` |
+| `defineScope` | `§ Scope` |
+| `readReferences` | `§ References` (read-conditions) |
+| `referencesRevealMore` | implicit — read-conditions inside `§ References` |
+| `hasBlocker` | `§ Gotchas` + absence of entry in Migration Paths (subsection of `§ References`) |
+| `checkSuccessCriteria` | `§ Success Criteria` |
+| `classifyFailure` | none — generic orchestrator rule |
+| `consultAxon5` | none — Axon 5 classpath + `context7` MCP |
+| `buildMigrationPlan` | `§ References` (Migration Paths + Toolbox subsections) |
+| `applyMigrationPlan` | `§ Out of Scope` (negative constraints) |
 
-## Result emission
+## Return values
 
-Each recipe completes by emitting **exactly one** result block. The orchestrator parses the `RESULT:` line; the rest is human-readable context.
+The graph terminates with one of four parallelogram nodes. Each `return` produces the same result block format below; only the `RESULT:` line differs.
+
+- `return Rejected` — `isApplicable` returned false.
+- `return Blocker` — `hasBlocker` returned true.
+- `return Success` — `checkSuccessCriteria` returned green.
+- `return Failure` — `checkSuccessCriteria` returned red and retry budget exhausted.
 
 ```
 RESULT: <Success|Blocker|Rejected|Failure>
@@ -89,15 +113,17 @@ FILES_CHANGED: [<path>, ...]
 NOTES: <one short paragraph — why this result, what to look at next>
 ```
 
+The orchestrator parses the `RESULT:` line; the rest is human-readable context.
+
 ## Invariants
 
-- **Step 1 sits outside Research** — cheap surface check on `<Source>` alone; don't pay the Research cost for the wrong recipe.
-- **Scope before References** (inside Research) — `scope` drives *which* `references` sections are read.
-- **Research is a fixed-point loop** — exits only when SQ says "no new in-scope items"; `scope` can only grow.
-- **Step 5 is the single check** — same evaluation logic pre- and post-Apply; visit context is encoded in `apply_count`.
-- **Blocker fires only from step 4** — emitted after Research stabilizes. Steps 5–7 never short-circuit to Blocker; partial work either passes step 5 or counts as Failure.
-- **Apply loop is `5 → 6 → 7 → 5`** with retry budget on `apply_count`. Re-Research (step 2 re-entry) and CTX are *free* (no budget); only Apply consumes.
-- **Two retry routes converge at step 7**:
-  - `scope_incomplete` → re-enter step 2; Research extends scope; eventually re-Apply.
-  - `knowledge_gap` → CTX → step 6 → re-Apply.
-- **Recipe owns content; orchestrator owns control flow.** A recipe never decides "retry" or "skip a step" — it only fills the cells in column *Recipe section* above.
+- **`isApplicable` sits outside Research** — cheap surface check on `<Source>` alone; don't pay the Research cost for the wrong recipe.
+- **Scope before References** (inside Research) — `<Scope>` drives *which* sections `readReferences` loads.
+- **Research is a fixed-point loop** — exits only when `referencesRevealMore` returns false; `<Scope>` is monotonically increasing.
+- **`checkSuccessCriteria` is the single check** — same body pre- and post-Apply; visit context is encoded in `applyCount`.
+- **`return Blocker` fires only from `hasBlocker`** — emitted after Research stabilizes. Downstream functions never short-circuit to Blocker; partial work either passes `checkSuccessCriteria` or counts as `return Failure`.
+- **Apply loop is `checkSuccessCriteria → buildMigrationPlan → applyMigrationPlan → checkSuccessCriteria`** with retry budget on `applyCount`. `defineScope` re-entry and `consultAxon5` are free.
+- **Two retry routes converge at `applyMigrationPlan`**:
+  - `scope_incomplete` → `defineScope` extends scope, Research re-stabilizes, eventually re-Apply.
+  - `knowledge_gap` → `consultAxon5` extends references, straight to `buildMigrationPlan`, then re-Apply.
+- **Recipe owns content; orchestrator owns control flow.** A recipe never decides "retry" or "skip a function" — it only fills the sections listed in *Recipe section bindings* above.
