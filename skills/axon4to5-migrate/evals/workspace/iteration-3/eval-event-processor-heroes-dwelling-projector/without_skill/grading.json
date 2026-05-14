@@ -1,0 +1,61 @@
+{
+  "eval_id": 13,
+  "eval_name": "event-processor-heroes-dwelling-projector",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-processor-heroes-dwelling-projector/without_skill/outputs/DwellingReadModelProjector.java",
+  "output_exists": true,
+  "passed": 5,
+  "total": 10,
+  "all_pass": false,
+  "expectations": [
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "passed": false,
+      "evidence": "missing required substring `@Namespace(\"ReadModel_Dwelling\")` in output"
+    },
+    {
+      "text": "AF5 Namespace import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.core.annotation.Namespace` in output"
+    },
+    {
+      "text": "@SequencingPolicy with MetadataSequencingPolicy",
+      "passed": false,
+      "evidence": "missing required substring `MetadataSequencingPolicy` in output"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "passed": false,
+      "evidence": "missing required substring `org.axonframework.messaging.eventhandling.annotation.EventHandler` in output"
+    },
+    {
+      "text": "@Component preserved (Spring stereotype)",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation gone",
+      "passed": false,
+      "evidence": "forbidden substring `@ProcessingGroup` STILL present in output"
+    },
+    {
+      "text": "AF4 ProcessingGroup import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` absent \u2014 good"
+    },
+    {
+      "text": "NO CommandDispatcher introduced (pure projection)",
+      "passed": true,
+      "evidence": "forbidden substring `CommandDispatcher` absent \u2014 good"
+    },
+    {
+      "text": "NO CommandGateway field (pure projection \u2014 never had one)",
+      "passed": true,
+      "evidence": "forbidden substring `private final CommandGateway` absent \u2014 good"
+    }
+  ]
+}

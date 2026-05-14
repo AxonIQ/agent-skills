@@ -1,0 +1,60 @@
+{
+  "eval_id": 13,
+  "eval_name": "event-processor-heroes-dwelling-projector",
+  "recipe": "event-processor",
+  "prompt": "You have the axon4to5-migrate skill loaded. Migrate this AF4 pure projection (no command dispatch \u2014 events update a read model only) at INPUT_PATH per references/event-processor.md. Pinned: license=axoniq-commercial, wiring=spring-boot, build-tool=maven. This is the 'pure projector' variant \u2014 Steps 1-4 + 8-12 apply; SKIP Steps 5-6 (no CommandGateway / CommandDispatcher). Apply @ProcessingGroup \u2192 @Namespace, AF5 annotation imports, and annotate with @SequencingPolicy(MetadataSequencingPolicy with parameters=GameMetaData.GAME_ID_KEY) \u2014 the AF4 GameConfiguration had a @Bean SequencingPolicy keyed by gameIdSequencingPolicy reading the same metadata. Return type stays void on the @EventHandler methods. Save to OUTPUT_PATH.",
+  "input": "evals/fixtures/axon4/heroes/DwellingReadModelProjector.java",
+  "output_filename": "DwellingReadModelProjector.java",
+  "assertions": [
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "type": "grep_require",
+      "pattern": "@Namespace(\"ReadModel_Dwelling\")"
+    },
+    {
+      "text": "AF5 Namespace import",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.core.annotation.Namespace"
+    },
+    {
+      "text": "@SequencingPolicy with MetadataSequencingPolicy",
+      "type": "grep_require",
+      "pattern": "MetadataSequencingPolicy"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "type": "grep_require",
+      "pattern": "org.axonframework.messaging.eventhandling.annotation.EventHandler"
+    },
+    {
+      "text": "@Component preserved (Spring stereotype)",
+      "type": "grep_require",
+      "pattern": "@Component"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation gone",
+      "type": "grep_forbid",
+      "pattern": "@ProcessingGroup"
+    },
+    {
+      "text": "AF4 ProcessingGroup import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.config.ProcessingGroup"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "type": "grep_forbid",
+      "pattern": "org.axonframework.eventhandling.EventHandler"
+    },
+    {
+      "text": "NO CommandDispatcher introduced (pure projection)",
+      "type": "grep_forbid",
+      "pattern": "CommandDispatcher"
+    },
+    {
+      "text": "NO CommandGateway field (pure projection \u2014 never had one)",
+      "type": "grep_forbid",
+      "pattern": "private final CommandGateway"
+    }
+  ]
+}

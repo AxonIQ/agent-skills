@@ -1,0 +1,61 @@
+{
+  "eval_id": 13,
+  "eval_name": "event-processor-heroes-dwelling-projector",
+  "output_path": "/Users/mateusznowak/GitRepos/AxonIQ/migration-skills-clones/agent-skills-claude/skills/axon4to5-migrate/evals/workspace/iteration-3/eval-event-processor-heroes-dwelling-projector/with_skill/outputs/DwellingReadModelProjector.java",
+  "output_exists": true,
+  "passed": 10,
+  "total": 10,
+  "all_pass": true,
+  "expectations": [
+    {
+      "text": "@Namespace replaced @ProcessingGroup",
+      "passed": true,
+      "evidence": "found `@Namespace(\"ReadModel_Dwelling\")`"
+    },
+    {
+      "text": "AF5 Namespace import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.core.annotation.Namespace`"
+    },
+    {
+      "text": "@SequencingPolicy with MetadataSequencingPolicy",
+      "passed": true,
+      "evidence": "found `MetadataSequencingPolicy`"
+    },
+    {
+      "text": "AF5 @EventHandler import",
+      "passed": true,
+      "evidence": "found `org.axonframework.messaging.eventhandling.annotation.EventHandler`"
+    },
+    {
+      "text": "@Component preserved (Spring stereotype)",
+      "passed": true,
+      "evidence": "found `@Component`"
+    },
+    {
+      "text": "AF4 @ProcessingGroup annotation gone",
+      "passed": true,
+      "evidence": "forbidden substring `@ProcessingGroup` absent \u2014 good"
+    },
+    {
+      "text": "AF4 ProcessingGroup import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.config.ProcessingGroup` absent \u2014 good"
+    },
+    {
+      "text": "AF4 @EventHandler import gone",
+      "passed": true,
+      "evidence": "forbidden substring `org.axonframework.eventhandling.EventHandler` absent \u2014 good"
+    },
+    {
+      "text": "NO CommandDispatcher introduced (pure projection)",
+      "passed": true,
+      "evidence": "forbidden substring `CommandDispatcher` absent \u2014 good"
+    },
+    {
+      "text": "NO CommandGateway field (pure projection \u2014 never had one)",
+      "passed": true,
+      "evidence": "forbidden substring `private final CommandGateway` absent \u2014 good"
+    }
+  ]
+}
