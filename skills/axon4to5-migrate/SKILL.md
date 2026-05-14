@@ -116,22 +116,22 @@ Migrate **everything in the working directory** that any recipe in the catalog d
 
 Steps (after the common pre-steps):
 
-1. **Discover** — for each recipe in the auto-listed catalog, evaluate its `applicable` predicates across the codebase
-   to produce candidate sources.
+**Recipe loop** — iterate recipes in discovery order. For each recipe:
+
+1. **Discover** — evaluate the recipe's `applicable` predicates across the codebase to produce candidate sources.
     - `execution=inline` → orchestrator scans inline using `Grep` / `Glob` / `Read`.
-    - `execution=subagent` → dispatch one `Explore` subagent **per recipe** (parallel batch via a single `Agent` tool
-      message with multiple calls). Each agent receives the recipe's `applicable` block + `id` and returns a list of
-      FQNs / file paths. Read-only — no edits.
-2. **Enqueue** — every `(recipe, source)` candidate. Deduplication is recipe's concern (handled inside its Recipe
-   sub-flow); orchestrator does not collapse items across recipes.
-3. **Drain** — for each item run the Recipe sub-flow:
+    - `execution=subagent` → dispatch one `Explore` subagent for this recipe. Read-only — no edits.
+2. **Enqueue** — add `(recipe, source)` candidates. Deduplication is recipe's concern.
+3. **Drain** — exhaust all pending items for **this recipe** before advancing to the next:
     - `max-subagents=0` (default) → inline, main session, sequentially.
     - `max-subagents=N` → main session acts as **coordinator**. Dispatches up to N pending items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Each subagent executes ONE recipe sub-flow and returns a result block (`RESULT:` line + NOTES).
       - ✅ Success / ⏭ Rejected / ❌ Failure → main records result, immediately dispatches next pending item. **No pause.**
       - 🚧 Blocker → **BLOCKER_RESOLUTION in main session**: `AskUserQuestion` if `auto=false`; auto-skip if `auto=true`. Resolved → re-dispatch same item to a new subagent. Not resolved → mark blocked, dispatch next pending item.
       - Main session never pauses unless waiting for user input on a blocker (`auto=false`).
-      - **Fallback** — if a subagent cannot be spawned (Agent tool unavailable or dispatch fails), process that item inline in the main session and continue.
-4. **Report** — render the report (see Queue flow § Render report).
+      - **Fallback** — if a subagent cannot be spawned, process inline and continue.
+4. **Mark recipe done** — `on:recipe-done` hook records status in `progress.md` Recipe status table.
+
+After all recipes drained → **Debugging loop** → **Finalize** → **Report**.
 
 **Context hygiene** — after every 5 items drained, emit this tip once (then reset counter):
 
@@ -184,8 +184,9 @@ flowchart TD
     PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
     ORW -- fail --> XORW[STOP: bulk-rewrite failed]
     ORW -- ok --> B["list-recipes (catalog)"]
-    B --> DISC["<b>Discover</b> (in order — see below)<br/>execution=inline: Grep/Glob<br/>execution=subagent: 1 Explore per recipe (parallel)<br/>→ <b>Enqueue</b> N items"]
-    DISC --> Q[(Migration queue)]
+    B --> RL{"<b>Next recipe</b><br/>in order?"}
+    RL -- "yes: &lt;recipe&gt;" --> DISC["<b>Discover</b><br/>execution=inline: Grep/Glob<br/>execution=subagent: 1 Explore<br/>→ <b>Enqueue</b> items"]
+    DISC --> Q[(Recipe queue)]
     Q --> L{"<b>Drain</b><br/>pending?"}
     L -- yes --> INP["pick next → in-progress"]
     INP --> W[["<b>Execute</b> recipe sub-flow<br/>execution=inline: main session<br/>execution=subagent: general-purpose (parallel batch)"]]
@@ -199,7 +200,9 @@ flowchart TD
     VER --> DONE["mark done in queue"]
     DONE --> Q
     BLK --> Q
-    L -- no --> DBG_COMP
+    L -- "no (recipe drained)" --> RDONE["<b>on:recipe-done</b><br/>update Recipe status table"]
+    RDONE --> RL
+    RL -- "no more recipes" --> DBG_COMP
 
     subgraph DEBUG ["🔍 Debugging — all recipes applied, build still red"]
         direction TB

@@ -8,8 +8,8 @@ Owns state, commits, decisions. Observes hooks across SKILL.md flow. No phases �
 
 `<repo-root>/.axon4to5-migration/`
 
-- `progress.md` — state + resume + queue + decisions
-- `learnings.md` — append-only surprises
+- `progress.md` — state + resume + queue + decisions. Seeded from [`../assets/progress-template.md`](../assets/progress-template.md).
+- `learnings.md` — append-only surprises. Seeded from [`../assets/learnings-template.md`](../assets/learnings-template.md).
 
 Created lazily after Parse accepts args. Never overwritten without caller approval.
 
@@ -19,7 +19,7 @@ Before pre-step #1 (Parse):
 
 1. `Read .axon4to5-migration/progress.md` if exists.
 2. Present → resume protocol (§Resume) + 📋 message.
-3. Absent → 🆕 message, continue to Parse.
+3. Absent → seed `progress.md` from `assets/progress-template.md`, seed `learnings.md` from `assets/learnings-template.md`, emit 🆕 message, continue to Parse.
 
 ## `progress.md` schema
 
@@ -28,6 +28,7 @@ Fixed section order.
 ```
 ## ▶︎ RESUME HERE
 - next: <one sentence>
+- recipe-loop: <recipe id> (N/8)
 - recipe: <id>
 - source: <fqn or path>
 - verify: <exact command>
@@ -45,8 +46,17 @@ status: <not-run | success | failed>
 ts: <iso>
 note: <optional>
 
-## Pinned decisions
-- <iso-ts> <topic> → <choice>
+## Recipe status
+| # | Recipe | Status | Items done/total | Last commit |
+|---|--------|--------|------------------|-------------|
+| 1 | aggregate | pending | 0/? | — |
+| 2 | event-processor | pending | 0/? | — |
+| 3 | command-gateway | pending | 0/? | — |
+| 4 | query-gateway | pending | 0/? | — |
+| 5 | query-handler | pending | 0/? | — |
+| 6 | interceptors | pending | 0/? | — |
+| 7 | saga | pending | 0/? | — |
+| 8 | event-store | pending | 0/? | — |
 
 ## Queue
 | # | recipe | source | status | last-commit | notes |
@@ -78,7 +88,8 @@ Every hook that mutates `progress.md` commits the change in the same op. Code-be
 | `on:session-start` | Before pre-steps | Read `progress.md`; resume or fresh. | — |
 | `on:args-parsed` | After Parse validates | Init state dir if absent; write Selection frame (framework, configuration, mode, execution — **not** `source`). Resume + frame mismatch → AskUserQuestion (resume / start-over / abort) **before** writing. | `chore(af5): record selection frame` |
 | `on:openrewrite-done` | After pre-step #2 | Write outcome to `progress.md`. If status=`success`: stage **all** working-tree changes with `git add -A` (covers OpenRewrite recipe edits + `progress.md`); commit with canonical message (substitute `<framework>` from resolved arg). Resume + already `success` → skip pre-step entirely (no new commit). | `chore(af5): apply Axon 4 → 5 OpenRewrite migration (--framework <framework>)` |
-| `on:queue-built` | After producer (Match / Discover+Enqueue) | Snapshot queue. Resume → merge: keep prior statuses; add only new items. | `chore(af5): build queue (<N> items)` |
+| `on:queue-built` | After Discover+Enqueue for current recipe | Snapshot queue for this recipe. Resume → merge: keep prior statuses; add only new items. | `chore(af5): build queue (<recipe> — <N> items)` |
+| `on:recipe-done` | When recipe drain empties (`mode=project`) | Update Recipe status table row: status → `done` (or `partially-blocked`), Items done/total, Last commit. | `chore(af5): recipe <id> done (<N> done · <M> blocked)` |
 | `on:item-start` | Drain pick | Status → `in-progress`. | `chore(af5): start <source>` |
 | `on:item-result` | After FLOW.md `## Result` emitted | Status per outcome emoji; update notes col. | `chore(af5): record <status> for <source>` |
 | `on:item-success` | Result=✅ + Verify ok | Stage code paths + `progress.md` (+ `learnings.md` if dirty). | `refactor(af5): <source> (recipe: <id>)` |
