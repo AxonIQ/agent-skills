@@ -11,7 +11,10 @@ RECIPES_DIR="$SCRIPT_DIR/../references/recipes"
 
 shopt -s nullglob
 for f in "$RECIPES_DIR"/*.md; do
-  rel="references/recipes/$(basename "$f")"
+  base="$(basename "$f")"
+  # Skip files starting with underscore — those are infrastructure (_contract.md, _template.md)
+  case "$base" in _*) continue;; esac
+  rel="references/recipes/$base"
   # Extract YAML frontmatter between first two `---` lines
   fm="$(awk 'BEGIN{c=0} /^---[[:space:]]*$/{c++; next} c==1{print} c>=2{exit}' "$f")"
   name="$(printf '%s\n' "$fm" | awk -F': *' '/^name:/{print $2; exit}')"
