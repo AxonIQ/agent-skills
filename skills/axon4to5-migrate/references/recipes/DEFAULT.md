@@ -46,7 +46,7 @@ Per-recipe `# Success Criteria` inherits these checks. Recipes may **add** crite
 ### Baseline criteria — always in effect
 
 1. **Compile-clean** — every file in `# Scope` (main + test sources) compiles against Axon 5 dependencies. Missing-symbol errors against files OUTSIDE `# Scope` mean the scope is too narrow — re-research at FLOW.md S2, do NOT silence with excludes.
-2. **Tests green** — if `# Scope` contains test classes, every `@Test` method passes. Zero `@Test` methods in scope counts as criterion not-applicable (not match) — surface "no test coverage" as a **Learning** in the result block.
+2. **Tests green** — if `# Scope` contains test classes that use `AggregateTestFixture`, every `@Test` method passes. Zero `@Test` methods in scope counts as criterion not-applicable (not match) — surface "no test coverage" as a **Learning** in the result block. Tests that do NOT use `AggregateTestFixture` (e.g. integration tests, Mockito-only tests, Spring context tests) are **out of scope** — do not include them in `test-sources`, do not fail on them, do not attempt to fix them.
 3. **No silent behavioural regressions in the scoped slice** — assertions in migrated tests reflect AF5 semantics (record-style `payload()` / `metaData()` accessors, AF5 exception types). A flipped expectation that matches AF5 reality counts as match; silently weakened assertions do NOT.
 
 ### Verification — `axon4to5-isolatedtest` Skill (default mechanism)
@@ -85,6 +85,7 @@ Behaviour:
 
 - Project-wide `clean verify` / full-module test run — happens once at the orchestrator's FINALIZE step after every `isolated-*` scope is cleaned up. Not a recipe-level Success Criterion.
 - Cross-recipe verification (e.g. "the projector still receives events from the migrated aggregate") — recipe boundaries are deliberately narrow; integration concerns belong to the orchestrator.
+- **Tests not backed by `AggregateTestFixture`** — integration tests, Mockito-only tests, Spring context tests, and any test class that does not directly use `AggregateTestFixture` are out of scope. Do NOT add them to `test-sources`, do NOT treat their failures as a recipe-level criterion, and do NOT attempt to fix them.
 
 ## Blocker Options baselines
 

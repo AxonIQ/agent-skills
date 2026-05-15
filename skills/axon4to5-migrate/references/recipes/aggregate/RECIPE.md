@@ -49,21 +49,9 @@ Constructs the recipe cannot migrate on its own. Each entry: what it is + how to
 
 `@Aggregate(snapshotTriggerDefinition = "...")`. AF5's `@EventSourced` / `@EventSourcedEntity` has no portable replacement attribute (see [configuration-migration.adoc](../../docs/paths/aggregates/configuration-migration.adoc) IMPORTANT note). Detect by grepping the `@Aggregate` annotation on `$SOURCE` for `snapshotTriggerDefinition`; also check for the post-OpenRewrite marker `// TODO #LLM: reconfigure snapshot trigger`.
 
-**Auto-migration** (do NOT halt if the companion bean is in scope and translatable):
+**B1 always fires as a Blocker.** There is currently no verified auto-migration path for snapshot trigger configuration in either `configuration=spring` or `configuration=native`. The `EventSourcedEntityModule.declarative()` builder chain required to wire `SnapshotPolicy` is non-trivial (mandatory intermediate phases before `snapshotPolicy()` is reachable) and the correct pattern has not yet been validated end-to-end. Do NOT attempt auto-migration — always halt with Blocker B1 and let the caller resolve manually.
 
-1. Locate the companion bean class: grep for `@Component("<beanName>")` or `@Bean` returning a class that extends `EventCountSnapshotTriggerDefinition` or `AggregateLoadTimeSnapshotTriggerDefinition`. Look in the same package first, then the configured scope.
-2. If found and translatable, extract the threshold from the `super(snapshotter, N)` / `super(snapshotter, Duration)` constructor call. Use the translation table:
-   - `EventCountSnapshotTriggerDefinition(snapshotter, N)` → `SnapshotPolicy.afterEvents(N)`
-   - `AggregateLoadTimeSnapshotTriggerDefinition(snapshotter, Duration)` → `SnapshotPolicy.whenSourcingTimeExceeds(Duration)`
-3. Apply per path:
-   - **`configuration=native`** — emit `@EventSourcedEntity` (or `@EventSourced`) on the entity class (no `snapshotTriggerDefinition` attribute). In the Configurer wiring file, register: `EventSourcedEntityModule.declarative(<IdType>.class, <Entity>.class).snapshotPolicy(c -> SnapshotPolicy.afterEvents(N)).build()`. Register `SnapshotStore` component: `configurer.componentRegistry(cr -> cr.registerComponent(SnapshotStore.class, c -> new InMemorySnapshotStore()))`.
-   - **`configuration=spring`** — entity drops `@EventSourced` (registration moves to the bean). Create (or augment) a `@Configuration` class: `@Bean EventSourcedEntityModule<IdType, Entity> entityModule() { return EventSourcedEntityModule.declarative(...).snapshotPolicy(...).build(); }` plus `@Bean SnapshotStore snapshotStore() { return new InMemorySnapshotStore(); }`.
-4. Mark companion bean class as dead code in LEARNINGS ("BikeSnapshotDefinition is now dead code — delete it"). Do NOT delete it from disk (out of scope).
-5. B1 does NOT fire → recipe continues normally.
-
-If companion bean is a **custom subclass** or **not found in scope** → B1 fires (Blocker), same as before.
-
-Recipe-specific Option offered alongside the three defaults (only when B1 fires):
+Recipe-specific Option offered alongside the three defaults (when B1 fires):
 
 - `migrate-snapshotting` — pause; caller manually creates `EventSourcedEntityModule.declarative(...)` registration with the correct `SnapshotPolicy`, removes the companion bean, then re-invokes. See [04-snapshot-blocker.md](use-cases/04-snapshot-blocker.md) for the full worked example.
 
