@@ -16,7 +16,8 @@
       "strict": false,
       "skills": [
         "./skills/axon4to5-openrewrite",
-        "./skills/axon4to5-isolatedtest"
+        "./skills/axon4to5-isolatedtest",
+        "./skills/axon4to5-migrate"
       ]
     }
   ]
