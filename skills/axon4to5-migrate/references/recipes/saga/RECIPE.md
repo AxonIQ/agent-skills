@@ -235,11 +235,11 @@ Inherits DEFAULT.md baseline.
 
 ### Success
 
-Say **"return SUCCESS"**, then emit the result block. `Recipe:` field is `axon4to5-saga`. NOTES must name the two new files created (state entity + repository). Flag in NOTES: (a) processor wiring not handled — caller should add `EventProcessorDefinition` per `projectors-event-processors.adoc`; (b) `@EnableScheduling` addition needed if `@Scheduled` was introduced; (c) no test coverage (saga fixtures rarely ship tests — Learning).
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES must name the two new files created (state entity + repository). Flag in NOTES: (a) processor wiring not handled — caller should add `EventProcessorDefinition` per `projectors-event-processors.adoc`; (b) `@EnableScheduling` addition needed if `@Scheduled` was introduced; (c) no test coverage (saga fixtures rarely ship tests — Learning).
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. `Recipe:` field is `axon4to5-saga`. NOTES name the detected blocker(s) + location. Options block per detected blocker with the three DEFAULT.md baselines.
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES name the detected blocker(s) + location. Options block per detected blocker with the three DEFAULT.md baselines.
 
 Example (B1 — DeadlineManager + native):
 
@@ -262,8 +262,8 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit the result block. `Recipe:` field is `axon4to5-saga`. NOTES must name the failed `# Applicable` predicate (1 aggregate / 2 event-processor / 5 unrecognised) and the sister recipe to route to.
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES must name the failed `# Applicable` predicate (1 aggregate / 2 event-processor / 5 unrecognised) and the sister recipe to route to.
 
 ### Failure
 
-Say **"return FAILURE"**, then emit the result block. NOTES list failing Success Criteria + last grep/compiler error verbatim. LEARNINGS nearly always present — common failure shape: AF4 import survived the rewrite (grep for `org.axonframework.modelling.saga` after edit).
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES list failing Success Criteria + last grep/compiler error verbatim. LEARNINGS nearly always present — common failure shape: AF4 import survived the rewrite (grep for `org.axonframework.modelling.saga` after edit).

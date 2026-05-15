@@ -226,11 +226,11 @@ Inherits DEFAULT.md baseline.
 
 ### Success
 
-Say **"return SUCCESS"**, then emit result block. `Recipe:` field is `axon4to5-command-gateway`. Include as Learning: any flagged follow-ups (stale `XxxMetaData.with(...)` helper, external `CommandCallback` implementation not in scope).
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-command-gateway`. Include as Learning: any flagged follow-ups (stale `XxxMetaData.with(...)` helper, external `CommandCallback` implementation not in scope).
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit result block. `Recipe:` field is `axon4to5-command-gateway`. NOTES name each detected blocker. Options block: three DEFAULT.md baselines + for B1: `redesign-callback` option.
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-command-gateway`. NOTES name each detected blocker. Options block: three DEFAULT.md baselines + for B1: `redesign-callback` option.
 
 Example (B1):
 
@@ -254,7 +254,7 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit result block. `Recipe:` field is `axon4to5-command-gateway`. NOTES name the failed predicate and route to the appropriate sister recipe.
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-command-gateway`. NOTES name the failed predicate and route to the appropriate sister recipe.
 
 Example:
 
@@ -270,4 +270,4 @@ return REJECTED
 
 ### Failure
 
-Say **"return FAILURE"**, then emit result block. NOTES: failing Success Criteria + last error verbatim. LEARNINGS nearly always present.
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES: failing Success Criteria + last error verbatim. LEARNINGS nearly always present.

@@ -341,11 +341,11 @@ Inherits DEFAULT.md baseline. Recipe-specific augmentations per outcome:
 
 ### Success
 
-Say **"return SUCCESS"**, then emit the result block. `Recipe:` field is `axon4to5-event-processor`. NOTES per DEFAULT.md baseline (Success Criteria passed, retries used, idempotent / edits=none when applicable). Add a LEARNINGS bullet listing any flagged constructs the recipe did NOT migrate but the caller should know about — DLQ presence, `@EventHandlerInterceptor` placement, orphaned `@Bean SequencingPolicy`.
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-processor`. NOTES per DEFAULT.md baseline (Success Criteria passed, retries used, idempotent / edits=none when applicable). Add a LEARNINGS bullet listing any flagged constructs the recipe did NOT migrate but the caller should know about — DLQ presence, `@EventHandlerInterceptor` placement, orphaned `@Bean SequencingPolicy`.
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. `Recipe:` field is `axon4to5-event-processor`. The recipe emits **one** Blocker result aggregating every detected blocker (see § Blocker, "Emission model — all blockers at once"). NOTES enumerate each detected blocker with its file:line. Options block has one sub-section per detected blocker — each with the three DEFAULT.md baselines (skip / revert / solve-manually).
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-processor`. The recipe emits **one** Blocker result aggregating every detected blocker (see § Blocker, "Emission model — all blockers at once"). NOTES enumerate each detected blocker with its file:line. Options block has one sub-section per detected blocker — each with the three DEFAULT.md baselines (skip / revert / solve-manually).
 
 Example (B1 — MongoTokenStore):
 
@@ -370,7 +370,7 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit the result block. `Recipe:` field is `axon4to5-event-processor`. NOTES must name the failed `# Applicable` predicate (1 saga / 2 aggregate / 6 unrecognised) and, when a sister recipe handles the source, mention it.
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-processor`. NOTES must name the failed `# Applicable` predicate (1 saga / 2 aggregate / 6 unrecognised) and, when a sister recipe handles the source, mention it.
 
 Example:
 
@@ -386,4 +386,4 @@ return REJECTED
 
 ### Failure
 
-Say **"return FAILURE"**, then emit the result block. NOTES must list failing Success Criteria + the last error verbatim. LEARNINGS nearly always present — record the hypothesis the next iteration starts from. Common Failure shape for this recipe: AF5 `Message` interface is non-generic (`CompletableFuture<? extends Message<?>>` does not compile); rewrite to `CompletableFuture<? extends Message>` and re-Apply.
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES must list failing Success Criteria + the last error verbatim. LEARNINGS nearly always present — record the hypothesis the next iteration starts from. Common Failure shape for this recipe: AF5 `Message` interface is non-generic (`CompletableFuture<? extends Message<?>>` does not compile); rewrite to `CompletableFuture<? extends Message>` and re-Apply.

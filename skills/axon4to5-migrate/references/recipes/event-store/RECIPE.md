@@ -314,11 +314,11 @@ Inherits DEFAULT.md baseline.
 
 ### Success
 
-Say **"return SUCCESS"**, then emit result block. `Recipe:` field is `axon4to5-event-store`. NOTES must include: (a) which path was taken (A.JPA / A.AS / B.JPA / B.AS); (b) if JPA: schema-change note for `aggregate_event_entry` (user-owned, out-of-band); (c) if custom Serializer flagged: list the FQNs; (d) no test coverage (Learning).
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-store`. NOTES must include: (a) which path was taken (A.JPA / A.AS / B.JPA / B.AS); (b) if JPA: schema-change note for `aggregate_event_entry` (user-owned, out-of-band); (c) if custom Serializer flagged: list the FQNs; (d) no test coverage (Learning).
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit result block. `Recipe:` field is `axon4to5-event-store`. NOTES name each detected blocker + location. Options block: three DEFAULT.md baselines + all recipe-specific options listed in the `## Blocker` section that apply.
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-store`. NOTES name each detected blocker + location. Options block: three DEFAULT.md baselines + all recipe-specific options listed in the `## Blocker` section that apply.
 
 Example (B1 — Mongo):
 
@@ -344,8 +344,8 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit result block. `Recipe:` field is `axon4to5-event-store`. NOTES name the failed `# Applicable` predicate (3 — no event store wiring found).
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-store`. NOTES name the failed `# Applicable` predicate (3 — no event store wiring found).
 
 ### Failure
 
-Say **"return FAILURE"**, then emit result block. NOTES: failing Success Criteria + last error verbatim. LEARNINGS nearly always present.
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES: failing Success Criteria + last error verbatim. LEARNINGS nearly always present.

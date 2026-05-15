@@ -46,7 +46,7 @@ flowchart TD
 
 ## Result
 
-Each recipe completes by returning **exactly one** result block, formatted as markdown. The orchestrator reads the bolded **Result** line to control the flow.
+Each recipe **MUST** emit **exactly one** result block, formatted as markdown, before returning control to the orchestrator. The orchestrator reads the bolded **Result** line to control the flow. **Omitting the Result block is an error** — without it, the orchestrator cannot route the outcome.
 
 ### Schema
 
@@ -143,6 +143,17 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > - AF5 `org.axonframework.messaging.core.Message` is **NOT generic** — declared as `public interface Message` (verified via `javap` against `axon-messaging-5.1.1-SNAPSHOT.jar`). Any recipe pseudocode using `CompletableFuture<? extends Message<?>>` is wrong; the correct shape is `CompletableFuture<? extends Message>`.
 > - This `$SOURCE` is a processor, not an aggregate — Applicable should arguably have rejected it earlier. The aggregate recipe is the wrong tool for try/catch → reactive-compensation refactoring; caller should re-route to the event-processor recipe and re-invoke.
 
+## MUST / MUST NOT
+
+MUST:
+- Emit exactly one Result block (schema per § Result) before returning. No exceptions.
+- Emit ✅ Success (not ⏭️ Rejected) when `$SOURCE` is already migrated and Success Criteria pass without edits — that is an idempotent Success, not a Rejected outcome. ⏭️ Rejected is reserved for when the `# Applicable` predicate fails (wrong recipe for this source type).
+- Emit `**Options:**` when Result = 🚧 Blocker.
+
+MUST NOT:
+- Return to the orchestrator without emitting a Result block.
+- Emit more than one Result block per recipe execution.
+
 ## Invariants
 
 - **Applicable check sits outside Research** — cheap surface check on `$SOURCE` alone; don't pay the Research cost for the wrong recipe.
@@ -153,3 +164,4 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 - **Apply loop is `Check → Plan → Apply → Check`** — only Apply consumes the retry budget. Adjust activities (re-research, source consultation) are *free*.
 - **Adjust is open-ended** — on retry the AI picks any subset of: extend scope, consult Axon 5 sources / context7, rethink the approach. Plan Migration is rebuilt each iteration using whatever new info Adjust gathered.
 - **Recipe owns content; orchestrator owns control flow.** A recipe never decides "retry" or "skip a step" — it only fills the named sections referenced from the diagram nodes.
+- **Result block is non-negotiable** — every flowchart path (SC, RJ, BL, FL) exits through a Result block. The recipe has no valid return path without one.

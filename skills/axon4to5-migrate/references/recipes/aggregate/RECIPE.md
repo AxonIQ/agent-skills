@@ -268,11 +268,11 @@ Inherits DEFAULT.md baseline. Recipe-specific augmentations per outcome:
 
 ### Success
 
-Say **"return SUCCESS"**, then emit the result block. `Recipe:` field is `axon4to5-aggregate`. NOTES per DEFAULT.md baseline (which Success Criteria passed, retries used, idempotent / edits=none when applicable).
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-aggregate`. NOTES per DEFAULT.md baseline (which Success Criteria passed, retries used, idempotent / edits=none when applicable).
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. `Recipe:` field is `axon4to5-aggregate`. The recipe emits **one** Blocker result aggregating every detected blocker (see § Blocker, "Emission model — all blockers at once"). NOTES enumerate each detected blocker with its file:line. The Options block has one sub-section per detected blocker — each sub-section lists the three DEFAULT.md baselines (skip / revert / solve-manually) plus any recipe-specific options the blocker entry declared.
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-aggregate`. The recipe emits **one** Blocker result aggregating every detected blocker (see § Blocker, "Emission model — all blockers at once"). NOTES enumerate each detected blocker with its file:line. The Options block has one sub-section per detected blocker — each sub-section lists the three DEFAULT.md baselines (skip / revert / solve-manually) plus any recipe-specific options the blocker entry declared.
 
 Example — single blocker (B1):
 
@@ -326,7 +326,7 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit the result block. `Recipe:` field is `axon4to5-aggregate`. NOTES must name the failed `# Applicable` predicate (1 saga / 2 projector / 3 state-stored / 6 unrecognised). When a sister recipe handles the source, mention it in NOTES (e.g. "route to event-processor recipe").
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-aggregate`. NOTES must name the failed `# Applicable` predicate (1 saga / 2 projector / 3 state-stored / 6 unrecognised). When a sister recipe handles the source, mention it in NOTES (e.g. "route to event-processor recipe").
 
 Example:
 
@@ -342,4 +342,4 @@ return REJECTED
 
 ### Failure
 
-Say **"return FAILURE"**, then emit the result block. NOTES must list failing Success Criteria + the last error verbatim. LEARNINGS nearly always present — record the hypothesis the next iteration starts from.
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES must list failing Success Criteria + the last error verbatim. LEARNINGS nearly always present — record the hypothesis the next iteration starts from.

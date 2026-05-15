@@ -177,11 +177,11 @@ Inherits DEFAULT.md baseline.
 
 ### Success
 
-Say **"return SUCCESS"**, then emit the result block. `Recipe:` field is `axon4to5-interceptors`. NOTES: variant migrated (dispatch / handler / both), path (A / B), registration sites updated if Path B.
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-interceptors`. NOTES: variant migrated (dispatch / handler / both), path (A / B), registration sites updated if Path B.
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. `Recipe:` field is `axon4to5-interceptors`. NOTES: name blocker (B1 annotation form / prerequisite-not-compiling) with `file:line`. OPTIONS: DEFAULT.md baselines (skip / revert / solve-manually).
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-interceptors`. NOTES: name blocker (B1 annotation form / prerequisite-not-compiling) with `file:line`. OPTIONS: DEFAULT.md baselines (skip / revert / solve-manually).
 
 Example (B1):
 
@@ -202,8 +202,8 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit the result block. `Recipe:` field is `axon4to5-interceptors`. NOTES: which predicate failed.
+Say **"return REJECTED"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-interceptors`. NOTES: which predicate failed.
 
 ### Failure
 
-Say **"return FAILURE"**, then emit the result block. NOTES: failing Success Criteria + last compiler error verbatim. LEARNINGS: hypothesis for next iteration.
+Say **"return FAILURE"**, then **MUST emit** the result block (schema: FLOW.md § Result). NOTES: failing Success Criteria + last compiler error verbatim. LEARNINGS: hypothesis for next iteration.

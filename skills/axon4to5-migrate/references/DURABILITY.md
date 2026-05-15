@@ -79,6 +79,22 @@ Status ∈ `pending`, `in-progress`, `done`, `blocked`, `skipped`, `rejected`, `
 
 **MUST `Read learnings.md` when:** surprised, unexpected result, blocker, or ≥2 consecutive failures on the same item. Prior entries often pre-explain the current problem. Skip on routine resume.
 
+## Proactive Learnings
+
+`learnings.md` capture is **orthogonal to the Result block**. The `on:learning` hook (§ Hooks) fires when a recipe includes a `**Learnings:**` section in its Result — but that is not the only path. The orchestrator MUST also write to `learnings.md` proactively, on its own initiative, whenever any of the following occur during a recipe run or between runs:
+
+- An import path, class name, or method signature differed from what the recipe documentation predicted (had to discover the correct form by reading jars, grepping, or trial-compile).
+- A compile error occurred that was not expected from the recipe's documented migration steps.
+- A retry was consumed (2nd Apply attempt used).
+- A blocker was detected, regardless of how it was resolved.
+- The project's shape (annotations, dependencies, module layout) required a deviation from the recipe's use cases or toolbox steps.
+- Any step required external investigation (reading jars with `javap`, grepping to discover correct packages, consulting MCP docs, etc.).
+- A microservices or secondary module had a different shape than the primary module and required separate handling.
+
+**How to write:** Append a dated entry to `learnings.md` using the schema (§ `learnings.md` schema). Do NOT wait for the Result block — write as soon as the surprise is understood and resolved. Fold into the next item commit (`on:item-success` stages `learnings.md` when dirty).
+
+**Deciding on your own:** The agent does not need a signal from the user, a blocker resolution, or a Result block to trigger this. If the migration surprised you — write it down.
+
 ## Hooks
 
 Every hook that mutates `progress.md` commits the change in the same op. Code-bearing → `refactor(af5)`. State-only → `chore(af5)`.
@@ -146,6 +162,8 @@ MUST:
 - persist Selection arguments **only after** Parse validates them.
 - `Read learnings.md` on surprise, blocker, or repeated failure.
 - reuse the orchestrator's existing AskUserQuestion path for caller prompts.
+- emit Result block per FLOW.md § Result before recipe execution returns to the orchestrator; missing Result = record `failed` status and surface as error.
+- write a proactive learning to `learnings.md` whenever a surprise, discovery, or deviation from recipe docs occurs (see § Proactive Learnings), independent of the Result block's optional `**Learnings:**` field.
 
 MUST NOT:
 - identify the caller (user / subagent / auto) — `BLOCKER_RESOLUTION.md`'s concern.
