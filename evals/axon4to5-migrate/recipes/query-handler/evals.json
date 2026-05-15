@@ -1,0 +1,408 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "query-handler",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate Skill with the query-handler recipe in single mode. Coverage: simple @QueryHandler import swap (bike-rental derived), queryName removal with payload record introduction (bike-rental), QueryUpdateEmitter constructor→method-param migration (bike-rental), @ProcessingGroup+@MetaDataValue migration (heroes-of-ddd derived), rejected pure dispatcher.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "simple-import-swap",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. BikeStatusHandler is a Spring @Component with two @QueryHandler methods: findAll(FindAllBikes query) and findOne(FindBikeById query). Both methods already use typed payload classes. Apply the query-handler recipe use-case 01: swap the @QueryHandler import from org.axonframework.queryhandling.QueryHandler to org.axonframework.messaging.queryhandling.annotation.QueryHandler. Method bodies, parameters, and all other annotations stay identical. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 QueryHandler import; method signatures and bodies unchanged; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/BikeStatusHandler.java"
+      ],
+      "expectations": [
+        "AF5 QueryHandler import (messaging.queryhandling.annotation.QueryHandler)",
+        "AF4 QueryHandler import removed",
+        "findAll(FindAllBikes query) method signature preserved",
+        "findOne(FindBikeById query) method signature preserved",
+        "Result block marks Success with axon4to5-query-handler"
+      ],
+      "category": "simple-import-swap",
+      "fixture": "synthetic/BikeStatusHandler.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler",
+          "text": "AF5 QueryHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "findAll(FindAllBikes",
+          "text": "findAll method signature preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "findOne(FindBikeById",
+          "text": "findOne method signature preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryHandler",
+          "text": "AF4 QueryHandler import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-handler",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "named-query-removal",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. RentalBikeQueryProjection has three @QueryHandler methods each with queryName attribute: findAll() with queryName=\"findAll\" (no params), findAvailable(String bikeType) with queryName=\"findAvailable\", findOne(String bikeId) with queryName=\"findOne\". Apply the query-handler recipe use-case 02: (1) swap QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler, (2) add import org.axonframework.messaging.queryhandling.annotation.Query, (3) introduce three inner records: @Query(name=\"findAll\") record FindAllQuery() {}, @Query(name=\"findAvailable\") record FindAvailableQuery(String bikeType) {}, @Query(name=\"findOne\") record FindOneQuery(String bikeId) {}, (4) update method signatures: findAll(FindAllQuery ignored), findAvailable(FindAvailableQuery query), findOne(FindOneQuery query), (5) update method bodies: replace bare param references bikeType→query.bikeType() and bikeId→query.bikeId(), (6) remove all queryName attributes from @QueryHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 QueryHandler import; three payload records introduced with @Query annotations; queryName attributes removed; method bodies updated; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/RentalBikeQueryProjection.java"
+      ],
+      "expectations": [
+        "AF5 QueryHandler import",
+        "org.axonframework.messaging.queryhandling.annotation.Query import added",
+        "record FindAllQuery introduced",
+        "record FindAvailableQuery introduced",
+        "record FindOneQuery introduced",
+        "queryName attributes removed",
+        "query.bikeType() used in findAvailable body",
+        "query.bikeId() used in findOne body",
+        "Result block marks Success with axon4to5-query-handler"
+      ],
+      "category": "named-query-removal",
+      "fixture": "synthetic/RentalBikeQueryProjection.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler",
+          "text": "AF5 QueryHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.annotation.Query",
+          "text": "@Query annotation import added"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "record FindAllQuery",
+          "text": "FindAllQuery record introduced"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "record FindAvailableQuery",
+          "text": "FindAvailableQuery record introduced"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "query.bikeType()",
+          "text": "findAvailable body updated to use query.bikeType()"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "queryName",
+          "text": "queryName attributes removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryHandler",
+          "text": "AF4 QueryHandler import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-handler",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "query-update-emitter-migration",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. BikeStatusSubscriptionProjection has QueryUpdateEmitter as a constructor field and an @EventHandler method on(BikeRegisteredEvent event) that calls `updateEmitter.emit(q -> \"findAll\".equals(q.getQueryName()), bikeStatus)`. Apply the query-handler recipe use-case 03: (1) remove private final QueryUpdateEmitter updateEmitter field, (2) remove QueryUpdateEmitter updateEmitter from constructor parameters and body, (3) add QueryUpdateEmitter updateEmitter as a method parameter to the @EventHandler on() method, (4) update emit() from 2-arg to 3-arg: `updateEmitter.emit(FindAllBikes.class, q -> true, bikeStatus)`, (5) swap QueryUpdateEmitter import to org.axonframework.messaging.queryhandling.QueryUpdateEmitter, (6) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler, (7) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "QueryUpdateEmitter field removed; injected as method param in @EventHandler; emit() updated to 3-arg class-based form; all imports updated; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/BikeStatusSubscriptionProjection.java"
+      ],
+      "expectations": [
+        "AF5 QueryUpdateEmitter import",
+        "QueryUpdateEmitter field removed",
+        "QueryUpdateEmitter injected as method param in on()",
+        "emit() uses FindAllBikes.class 3-arg form",
+        "getQueryName() string predicate removed",
+        "AF5 EventHandler import on the touched method",
+        "AF5 QueryHandler import",
+        "Result block marks Success with axon4to5-query-handler"
+      ],
+      "category": "query-update-emitter-migration",
+      "fixture": "synthetic/BikeStatusSubscriptionProjection.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.QueryUpdateEmitter",
+          "text": "AF5 QueryUpdateEmitter import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "FindAllBikes.class, q -> true",
+          "text": "emit() updated to 3-arg class-based form"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "QueryUpdateEmitter updateEmitter)",
+          "text": "QueryUpdateEmitter injected as method parameter"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler",
+          "text": "AF5 QueryHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "private final QueryUpdateEmitter",
+          "text": "QueryUpdateEmitter field removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "getQueryName()",
+          "text": "String-based predicate removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryUpdateEmitter",
+          "text": "AF4 QueryUpdateEmitter import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-handler",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "processing-group-metadata-migration",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. GetAllDwellingsQueryHandler is annotated with @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") and has an @EventHandler method with a @MetaDataValue(\"gameId\") String gameId parameter. Apply the query-handler recipe use-case 04: (1) replace @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") with @Namespace(\"Read_GetAllDwellings_QueryCache\"); add import org.axonframework.messaging.core.annotation.Namespace; remove import org.axonframework.config.ProcessingGroup. (2) replace @MetaDataValue(\"gameId\") with @MetadataValue(\"gameId\"); add import org.axonframework.messaging.core.annotation.MetadataValue; remove import org.axonframework.messaging.annotation.MetaDataValue. (3) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler. (4) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler (this method is being modified). Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "@Namespace replaces @ProcessingGroup; @MetadataValue replaces @MetaDataValue; all imports updated; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/GetAllDwellingsQueryHandler.java"
+      ],
+      "expectations": [
+        "@Namespace annotation replaces @ProcessingGroup",
+        "Namespace import from messaging.core.annotation",
+        "@MetadataValue replaces @MetaDataValue",
+        "MetadataValue import from messaging.core.annotation",
+        "@ProcessingGroup removed",
+        "@MetaDataValue removed",
+        "Result block marks Success with axon4to5-query-handler"
+      ],
+      "category": "processing-group-metadata",
+      "fixture": "synthetic/GetAllDwellingsQueryHandler.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.annotation.Namespace",
+          "text": "Namespace import added"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Namespace(",
+          "text": "@Namespace annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.annotation.MetadataValue",
+          "text": "MetadataValue import added"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@MetadataValue(",
+          "text": "@MetadataValue annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.annotation.QueryHandler",
+          "text": "AF5 QueryHandler import"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@ProcessingGroup",
+          "text": "@ProcessingGroup removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@MetaDataValue",
+          "text": "@MetaDataValue removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.config.ProcessingGroup",
+          "text": "ProcessingGroup import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-handler",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "rejected-no-query-handler",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. PaymentDispatchService is a @Service that injects QueryGateway and dispatches queries via queryGateway.query(...) but has NO @QueryHandler annotation. The query-handler recipe's Applicable predicate 4 must reject this class (no @QueryHandler found — suggest query-gateway recipe). The source MUST stay byte-identical — no imports changed, no annotations added. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Pure dispatcher rejected; source untouched; Result: ⏭️ Rejected noting query-gateway as the appropriate recipe.",
+      "files": [
+        "evals/fixtures/synthetic/PaymentDispatchService.java"
+      ],
+      "expectations": [
+        "Result block marks Rejected (⏭️)",
+        "Notes name query-gateway as routing target",
+        "Source untouched: QueryGateway field still present",
+        "No @QueryHandler annotation added",
+        "Recipe identifier present"
+      ],
+      "category": "rejected-no-query-handler",
+      "fixture": "synthetic/PaymentDispatchService.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Rejected",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ⏭",
+          "text": "Rejected emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Rejected",
+          "text": "Rejected text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "query-gateway",
+          "text": "Notes name query-gateway as routing target"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-handler",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "QueryGateway queryGateway",
+          "text": "Source untouched: QueryGateway field present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@QueryHandler",
+          "text": "No @QueryHandler added to source"
+        }
+      ]
+    }
+  ]
+}

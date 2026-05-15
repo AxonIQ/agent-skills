@@ -1,0 +1,356 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "command-gateway",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate Skill with the command-gateway recipe in single mode. Coverage: REST controller send(cmd,metadata)->resultAs(Void.class) (main gotcha), REST controller sendAndWait->preferred async, @Scheduled sendAndWait->import-only, Rejected (handler class with @EventHandler). Fixtures live in evals/fixtures/synthetic/ (new) and evals/fixtures/axon4/heroes/ (shared).",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spring-rest-send-with-metadata",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. OrderRestController is a Spring @RestController. It imports AF4 CommandGateway (org.axonframework.commandhandling.gateway.CommandGateway) and returns `commandGateway.send(command, RequestContext.with(userId))` from a `CompletableFuture<Void>` method. Apply the command-gateway recipe: (1) swap the CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway), (2) append .resultAs(Void.class) to the send call so the return type compiles. Field type, constructor, and method signature stay the same. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 CommandGateway import; .resultAs(Void.class) appended; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/OrderRestController.java"
+      ],
+      "expectations": [
+        "AF5 CommandGateway import (messaging.commandhandling.gateway.CommandGateway)",
+        ".resultAs(Void.class) appended to the send call",
+        "AF4 commandhandling.gateway.CommandGateway import removed",
+        "CompletableFuture<Void> return type preserved (already present)",
+        "Field type CommandGateway preserved",
+        "No CommandDispatcher introduced",
+        "Result block marks Success with axon4to5-command-gateway"
+      ],
+      "category": "spring-rest-send-metadata",
+      "fixture": "synthetic/OrderRestController.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway",
+          "text": "AF5 CommandGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": ".resultAs(Void.class)",
+          "text": ".resultAs(Void.class) appended to send call"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CompletableFuture<Void>",
+          "text": "CompletableFuture<Void> return type preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CommandGateway commandGateway",
+          "text": "CommandGateway field preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@RestController",
+          "text": "@RestController preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.commandhandling.gateway.CommandGateway",
+          "text": "AF4 CommandGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandDispatcher",
+          "text": "No CommandDispatcher introduced (top-of-chain caller)"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-command-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spring-rest-sendandwait-to-async",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. CapacityRestController is a Spring @RestController. It uses commandGateway.sendAndWait(cmd, ReservationResult.class) in a method returning ReservationResult (blocking). Apply the command-gateway recipe per use-case 02: (1) swap CommandGateway import to AF5, (2) prefer async — upgrade method return type from ReservationResult to CompletableFuture<ReservationResult>, rewrite sendAndWait(cmd, ReservationResult.class) to send(cmd, ReservationResult.class), add import java.util.concurrent.CompletableFuture. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 CommandGateway import; method returns CompletableFuture<ReservationResult>; sendAndWait replaced by send(cmd, R.class); CompletableFuture import added; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/CapacityRestController.java"
+      ],
+      "expectations": [
+        "AF5 CommandGateway import",
+        "Method return type CompletableFuture<ReservationResult>",
+        "send(new ReserveCapacityCommand(...), ReservationResult.class) used",
+        "import java.util.concurrent.CompletableFuture added",
+        "AF4 CommandGateway import removed",
+        "sendAndWait removed (replaced by send)",
+        "No CommandDispatcher introduced",
+        "Result block marks Success with axon4to5-command-gateway"
+      ],
+      "category": "spring-rest-sendandwait-async",
+      "fixture": "synthetic/CapacityRestController.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway",
+          "text": "AF5 CommandGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CompletableFuture<ReservationResult>",
+          "text": "Method return type upgraded to CompletableFuture<ReservationResult>"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "java.util.concurrent.CompletableFuture",
+          "text": "CompletableFuture import added"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "ReservationResult.class",
+          "text": "send(cmd, ReservationResult.class) used"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.commandhandling.gateway.CommandGateway",
+          "text": "AF4 CommandGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "sendAndWait",
+          "text": "sendAndWait replaced by send"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandDispatcher",
+          "text": "No CommandDispatcher introduced"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-command-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "spring-scheduled-sendandwait-import-only",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. ScheduledOrderProcessor is a @Scheduled void method caller — it cannot accept a CompletableFuture. Apply the command-gateway recipe per use-case 03: import-only change — swap CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway). sendAndWait call, field, constructor, and method body stay byte-identical. Do NOT introduce CompletableFuture or change the method signature. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 CommandGateway import; sendAndWait and void method unchanged; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/ScheduledOrderProcessor.java"
+      ],
+      "expectations": [
+        "AF5 CommandGateway import (messaging.commandhandling.gateway.CommandGateway)",
+        "sendAndWait call preserved",
+        "@Scheduled preserved",
+        "void method return type preserved",
+        "AF4 CommandGateway import removed",
+        "No CompletableFuture import added",
+        "No CommandDispatcher introduced",
+        "Result block marks Success with axon4to5-command-gateway"
+      ],
+      "category": "scheduler-import-only",
+      "fixture": "synthetic/ScheduledOrderProcessor.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway",
+          "text": "AF5 CommandGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "sendAndWait",
+          "text": "sendAndWait preserved (import-only change)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Scheduled",
+          "text": "@Scheduled preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.commandhandling.gateway.CommandGateway",
+          "text": "AF4 CommandGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "java.util.concurrent.CompletableFuture",
+          "text": "No CompletableFuture import added (void caller)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandDispatcher",
+          "text": "No CommandDispatcher introduced"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-command-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "spring-handler-rejected",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. WhenCreatureRecruitedThenAddToArmyProcessor has an @EventHandler method AND injects CommandGateway as a class-level field. The command-gateway recipe's # Applicable predicate 2 must reject (route to event-processor recipe). The source MUST stay byte-identical — no AF5 CommandGateway import, no @Namespace, no CommandDispatcher. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Event-handler class rejected; source untouched; Result: ⏭️ Rejected with NOTES naming event-processor recipe.",
+      "files": [
+        "evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java"
+      ],
+      "expectations": [
+        "Result block marks Rejected (⏭️)",
+        "Notes name event-processor recipe as routing target",
+        "Source untouched: @ProcessingGroup still present",
+        "Source untouched: AF4 CommandGateway import still present",
+        "No @Namespace added",
+        "No AF5 CommandGateway import swapped in",
+        "No CommandDispatcher introduced (event-processor recipe's territory)",
+        "Recipe identifier present"
+      ],
+      "category": "rejected-handler",
+      "fixture": "axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Rejected",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ⏭",
+          "text": "Rejected emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Rejected",
+          "text": "Rejected text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "event-processor",
+          "text": "Notes name event-processor as the routing target"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-command-gateway",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@ProcessingGroup",
+          "text": "Source untouched: @ProcessingGroup present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.commandhandling.gateway.CommandGateway",
+          "text": "Source untouched: AF4 CommandGateway import still present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Namespace",
+          "text": "No @Namespace added"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.commandhandling.gateway.CommandGateway",
+          "text": "No AF5 CommandGateway import swapped in"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandDispatcher",
+          "text": "No CommandDispatcher introduced (event-processor recipe territory)"
+        }
+      ]
+    }
+  ]
+}

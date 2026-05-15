@@ -1,0 +1,328 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "query-gateway",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate Skill with the query-gateway recipe in single mode. Coverage: REST controller import-only (Class<R> overload already used), ResponseType wrapper removal + queryMany, sync callback bare-.get()-to-orTimeout, rejected handler class with QueryGateway field.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spring-rest-import-only",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingRestController is a Spring @RestController. It imports AF4 QueryGateway (org.axonframework.queryhandling.QueryGateway) and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` — already using the Class<R> overload. Apply the query-gateway recipe: (1) swap the QueryGateway import to AF5 (org.axonframework.messaging.queryhandling.gateway.QueryGateway). Body, field, constructor, return type, and method signature stay identical. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 QueryGateway import; body unchanged; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/DwellingRestController.java"
+      ],
+      "expectations": [
+        "AF5 QueryGateway import (messaging.queryhandling.gateway.QueryGateway)",
+        "AF4 queryhandling.QueryGateway import removed",
+        "query(new GetDwellingById(dwellingId), DwellingReadModel.class) call preserved",
+        "CompletableFuture<DwellingReadModel> return type preserved",
+        "@RestController preserved",
+        "No ResponseType introduced",
+        "Result block marks Success with axon4to5-query-gateway"
+      ],
+      "category": "spring-rest-import-only",
+      "fixture": "synthetic/DwellingRestController.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway",
+          "text": "AF5 QueryGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "DwellingReadModel.class",
+          "text": "Class<R> overload preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CompletableFuture<DwellingReadModel>",
+          "text": "Return type preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@RestController",
+          "text": "@RestController preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryGateway",
+          "text": "AF4 QueryGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "ResponseTypes",
+          "text": "No ResponseType wrapper introduced"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spring-rest-response-type-removal",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. BikeStatusController is a Spring @RestController. It uses `ResponseTypes.instanceOf(BikeStatus.class)` for a single-response query and `ResponseTypes.multipleInstancesOf(BikeStatus.class)` for a multi-response query. Apply the query-gateway recipe per use-case 03: (1) swap QueryGateway import to AF5, (2) replace ResponseTypes.instanceOf(BikeStatus.class) with BikeStatus.class, (3) replace query(..., ResponseTypes.multipleInstancesOf(BikeStatus.class)) with queryMany(..., BikeStatus.class), (4) remove the ResponseTypes import. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 QueryGateway import; ResponseTypes wrappers removed; queryMany used for multi-response; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/BikeStatusController.java"
+      ],
+      "expectations": [
+        "AF5 QueryGateway import",
+        "ResponseTypes.instanceOf removed — replaced by BikeStatus.class",
+        "queryMany used for multi-response call",
+        "ResponseTypes import removed",
+        "AF4 QueryGateway import removed",
+        "CompletableFuture<List<BikeStatus>> return type preserved",
+        "Result block marks Success with axon4to5-query-gateway"
+      ],
+      "category": "spring-rest-response-type",
+      "fixture": "synthetic/BikeStatusController.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway",
+          "text": "AF5 QueryGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "queryMany(",
+          "text": "queryMany used for multi-response"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "BikeStatus.class",
+          "text": "Plain Class<R> overload used"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CompletableFuture<List<BikeStatus>>",
+          "text": "CompletableFuture<List<BikeStatus>> return type preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryGateway",
+          "text": "AF4 QueryGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "ResponseTypes",
+          "text": "ResponseTypes wrappers removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.responsetypes",
+          "text": "ResponseTypes import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "blocking-get-to-async-upgrade",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingsQueryService is a @Component with method `getDwelling(String dwellingId)` that returns `DwellingReadModel` and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class).get()` (bare blocking call). The method is a plain service method with no sync contract constraint. Apply the query-gateway recipe per use-case 02 Path A (preferred): (1) swap QueryGateway import to AF5, (2) change method return type from `DwellingReadModel` to `CompletableFuture<DwellingReadModel>`, (3) simplify the body to `return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` (no .get(), no try-catch), (4) add `import java.util.concurrent.CompletableFuture`. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "AF5 QueryGateway import; method return type upgraded to CompletableFuture<DwellingReadModel>; body returns future directly; no .get(); CompletableFuture import added; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/DwellingsQueryService.java"
+      ],
+      "expectations": [
+        "AF5 QueryGateway import",
+        "Method return type CompletableFuture<DwellingReadModel>",
+        "import java.util.concurrent.CompletableFuture added",
+        "No bare .get() call",
+        "AF4 QueryGateway import removed",
+        "@Component preserved",
+        "Result block marks Success with axon4to5-query-gateway"
+      ],
+      "category": "blocking-get-to-async",
+      "fixture": "synthetic/DwellingsQueryService.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway",
+          "text": "AF5 QueryGateway import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "CompletableFuture<DwellingReadModel>",
+          "text": "Method return type upgraded to CompletableFuture<DwellingReadModel>"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "java.util.concurrent.CompletableFuture",
+          "text": "CompletableFuture import added"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.queryhandling.QueryGateway",
+          "text": "AF4 QueryGateway import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": ".get()",
+          "text": "No bare .get() call"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-gateway",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "spring-handler-rejected",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. QueryGatewayInHandlerClass has an @EventHandler method AND injects QueryGateway as a class-level field. The query-gateway recipe's Applicable predicate 2 must reject (route to event-processor recipe). The source MUST stay byte-identical — no AF5 QueryGateway import, no changes to @ProcessingGroup, no changes to @EventHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Handler class rejected; source untouched; Result: ⏭️ Rejected with NOTES naming event-processor recipe.",
+      "files": [
+        "evals/fixtures/synthetic/QueryGatewayInHandlerClass.java"
+      ],
+      "expectations": [
+        "Result block marks Rejected (⏭️)",
+        "Notes name event-processor recipe as routing target",
+        "Source untouched: @ProcessingGroup still present",
+        "Source untouched: AF4 QueryGateway import still present",
+        "No AF5 QueryGateway import swapped in",
+        "Recipe identifier present"
+      ],
+      "category": "rejected-handler",
+      "fixture": "synthetic/QueryGatewayInHandlerClass.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Rejected",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ⏭",
+          "text": "Rejected emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Rejected",
+          "text": "Rejected text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "event-processor",
+          "text": "Notes name event-processor as routing target"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-query-gateway",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@ProcessingGroup",
+          "text": "Source untouched: @ProcessingGroup present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.queryhandling.QueryGateway",
+          "text": "Source untouched: AF4 QueryGateway import still present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.queryhandling.gateway.QueryGateway",
+          "text": "No AF5 QueryGateway import swapped in"
+        }
+      ]
+    }
+  ]
+}
