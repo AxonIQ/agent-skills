@@ -20,6 +20,7 @@ argument-hint: $SOURCE
 
 - `$SOURCE` class itself.
 - Surrounding method return types that need upgrading to `CompletableFuture<R>` when the controller can serve futures async.
+- **CommandBus config-reader companions** — during Research: `grep -RlnE 'config\.commandBus\(\)|findComponent\(CommandBus' --include='*.java' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
 
 Scope grows during FLOW.md Research; never shrinks. External helpers (e.g. `XxxMetaData.with(...)` returning AF4 `MetaData`) are NOT in scope — flag as follow-up.
 
@@ -33,7 +34,8 @@ Decision rule (top-down; first match wins):
 2. **Handler class** — any method annotated `@EventHandler` / `@CommandHandler` / `@QueryHandler` / `@SagaEventHandler` / `@MessageHandlerInterceptor`. → **Rejected** with NOTES routing to the appropriate handler recipe. Such a class may also use `CommandGateway`; the handler recipe owns the whole class including any dispatch calls.
 3. **CommandGateway caller, AF4 shape** — imports `org.axonframework.commandhandling.gateway.CommandGateway`. → **continue** to Research.
 4. **CommandGateway caller, partially migrated** — imports `org.axonframework.messaging.commandhandling.gateway.CommandGateway`. → **continue** to Research; the Success Criteria pre-Apply check decides idempotent-Success vs. continue.
-5. **None of the above** — no `CommandGateway` import. → **Rejected** with NOTES naming the failed predicate.
+5. **CommandBus config reader** — imports `org.axonframework.config.Configuration` AND calls `config.commandBus()` / `config.findComponent(CommandBus.class)`. No `CommandGateway` import. → **continue** as config-reader target (Toolbox Step 5).
+6. **None of the above** — no `CommandGateway` import, no config-reader pattern. → **Rejected** with NOTES naming the failed predicate.
 
 ## Blocker
 
@@ -63,7 +65,7 @@ Recipe-specific Option alongside the three defaults:
 ## References
 
 - [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always. Covers `CommandGateway` package move, `@Command`, `@TargetEntityId`, `MessageType`.
-- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` AND the class obtains `CommandGateway` via a live `AxonConfiguration.getComponent(CommandGateway.class)`.
+- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` OR any config-reader class is in scope. Covers `AxonConfiguration` / `Configuration` split, `getOptionalComponent(...)`, component lookup model.
 
 ## Success Criteria
 
@@ -77,6 +79,7 @@ For every file in `# Scope`:
 2. **No `CompletableFuture` variable assigned from bare `send(...)` result** — every AF4 assignment `CompletableFuture<R> f = commandGateway.send(cmd[, metadata])` is rewritten through `CommandResult` (`.resultAs(R.class)`, `.send(cmd, R.class)`, or `.getResultMessage()`).
 3. **No stale AF4 `commandhandling.*` imports** — none of: `org.axonframework.commandhandling.CommandExecutionException`, `org.axonframework.commandhandling.gateway.*`.
 4. **`CommandCallback` SPI gone** — no `import org.axonframework.commandhandling.CommandCallback` and no anonymous / lambda usage remains in `$SOURCE`.
+5. **Config-reader migration (when in scope)** — when a config-reader class is in scope: no `org.axonframework.config.Configuration` import; `CommandBus` import is `org.axonframework.messaging.commandhandling.CommandBus`; no `config.commandBus()` / `findComponent(CommandBus.class)` calls remain.
 
 Aggregation rule: **all match (AND)**.
 
@@ -178,6 +181,25 @@ Kotlin: replace `R.class` with `R::class.java`. Do NOT introduce coroutines, `su
 - Any remaining `org.axonframework.commandhandling.*` imports → delete.
 - Introduced `CompletableFuture`? Confirm `import java.util.concurrent.CompletableFuture;` is present.
 
+### Step 5 — CommandBus config-reader migration
+
+*Apply-condition:* `$SOURCE` matched Applicable predicate 5 OR Research found a companion config-reader in scope.
+
+**Path A (Spring Boot):** `AxonConfiguration` is auto-created as a Spring bean; constructor injection unchanged.
+**Path B (native Configurer):** pass the live `AxonConfiguration` returned by `configurer.build().start()` as a constructor argument.
+
+1. **Switch injected type** — `Configuration` (AF4: `org.axonframework.config.Configuration`) → `Configuration` (AF5: `org.axonframework.common.configuration.Configuration`). If class also touches root lifecycle → use `AxonConfiguration` (`org.axonframework.common.configuration.AxonConfiguration`).
+2. **Rewrite lookups**:
+
+| AF4 call | AF5 replacement |
+|---|---|
+| `config.commandBus()` | `axonConfig.getOptionalComponent(CommandBus.class).orElseThrow()` |
+| `config.findComponent(CommandBus.class)` | `axonConfig.getOptionalComponent(CommandBus.class)` |
+
+Use `.orElseThrow(...)` when AF4 assumed presence; propagate `Optional` otherwise.
+
+3. **Sweep imports** — remove `org.axonframework.config.Configuration`, `org.axonframework.commandhandling.CommandBus`. Add `org.axonframework.common.configuration.Configuration` (or `AxonConfiguration`), `org.axonframework.messaging.commandhandling.CommandBus`.
+
 ## Use cases
 
 - [01-rest-controller-send-with-metadata.md](use-cases/01-rest-controller-send-with-metadata.md) — *apply-condition:* `$SOURCE` is a Spring `@RestController` AND uses `commandGateway.send(cmd, metadata)` returning `CompletableFuture<Void>` or `CompletableFuture<R>`.
@@ -196,6 +218,7 @@ Kotlin: replace `R.class` with `R::class.java`. Do NOT introduce coroutines, `su
 - **`CommandCallback` SPI removed** — inline lambdas at call sites can become `.onSuccess(...).onError(...)`. Classes implementing `CommandCallback` directly are Blocker B1.
 - **Metadata helper may not compile** — if `$SOURCE` calls `XxxMetaData.with(...)` returning AF4 `org.axonframework.messaging.MetaData`, the file will still fail to compile after this recipe (the helper needs its own migration). Flag in NOTES; do not attempt to migrate the helper from inside this recipe.
 - **`CommandExecutionException` FQN moved** — `org.axonframework.commandhandling.CommandExecutionException` → `org.axonframework.messaging.commandhandling.CommandExecutionException`. Easy to miss inside catch blocks.
+- **Config-reader: `Configuration` vs `AxonConfiguration`** — use read-only `Configuration` when the class never touches root lifecycle (start/stop); use `AxonConfiguration` otherwise. Wrong choice compiles but fails at runtime when lifecycle methods are absent on the interface.
 
 ## Result
 

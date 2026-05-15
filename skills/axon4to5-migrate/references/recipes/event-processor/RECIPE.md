@@ -23,6 +23,7 @@ argument-hint: $SOURCE
 - The custom `SequencingPolicy` implementation when one is referenced by external YAML / `@Bean` and the class needs `@SequencingPolicy` to preserve behaviour (see Step 7).
 - The Configurer / `@Configuration` wiring file ONLY when processor configuration is in scope (in-progress recipe state — see Step 11). Typical filenames: `*Configuration.java`, `AxonConfig.java`, `*Application.java`. Only the `@Bean EventProcessorDefinition` / `MessagingConfigurer.eventProcessing(...)` slice for `$SOURCE` — not every processor in the project.
 - `application.yaml` / `application.properties` for the per-processor `sequencing-policy` key (deleted as it moves to the class) and for the `serializer:` → `converter:` rename.
+- **EventProcessingConfiguration config-reader companions** — during Research: `grep -RlnE 'EventProcessingConfiguration|epc\.eventProcessor\(|eventProcessorByProcessingGroup' --include='*.java' <project>/src`. Filter matches for those referencing `$SOURCE`'s `@ProcessingGroup` / `@Namespace` string. Ops endpoints (reset/replay/DLQ controllers) are the most common shape. Add them to scope.
 
 Scope grows during FLOW.md Research; it never shrinks. Sibling event-handling components, aggregates, sagas, application beans unrelated to `$SOURCE` are NEVER in scope.
 
@@ -37,7 +38,8 @@ Decision rule (top-down; first match wins):
 3. **Event-handling component, AF4 shape** — class has at least one `@EventHandler` method AND class-level `@ProcessingGroup` annotation. → **continue** to Research.
 4. **Event-handling component, partially-migrated** — class has at least one `@EventHandler` method AND class-level `@Namespace` annotation (already swapped). → **continue** to Research; the Success Criteria pre-Apply check decides idempotent-Success vs. continue.
 5. **Event-handling component, no `@ProcessingGroup`/`@Namespace`** — class has `@EventHandler` but no group/namespace marker. → **continue** with NOTES surfacing the missing namespace (recipe will use the class FQN's package as a default and emit a Learning).
-6. **None of the above** — no `@EventHandler` method anywhere. → **Rejected** with NOTES naming the failed predicate.
+6. **EventProcessingConfiguration reader** — no `@EventHandler` anywhere, but imports `org.axonframework.config.EventProcessingConfiguration` OR calls `epc.eventProcessor(...)` / `eventProcessorByProcessingGroup(...)` / `epc.tokenStore(...)` / `epc.sequencedDeadLetterProcessor(...)`. → **continue** as config-reader target (Toolbox Step 12).
+7. **None of the above** — no `@EventHandler` method, no `EventProcessingConfiguration` pattern. → **Rejected** with NOTES naming the failed predicate.
 
 ## Blocker
 
@@ -131,6 +133,8 @@ For every file in `# Scope`:
    - `axon.eventhandling.processors.<group>.sequencing-policy` key REMOVED (moved to class-level annotation per (5)).
    - `axon.eventhandling.processors.<group>.mode: tracking` rewritten to `mode: pooled` (AF5 has no `TrackingEventProcessor`).
    - Global `axon.serializer.*` → `axon.converter.*` (recipe handles only the slice in scope; full conversion belongs to the serializer recipe).
+
+8. **Config-reader migration (when in scope)** — when an `EventProcessingConfiguration` config-reader class is in scope: no `org.axonframework.config.EventProcessingConfiguration` or `org.axonframework.config.Configuration` import; lookups use two-step `getModuleConfiguration("EventProcessor[" + name + "]").flatMap(...)` form; no `TrackingEventProcessor` reference; async lifecycle calls (`start`, `shutdown`, `resetTokens`, `processAny`, `process`) wrapped with `.orTimeout(...).join()` at synchronous boundaries.
 
 Aggregation rule: **all match (AND)** — DEFAULT.md baseline AND this section's checks.
 
@@ -261,6 +265,47 @@ For subscribing processors, swap `pooledStreaming(...)` for `subscribing(...)`. 
 
 AF5 enforces `QueryUpdateEmitter` as a parameter of message handlers. Remove the class-level field and its constructor/setter injection. Add `QueryUpdateEmitter emitter` as a parameter on every `@EventHandler` method that calls it. (Same import in AF5 as AF4: `org.axonframework.queryhandling.QueryUpdateEmitter` — the API location stayed; only the injection style changed.)
 
+### Step 12 — EventProcessingConfiguration config-reader migration
+
+*Apply-condition:* `$SOURCE` matched Applicable predicate 6 OR Research found a companion config-reader class in scope.
+
+**Path A (Spring Boot):** `AxonConfiguration` is auto-created as a Spring bean; constructor injection / `@Autowired` unchanged.
+**Path B (native Configurer):** pass the live `AxonConfiguration` from `configurer.start()` as a constructor argument.
+
+1. **Switch injected type** — `EventProcessingConfiguration` → `AxonConfiguration` (`org.axonframework.common.configuration.AxonConfiguration`). If the class only reads and never touches root lifecycle, `Configuration` (`org.axonframework.common.configuration.Configuration`) is sufficient; prefer `AxonConfiguration` when `EventProcessingConfiguration` was the original type. Rename the field accordingly (`eventProcessingConfiguration` → `axonConfiguration`).
+
+2. **Rewrite event-processor lookups — two-step via module name**:
+
+Module name convention: `"EventProcessor[" + processorName + "]"` (case-sensitive; matches `@Namespace` / `@ProcessingGroup` string exactly).
+
+| AF4 call | AF5 replacement |
+|---|---|
+| `epc.eventProcessor(name)` | `axonConfig.getModuleConfiguration("EventProcessor[" + name + "]").flatMap(m -> m.getOptionalComponent(EventProcessor.class))` |
+| `epc.eventProcessor(name, EventProcessor.class)` | same as above |
+| `epc.eventProcessorByProcessingGroup(group)` | `axonConfig.getModuleConfiguration("EventProcessor[" + group + "]").flatMap(m -> m.getOptionalComponent(EventProcessor.class))` |
+| `epc.eventProcessorByProcessingGroup(group, StreamingEventProcessor.class)` | `axonConfig.getModuleConfiguration("EventProcessor[" + group + "]").flatMap(m -> m.getOptionalComponent(StreamingEventProcessor.class))` |
+| `epc.tokenStore(processor)` | `axonConfig.getModuleConfiguration("EventProcessor[" + processor + "]").flatMap(m -> m.getOptionalComponent(TokenStore.class))` |
+| `epc.sequencedDeadLetterProcessor(group)` | `axonConfig.getModuleConfiguration("EventProcessor[" + group + "]").flatMap(m -> m.getOptionalComponent(SequencedDeadLetterProcessor.class, "EventHandlingComponent[" + group + "][" + componentName + "]"))` |
+
+DLQ flag: `SequencedDeadLetterProcessor` lookup compiles against free AF5 (`org.axonframework.messaging.eventhandling.deadletter`), but the underlying DLQ store is Axoniq commercial. If the class also instantiates / configures a DLQ implementation, flag it — that part belongs to a commercial recipe.
+
+3. **Update component types** — `TrackingEventProcessor` → `StreamingEventProcessor` (AF5 FQN: `org.axonframework.messaging.eventhandling.processing.streaming.StreamingEventProcessor`). `TrackingEventProcessor` is removed in AF5.
+
+4. **Adapt async lifecycle** — AF4 sync → AF5 `CompletableFuture<Void>`. Bridge with `.orTimeout(30, TimeUnit.SECONDS).join()` at synchronous call sites. Never bare `.join()` / `.get()` without a preceding `.orTimeout(...)`.
+
+   | AF4 | AF5 |
+   |---|---|
+   | `processor.start()` | `processor.start()` → `CompletableFuture<Void>` |
+   | `processor.shutDown()` | `processor.shutdown()` (lowercase d) → `CompletableFuture<Void>` |
+   | `processor.resetTokens()` | `processor.resetTokens()` → `CompletableFuture<Void>` |
+   | `dlq.processAny()` | `dlq.processAny()` → `CompletableFuture<Void>` |
+   | `dlq.process(...)` | `dlq.process(...)` → `CompletableFuture<Void>` |
+
+   Add `import java.util.concurrent.TimeUnit;` if absent. When caller is async-capable, prefer chaining over blocking.
+
+5. **Sweep imports** — remove `org.axonframework.config.*`, `org.axonframework.eventhandling.TrackingEventProcessor`, AF4-located `TokenStore` / `EventProcessor` / `StreamingEventProcessor`. Add AF5 equivalents from `org.axonframework.messaging.eventhandling.processing.*` and `org.axonframework.common.configuration.*`.
+   - If class had a separately injected `TokenStore` field: remove it — route through `axonConfiguration.getModuleConfiguration(...).flatMap(m -> m.getOptionalComponent(TokenStore.class))` instead.
+
 ## Use cases
 
 Each entry is a markdown link to the full before/after example, followed by its apply-condition.
@@ -286,6 +331,9 @@ Each entry is a markdown link to the full before/after example, followed by its 
 - **`@ResetHandler` migration is purely an import swap** (`org.axonframework.eventhandling.ResetHandler` → `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler`). Body unchanged.
 - **DLQ presence is informational.** Do not attempt to migrate `SequencedDeadLetterQueue` / `registerDeadLetterQueue*` references. Flag in Result NOTES and route to the commercial `axoniq-dead-letter` flow per [dlq.adoc](../../docs/paths/dlq.adoc).
 - **OpenRewrite Phase 1 quirks** — typically swaps `@ProcessingGroup` → `@Namespace` annotation only (string preserved). Often leaves AF4 `@EventHandler` import, AF4 `@MetaDataValue`, and the AF4 `CommandGateway` field in place. Predicate 4 in `# Applicable` handles this partially-migrated state — the Success Criteria pre-Apply check fails on the surviving AF4 imports and Plan-Apply finishes the work.
+- **Config-reader: module name is case-sensitive** — `"EventProcessor[" + processorName + "]"` must match the `@Namespace` string exactly. A mismatch returns `Optional.empty()` at runtime with no error; the ops call silently no-ops. Grep the processor name from `$SOURCE`'s `@Namespace` annotation before constructing the module name.
+- **Config-reader: `shutDown` → `shutdown`** — AF4 method had capital `D`; AF5 is lowercase. Both compile if the project also has a `shutdown()` method — easy to miss. Grep for `shutDown` before and after to confirm the old form is gone.
+- **Config-reader: separately injected `TokenStore` usually becomes redundant** — AF4 often injected both `EventProcessingConfiguration` and `TokenStore`. After migrating to `getModuleConfiguration(...)`, the `TokenStore` field is typically no longer needed. Delete it (and its constructor parameter) unless flagged out of scope.
 
 ## Result
 

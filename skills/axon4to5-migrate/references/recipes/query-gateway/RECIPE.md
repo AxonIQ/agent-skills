@@ -21,6 +21,7 @@ argument-hint: $SOURCE
 - `$SOURCE` class itself.
 - Surrounding method return types that need adapting (e.g., blocking `.get()` → `.orTimeout(...).join()`).
 - Payload class(es) that need a new `@Query` annotation (only when `$SOURCE` uses named-query dispatch). Handler-side parameter type update is also in scope when payload shape changes (see Toolbox Step 2d).
+- **QueryBus/QueryUpdateEmitter config-reader companions** — during Research: `grep -RlnE 'config\.queryBus\(\)|config\.queryUpdateEmitter\(\)|findComponent\(QueryBus' --include='*.java' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
 
 Scope grows during FLOW.md Research; never shrinks. External helpers returning stale `ResponseType` objects are NOT in scope — flag as follow-up.
 
@@ -34,7 +35,8 @@ Decision rule (top-down; first match wins):
 2. **Handler class** — any method annotated `@EventHandler` / `@CommandHandler` / `@QueryHandler` / `@SagaEventHandler` / `@MessageHandlerInterceptor`. → **Rejected** with NOTES routing to the appropriate handler recipe.
 3. **QueryGateway caller, AF4 shape** — imports `org.axonframework.queryhandling.QueryGateway`. → **continue** to Research.
 4. **QueryGateway caller, partially migrated** — imports `org.axonframework.messaging.queryhandling.gateway.QueryGateway`. → **continue** to Research; the Success Criteria pre-Apply check decides idempotent-Success vs. continue.
-5. **None of the above** — no `QueryGateway` import. → **Rejected** with NOTES naming the failed predicate.
+5. **QueryBus/QueryUpdateEmitter config reader** — imports `org.axonframework.config.Configuration` AND calls `config.queryBus()` / `config.queryUpdateEmitter()` / `config.findComponent(QueryBus.class)`. No `QueryGateway` import. → **continue** as config-reader target (Toolbox Step 7).
+6. **None of the above** — no `QueryGateway` import, no config-reader pattern. → **Rejected** with NOTES naming the failed predicate.
 
 ## Blocker
 
@@ -67,7 +69,7 @@ Project defines a class implementing `org.axonframework.messaging.responsetypes.
 ## References
 
 - [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always. Covers `QueryGateway` package move, `@Query`, `MessageType`, `ResponseType` removal.
-- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` AND class obtains `QueryGateway` via `AxonConfiguration.getComponent(QueryGateway.class)`.
+- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` OR any config-reader class is in scope. Covers `AxonConfiguration` / `Configuration` split, `getOptionalComponent(...)`, component lookup model.
 
 ## Success Criteria
 
@@ -82,6 +84,7 @@ For every file in `# Scope`:
 3. **No named-query string dispatch** — no `queryGateway.query("…"` / `queryGateway.queryMany("…"` (3-arg, first arg `String`) call sites remain.
 4. **No bare blocking without timeout** — no `.get()` / `.join()` without preceding `.orTimeout(…)` at synchronous boundaries.
 5. **No stale AF4 queryhandling imports** — `org.axonframework.queryhandling.*` (except where replaced by AF5 equivalents).
+6. **Config-reader migration (when in scope)** — when a config-reader class is in scope: no `org.axonframework.config.Configuration` import; `QueryBus`/`QueryUpdateEmitter` imports updated to `org.axonframework.messaging.queryhandling.*`; no `config.queryBus()` / `config.queryUpdateEmitter()` calls remain.
 
 Aggregation rule: **all match (AND)**.
 
@@ -219,6 +222,28 @@ If AF4 caller assumed single initial result, collapse with `.next()` / `.singleO
 - Added `CompletableFuture`? Confirm `import java.util.concurrent.CompletableFuture;` present.
 - Added `.orTimeout(...).join()`? Confirm `import java.util.concurrent.TimeUnit;` present.
 
+### Step 7 — QueryBus/QueryUpdateEmitter config-reader migration
+
+*Apply-condition:* `$SOURCE` matched Applicable predicate 5 OR Research found a companion config-reader in scope.
+
+**Path A (Spring Boot):** `AxonConfiguration` is auto-created as a Spring bean; constructor injection unchanged.
+**Path B (native Configurer):** pass the live `AxonConfiguration` returned by `configurer.build().start()` as a constructor argument.
+
+1. **Switch injected type** — `Configuration` (AF4: `org.axonframework.config.Configuration`) → `Configuration` (AF5: `org.axonframework.common.configuration.Configuration`). If class also touches root lifecycle → use `AxonConfiguration` (`org.axonframework.common.configuration.AxonConfiguration`).
+2. **Rewrite lookups**:
+
+| AF4 call | AF5 replacement |
+|---|---|
+| `config.queryBus()` | `axonConfig.getOptionalComponent(QueryBus.class).orElseThrow()` |
+| `config.queryUpdateEmitter()` | `axonConfig.getOptionalComponent(QueryUpdateEmitter.class).orElseThrow()` |
+| `config.findComponent(QueryBus.class)` | `axonConfig.getOptionalComponent(QueryBus.class)` |
+
+Use `.orElseThrow(...)` when AF4 assumed presence; propagate `Optional` otherwise.
+
+> `QueryUpdateEmitter` as a `@QueryHandler` method parameter is preferred when the lookup is inside a handler — that form belongs to the query-handler recipe, not this step. Flag and do not migrate here.
+
+3. **Sweep imports** — remove `org.axonframework.config.Configuration`, `org.axonframework.queryhandling.QueryBus`, `org.axonframework.queryhandling.QueryUpdateEmitter`. Add `org.axonframework.common.configuration.Configuration` (or `AxonConfiguration`), `org.axonframework.messaging.queryhandling.QueryBus`, `org.axonframework.messaging.queryhandling.QueryUpdateEmitter`.
+
 ## Use cases
 
 - [01-rest-controller-import-only.md](use-cases/01-rest-controller-import-only.md) — *apply-condition:* `$SOURCE` is a Spring `@RestController` AND already uses `Class<R>` overload of `query(...)` (no `ResponseType` wrapper, no named query string).
@@ -237,6 +262,8 @@ If AF4 caller assumed single initial result, collapse with `.next()` / `.singleO
 - **Bare `.get()` / `.join()` — prefer async upgrade first** — if the method can return `CompletableFuture<R>`, change the return type and return the future directly (no blocking at all). Only use `.orTimeout(<d>, <u>).join()` when the method signature is truly constrained to a sync return (implements sync interface, `@KafkaListener`, MCP sync callback, etc.).
 - **`scatterGather(...)` removed with no drop-in** — this is always Blocker B1; do not attempt partial migration.
 - **`QueryGateway` stays `QueryGateway`** — never swap to any dispatcher variant inside this recipe.
+- **Config-reader: `QueryUpdateEmitter` inside a handler** — if the class uses `QueryUpdateEmitter` inside an `@QueryHandler` method, the method-parameter form is preferred in AF5. That variant belongs to the query-handler recipe — flag it instead of migrating here.
+- **Config-reader: `Configuration` vs `AxonConfiguration`** — use read-only `Configuration` when the class never touches root lifecycle; use `AxonConfiguration` otherwise.
 
 ## Result
 
