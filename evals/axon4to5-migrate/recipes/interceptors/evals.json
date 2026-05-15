@@ -1,0 +1,616 @@
+{
+  "skill_name": "axon4to5-migrate",
+  "recipe_under_test": "interceptors",
+  "mode_under_test": "single",
+  "notes": "Each eval drives the axon4to5-migrate Skill with the interceptors recipe in single mode. Coverage: dispatch interceptor (Spring Boot Path A), handler interceptor with lifecycle hooks (Spring Boot Path A), handler interceptor with native registration-site rewrite (Path B), annotation-based @MessageHandlerInterceptor (Blocker B1), Rejected (event-handler class routed away). Fixtures: axon4/bikerental/ for the real workshop source, synthetic/ for constructed cases.",
+  "fixtures_root": "evals/fixtures",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spring-axon-dispatch-interceptor",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axon configuration=spring mode=single source=$SOURCE`. DispatchTimeCommandDispatchInterceptor implements MessageDispatchInterceptor<CommandMessage<?>> with AF4 `BiFunction<Integer, CommandMessage<?>, CommandMessage<?>> handle(List<? extends CommandMessage<?>> messages)` returning a lambda that calls `command.withMetaData(Map.of(...))`. Apply the interceptors recipe (use-case 01): rewrite to `MessageStream<?> interceptOnDispatch(CommandMessage message, @Nullable ProcessingContext context, MessageDispatchInterceptorChain<CommandMessage> chain)` — collapse the batch-lambda body inline, call `message.andMetadata(Collections.singletonMap(...))`, return `chain.proceed(enrichedMessage, context)`. Generic type: `CommandMessage<?>` → `CommandMessage` (no wildcard). Remove AF4 imports: `org.axonframework.commandhandling.CommandMessage`, `org.axonframework.messaging.MessageDispatchInterceptor`, `java.util.List`, `java.util.function.BiFunction`, `java.util.Map`. Add AF5 imports: `org.axonframework.messaging.commandhandling.CommandMessage`, `org.axonframework.messaging.core.MessageDispatchInterceptor`, `org.axonframework.messaging.core.MessageDispatchInterceptorChain`, `org.axonframework.messaging.core.MessageStream`, `org.axonframework.messaging.core.unitofwork.ProcessingContext`, `org.jspecify.annotations.Nullable`, `java.util.Collections`. No @Component on this class — it has no Spring stereotype (check fixture). Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Dispatch interceptor rewritten to AF5 interceptOnDispatch signature; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/axon4/bikerental/DispatchTimeCommandDispatchInterceptor.java"
+      ],
+      "expectations": [
+        "Method interceptOnDispatch present",
+        "Return type MessageStream<?>",
+        "@Nullable annotation on ProcessingContext parameter",
+        "MessageDispatchInterceptorChain<CommandMessage> in signature",
+        "chain.proceed(enrichedMessage, context) call present",
+        "andMetadata used (AF5) not withMetaData (AF4)",
+        "Generic type CommandMessage (no wildcard)",
+        "AF5 MessageDispatchInterceptor import",
+        "AF5 MessageStream import",
+        "AF5 ProcessingContext import",
+        "org.jspecify.annotations.Nullable import",
+        "AF4 handle(List...) method removed",
+        "AF4 MessageDispatchInterceptor import removed",
+        "BiFunction import removed",
+        "java.util.List import removed",
+        "Result block marks Success with axon4to5-interceptors"
+      ],
+      "category": "spring-dispatch-interceptor",
+      "fixture": "axon4/bikerental/DispatchTimeCommandDispatchInterceptor.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axon",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "interceptOnDispatch",
+          "text": "AF5 interceptOnDispatch method present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageStream<?>",
+          "text": "Return type MessageStream<?>"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Nullable",
+          "text": "@Nullable on ProcessingContext parameter"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageDispatchInterceptorChain",
+          "text": "MessageDispatchInterceptorChain in signature"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "chain.proceed(",
+          "text": "chain.proceed(...) call present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "andMetadata(",
+          "text": "AF5 andMetadata accessor used"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageDispatchInterceptor<CommandMessage>",
+          "text": "Generic type de-wildcarded (no <?>)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.MessageDispatchInterceptor",
+          "text": "AF5 MessageDispatchInterceptor import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.MessageStream",
+          "text": "AF5 MessageStream import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.unitofwork.ProcessingContext",
+          "text": "AF5 ProcessingContext import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.jspecify.annotations.Nullable",
+          "text": "@Nullable import from jspecify"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "BiFunction<Integer",
+          "text": "AF4 BiFunction batch signature removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "List<? extends CommandMessage",
+          "text": "AF4 List<...> batch parameter removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.MessageDispatchInterceptor",
+          "text": "AF4 MessageDispatchInterceptor import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "java.util.function.BiFunction",
+          "text": "BiFunction import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "withMetaData(",
+          "text": "AF4 withMetaData accessor removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandMessage<?>",
+          "text": "Wildcard CommandMessage<?> removed (de-wildcarded)"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-interceptors",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spring-axon-handler-interceptor-lifecycle-hooks",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axon configuration=spring mode=single source=$SOURCE`. LoggingCommandHandlerInterceptor implements MessageHandlerInterceptor<CommandMessage<?>> with AF4 `Object handle(UnitOfWork<? extends CommandMessage<?>> unitOfWork, InterceptorChain interceptorChain) throws Exception`. Body uses: `unitOfWork.getMessage()`, `unitOfWork.onCommit(uow -> {...})`, `unitOfWork.onRollback(uow -> {...})`, returns `interceptorChain.proceed()`. Apply the interceptors recipe (use-case 02): rewrite to `MessageStream<?> interceptOnHandle(CommandMessage message, ProcessingContext context, MessageHandlerInterceptorChain<CommandMessage> chain)` — use `message` param directly (drop `unitOfWork.getMessage()`); `unitOfWork.onCommit(...)` → `context.runOnAfterCommit(ctx -> {...})`; `unitOfWork.onRollback(...)` → `context.onError((ctx, error) -> {...})`; `return interceptorChain.proceed()` → `return chain.proceed(message, context)`. Remove `throws Exception`. Generic: `CommandMessage<?>` → `CommandMessage`. Remove AF4 imports: `org.axonframework.commandhandling.CommandMessage`, `org.axonframework.messaging.InterceptorChain`, `org.axonframework.messaging.MessageHandlerInterceptor`, `org.axonframework.messaging.unitofwork.UnitOfWork`. Add AF5 imports: `org.axonframework.messaging.commandhandling.CommandMessage`, `org.axonframework.messaging.core.MessageHandlerInterceptor`, `org.axonframework.messaging.core.MessageHandlerInterceptorChain`, `org.axonframework.messaging.core.MessageStream`, `org.axonframework.messaging.core.unitofwork.ProcessingContext`. @Component preserved. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Handler interceptor rewritten to AF5 interceptOnHandle with lifecycle hooks migrated; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/LoggingCommandHandlerInterceptor.java"
+      ],
+      "expectations": [
+        "interceptOnHandle method present",
+        "Return type MessageStream<?>",
+        "ProcessingContext context parameter (no @Nullable — handler context is mandatory)",
+        "MessageHandlerInterceptorChain<CommandMessage> in signature",
+        "runOnAfterCommit present (was onCommit)",
+        "onError present with two-arg lambda (was onRollback)",
+        "chain.proceed(message, context) return",
+        "throws Exception removed from signature",
+        "Generic type CommandMessage (no wildcard)",
+        "AF5 MessageHandlerInterceptor import",
+        "AF5 MessageHandlerInterceptorChain import",
+        "AF5 ProcessingContext import",
+        "@Component preserved",
+        "AF4 UnitOfWork import removed",
+        "AF4 InterceptorChain import removed",
+        "AF4 handle(UnitOfWork...) signature removed",
+        "unitOfWork.getMessage() removed",
+        "interceptorChain.proceed() removed",
+        "Result block marks Success with axon4to5-interceptors"
+      ],
+      "category": "spring-handler-interceptor",
+      "fixture": "synthetic/LoggingCommandHandlerInterceptor.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axon",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "interceptOnHandle",
+          "text": "AF5 interceptOnHandle method present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageStream<?>",
+          "text": "Return type MessageStream<?>"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageHandlerInterceptorChain",
+          "text": "MessageHandlerInterceptorChain in signature"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "runOnAfterCommit",
+          "text": "AF5 runOnAfterCommit (was onCommit)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "onError",
+          "text": "AF5 onError (was onRollback)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "chain.proceed(message, context)",
+          "text": "chain.proceed(message, context) present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageHandlerInterceptor<CommandMessage>",
+          "text": "Generic type de-wildcarded"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.MessageHandlerInterceptor",
+          "text": "AF5 MessageHandlerInterceptor import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.unitofwork.ProcessingContext",
+          "text": "AF5 ProcessingContext import"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Component",
+          "text": "@Component preserved"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.unitofwork.UnitOfWork",
+          "text": "AF4 UnitOfWork import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.InterceptorChain",
+          "text": "AF4 InterceptorChain import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.MessageHandlerInterceptor",
+          "text": "AF4 MessageHandlerInterceptor import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "unitOfWork.getMessage()",
+          "text": "unitOfWork.getMessage() removed (use message param)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "interceptorChain.proceed()",
+          "text": "AF4 interceptorChain.proceed() removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "UnitOfWork<",
+          "text": "UnitOfWork type removed from signature"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "CommandMessage<?>",
+          "text": "Wildcard CommandMessage<?> removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-interceptors",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "native-axon-handler-interceptor-with-registration",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axon configuration=native mode=single source=$SOURCE`. Two files in scope: (1) AuditCommandHandlerInterceptor.java — implements MessageHandlerInterceptor<CommandMessage<?>> with AF4 `Object handle(UnitOfWork<? extends CommandMessage<?>> unitOfWork, InterceptorChain interceptorChain) throws Exception`. Uses `unitOfWork.getMessage()`, `unitOfWork.onPrepareCommit(uow -> {...})`, `unitOfWork.onCommit(uow -> {...})`, `Object result = interceptorChain.proceed()`. (2) AuditInterceptorNativeConfig.java — has `Configurer configurer = DefaultConfigurer.defaultConfiguration()` and `configurer.registerCommandHandlerInterceptor(config -> new AuditCommandHandlerInterceptor())`. Apply interceptors recipe (use-case 03): rewrite AuditCommandHandlerInterceptor to `MessageStream<?> interceptOnHandle(CommandMessage message, ProcessingContext context, MessageHandlerInterceptorChain<CommandMessage> chain)` — `unitOfWork.getMessage()` gone (use message), `onPrepareCommit` → `context.runOnPreInvocation(ctx -> {...})`, `onCommit` → `context.runOnAfterCommit(ctx -> {...})`, `return chain.proceed(message, context)` (result variable gone — async). In AuditInterceptorNativeConfig: `Configurer` → `MessagingConfigurer`, `DefaultConfigurer.defaultConfiguration()` → `MessagingConfigurer.create()`, import `org.axonframework.messaging.core.config.MessagingConfigurer`. Method name `registerCommandHandlerInterceptor` unchanged. Remove `org.axonframework.config.Configurer`, `org.axonframework.config.DefaultConfigurer` imports. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Handler interceptor rewritten to AF5; config registration receiver changed to MessagingConfigurer; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/AuditCommandHandlerInterceptor.java",
+        "evals/fixtures/synthetic/AuditInterceptorNativeConfig.java"
+      ],
+      "expectations": [
+        "interceptOnHandle method present in AuditCommandHandlerInterceptor",
+        "MessageStream<?> return type",
+        "runOnPreInvocation present (was onPrepareCommit)",
+        "runOnAfterCommit present (was onCommit)",
+        "chain.proceed(message, context) return (result variable gone)",
+        "UnitOfWork import removed from interceptor",
+        "InterceptorChain import removed from interceptor",
+        "MessagingConfigurer used in config file",
+        "MessagingConfigurer.create() used in config file",
+        "registerCommandHandlerInterceptor method name unchanged",
+        "AF5 MessagingConfigurer import added",
+        "AF4 Configurer import removed from config",
+        "AF4 DefaultConfigurer import removed from config",
+        "Result block marks Success with axon4to5-interceptors"
+      ],
+      "category": "native-handler-interceptor",
+      "fixture": "synthetic/AuditCommandHandlerInterceptor.java",
+      "secondary_fixtures": [
+        "synthetic/AuditInterceptorNativeConfig.java"
+      ],
+      "skill_args": {
+        "framework": "axon",
+        "configuration": "native",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "interceptOnHandle",
+          "text": "AF5 interceptOnHandle in interceptor class"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "MessageStream<?>",
+          "text": "Return type MessageStream<?>"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "runOnPreInvocation",
+          "text": "runOnPreInvocation (was onPrepareCommit)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "runOnAfterCommit",
+          "text": "runOnAfterCommit (was onCommit)"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "chain.proceed(message, context)",
+          "text": "chain.proceed(message, context) used"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.unitofwork.UnitOfWork",
+          "text": "AF4 UnitOfWork import removed from interceptor"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.messaging.InterceptorChain",
+          "text": "AF4 InterceptorChain import removed from interceptor"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "interceptorChain.proceed()",
+          "text": "AF4 interceptorChain.proceed() removed"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_require",
+          "pattern": "MessagingConfigurer",
+          "text": "MessagingConfigurer used in config"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_require",
+          "pattern": "MessagingConfigurer.create()",
+          "text": "MessagingConfigurer.create() used"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_require",
+          "pattern": "registerCommandHandlerInterceptor",
+          "text": "registerCommandHandlerInterceptor method name preserved"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.core.config.MessagingConfigurer",
+          "text": "AF5 MessagingConfigurer import added to config"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.config.Configurer",
+          "text": "AF4 Configurer import removed from config"
+        },
+        {
+          "target": "secondary:AuditInterceptorNativeConfig.java",
+          "type": "grep_forbid",
+          "pattern": "DefaultConfigurer",
+          "text": "AF4 DefaultConfigurer removed from config"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-interceptors",
+          "text": "Recipe identifier present"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "spring-axon-annotation-interceptor-blocker",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axon configuration=spring mode=single source=$SOURCE`. AnnotationInterceptorHandler has a `@CommandHandler` method AND a method annotated with `@MessageHandlerInterceptor(messageType = CommandMessage.class)` — the annotation form, NOT implementing the `MessageHandlerInterceptor<M>` interface. Per the interceptors recipe # Applicable predicate 1 and # Blocker B1: detect `@MessageHandlerInterceptor` as a method annotation, emit Blocker B1. Do NOT edit the source file. Copy the Result block to $WORKSPACE/result.md with `**Result:** 🚧 Blocker`, `**Recipe:** axon4to5-interceptors`, Notes naming B1 and citing the file:line, Options with skip / revert / solve-manually.",
+      "expected_output": "B1 Blocker emitted; source untouched; Result: 🚧 Blocker.",
+      "files": [
+        "evals/fixtures/synthetic/AnnotationInterceptorHandler.java"
+      ],
+      "expectations": [
+        "Result block marks Blocker (🚧)",
+        "Notes reference B1 and @MessageHandlerInterceptor annotation",
+        "Notes cite file:line of the annotation",
+        "Options include skip / revert / solve-manually",
+        "Source untouched: @CommandHandler still present",
+        "@MessageHandlerInterceptor annotation still present (no edit)",
+        "No interceptOnHandle added to source",
+        "No UnitOfWork changes attempted",
+        "Recipe identifier present"
+      ],
+      "category": "blocker-annotation-b1",
+      "fixture": "synthetic/AnnotationInterceptorHandler.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axon",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Blocker",
+      "expected_blocker": "B1",
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emoji and text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "B1",
+          "text": "B1 blocker identified"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-interceptors",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "skip",
+          "text": "skip option in Options list"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "solve-manually",
+          "text": "solve-manually option in Options list"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@CommandHandler",
+          "text": "Source untouched: @CommandHandler still present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@MessageHandlerInterceptor",
+          "text": "@MessageHandlerInterceptor annotation unchanged (no edits)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "interceptOnHandle",
+          "text": "No interceptOnHandle added (source not modified)"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "ProcessingContext",
+          "text": "No ProcessingContext added (source not modified)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "spring-axoniq-event-handler-rejected",
+      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingReadModelProjector has @ProcessingGroup and @EventHandler methods — it is a projector, NOT an interceptor. The interceptors recipe # Applicable predicate 5 / 6 must Reject (no interceptor interface, no @MessageHandlerInterceptor annotation). Source MUST stay byte-identical — no @Namespace, no AF5 imports, no interceptOnDispatch/interceptOnHandle added. Copy the Result block to $WORKSPACE/result.md.",
+      "expected_output": "Projector rejected; source untouched; Result: ⏭️ Rejected.",
+      "files": [
+        "evals/fixtures/axon4/heroes/DwellingReadModelProjector.java"
+      ],
+      "expectations": [
+        "Result block marks Rejected (⏭️)",
+        "Notes name failed predicate (no interceptor interface)",
+        "Notes suggest routing to event-processor recipe",
+        "Source untouched: @ProcessingGroup still present",
+        "No interceptOnHandle added",
+        "No @Namespace added (event-processor recipe territory)",
+        "Recipe identifier present"
+      ],
+      "category": "rejected-event-handler",
+      "fixture": "axon4/heroes/DwellingReadModelProjector.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "framework": "axoniq",
+        "configuration": "spring",
+        "mode": "single",
+        "source": "$SOURCE",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Rejected",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ⏭",
+          "text": "Rejected emoji"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Rejected",
+          "text": "Rejected text"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-interceptors",
+          "text": "Recipe identifier present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@ProcessingGroup",
+          "text": "Source untouched: @ProcessingGroup present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "interceptOnHandle",
+          "text": "No interceptOnHandle added"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@Namespace",
+          "text": "No @Namespace added (event-processor recipe territory)"
+        }
+      ]
+    }
+  ]
+}
