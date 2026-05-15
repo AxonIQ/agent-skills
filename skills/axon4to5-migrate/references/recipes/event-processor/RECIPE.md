@@ -179,7 +179,7 @@ Typos compile but silently no-op (the parameter receives `null`). Grep before an
 
 *Apply-condition:* the AF4 wiring referenced a sequencing policy for `$SOURCE`'s processing group — either via a `@Bean SequencingPolicy` registered with `EventProcessingConfigurer.registerSequencingPolicy(...)` / `assignSequencingPolicy(...)`, or via YAML `axon.eventhandling.processors.<group>.sequencing-policy`.
 
-1. Annotate `$SOURCE`'s class with `@SequencingPolicy(type = <PolicyClass>.class, parameters = "<param>")` (`org.axonframework.messaging.core.sequencing.annotation.SequencingPolicy`).
+1. Annotate `$SOURCE`'s class with `@SequencingPolicy(type = <PolicyClass>.class, parameters = "<param>")` (`org.axonframework.messaging.core.annotation.SequencingPolicy`).
 2. Built-in policy classes (no body migration needed):
    - `MetadataSequencingPolicy.class` with `parameters = "<metadataKey>"` — the AF4 idiom of "sequence by a metadata key" (very common; legacy projects often had a per-tenant `@Bean SequencingPolicy` reading e.g. `GameMetaData.GAME_ID_KEY`).
    - `SequentialPerAggregatePolicy.class` — AF4 default; rarely needs to be explicit.
