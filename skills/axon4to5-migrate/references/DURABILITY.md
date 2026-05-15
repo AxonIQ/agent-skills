@@ -93,6 +93,8 @@ Status ∈ `pending`, `in-progress`, `done`, `blocked`, `skipped`, `rejected`, `
 
 **How to write:** Append a dated entry to `learnings.md` using the schema (§ `learnings.md` schema). Do NOT wait for the Result block — write as soon as the surprise is understood and resolved. Fold into the next item commit (`on:item-success` stages `learnings.md` when dirty).
 
+**Debug-loop mandatory rule:** After EVERY compile attempt (during any Apply → compile → fix cycle) that produces an error not predicted by the recipe's documented steps, write a `learnings.md` entry for that error **before taking any further action** — before the next edit, before the next compile, before calling the next tool. "Not predicted" means: the error references a class, method, package, or API shape not mentioned in the recipe's Toolbox or Gotchas. Do not batch multiple novel errors into one entry after the fact; write each as it is understood. This rule is non-negotiable and applies even if the session ends before the item is complete.
+
 **Deciding on your own:** The agent does not need a signal from the user, a blocker resolution, or a Result block to trigger this. If the migration surprised you — write it down.
 
 ## Hooks
