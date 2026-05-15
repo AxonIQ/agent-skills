@@ -235,6 +235,8 @@ flowchart TD
 
 Entered when drain empties but build is still red. All known recipes have been applied — this phase asks: "is there still something a recipe can fix?"
 
+**Before the first full compile:** Scan for application classes in subdirectories that OpenRewrite does NOT process by default — e.g., a `microservices/` tree or separately deployable modules at the same repo root. These classes often use the same AF4 patterns (AF4 `ConfigurationEnhancer`, `SagaEntry`, `DeadlineManager`) as the main modules but are missed by the recipe drain because discovery only scanned the main source sets. Add any found classes to the queue and drain them before running the full compile.
+
 1. **Full compile** — `mvn compile` / `gradle classes` (Java + Kotlin). Green → exit loop → Finalize.
 2. Errors remain:
    - **Re-discover** — re-scan every recipe's `applicable` predicates against current codebase. Sources mutated during drain may now match recipes that rejected earlier.

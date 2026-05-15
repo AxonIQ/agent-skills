@@ -20,6 +20,7 @@ argument-hint: $SOURCE
 - New `<SagaName>State.java` entity class — created by this recipe in the same package as `$SOURCE`.
 - New `<SagaName>StateRepository.java` interface — created by this recipe in the same package as `$SOURCE`.
 - Any existing `*State.java` / `*StateRepository.java` files in the same package if already partially created.
+- Existing `*SagaTest.java` / `*Test.java` in the same package that imports `SagaTestFixture` (AF4) or `AxonTestFixture` (post-OpenRewrite) — **only when B2 option `rewrite-mockito` is chosen**.
 
 Scope grows during Research; never shrinks. Sibling sagas, aggregates, projectors are NOT in scope.
 
@@ -37,6 +38,17 @@ Scope grows during Research; never shrinks. Sibling sagas, aggregates, projector
 4. Keeps all imports as comments so the caller can see what was there.
 
 Then emits Blocker B1. The source is in a partially-migrated state — the saga structure is done; only the deadline mechanics need the caller's decision.
+
+**B2 — Existing `*SagaTest.java` uses `SagaTestFixture` or `AxonTestFixture`**
+
+Detection: `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. AF4 uses `SagaTestFixture`; OpenRewrite renames it to `AxonTestFixture`. Either form applies to this blocker. Neither supports non-aggregate types in AF5 — the fixture is designed for aggregates only. The test will not compile after the saga rewrite.
+
+**Does NOT block the saga structural rewrite.** Steps 1–6 run first; B2 fires after the main migration is complete and the test file is identified.
+
+Options (in addition to three defaults):
+- `skip` *(Recommended)* — leave the test in its current (broken) state; caller rewrites later; queue moves on.
+- `rewrite-mockito` — recipe rewrites the test as a plain Mockito unit test: removes `SagaTestFixture` / `AxonTestFixture`, mocks `<SagaName>StateRepository` and `CommandDispatcher`, constructs the saga directly, and uses `ArgumentCaptor` / `verify(...)` assertions. Test file is added to scope.
+- `solve-manually` — pause; caller rewrites the test, then re-invokes.
 
 **Unmet project prerequisites**
 
@@ -93,7 +105,11 @@ Aggregation rule: **all match (AND)** — DEFAULT.md baseline AND this section's
 
 ### Verification
 
-No isolated test Skill invocation for saga because sagas typically have no isolated test file (`test-sources: []`). DEFAULT.md criterion (2) is not-applicable; surface "no test coverage" as a Learning. Compile-clean check still applies — Grep for lingering AF4 imports as a proxy before concluding Success.
+First, run `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. If found → B2 applies (see § Blocker); choose option before proceeding to verification.
+
+When B2 option is `rewrite-mockito` and the test was rewritten: invoke `axon4to5-isolatedtest` with the saga class + rewritten test file. Both must compile and tests must pass green.
+
+When B2 option is `skip` or no test file exists: `axon4to5-isolatedtest` with `test-sources: []` (compile-only). Surface "no test coverage" as a Learning. Compile-clean check still applies — grep for lingering AF4 imports as a proxy before concluding Success.
 
 ## References
 
@@ -228,7 +244,7 @@ public <SagaName>(CommandGateway commandGateway, <Name>StateRepository repositor
 - **No-arg JPA constructor.** Hibernate requires a no-arg constructor on `@Entity` classes. Always generate `public <Name>State() {}`.
 - **`@Saga` in AF4 had two common import paths:** `org.axonframework.spring.stereotype.Saga` (older) and `org.axonframework.extension.spring.stereotype.Saga` (newer Extension model). Grep for both; both must be removed.
 - **Saga fields become repository lookups.** Instance fields like `private String bikeId; private String renter;` stored between event invocations are replaced by fields on the JPA entity. Every handler that reads those fields must look up the entity first.
-
+- **`@EntityScan(basePackageClasses = {SagaEntry.class})` fails to compile after saga removal.** `org.axonframework.modelling.saga.repository.jpa.SagaEntry` was removed with the Saga SPI. Replace with the new state entity class (`<SagaName>State.class`). For modules that don't depend on the module containing the state entity (e.g., a microservices application class), use `basePackages = "..."` (string-based package scan) instead of a class reference to avoid a cross-module compile dependency.
 ## Result
 
 Inherits DEFAULT.md baseline.
@@ -239,7 +255,9 @@ Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md �
 
 ### Blocker
 
-Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES name the detected blocker(s) + location. Options block per detected blocker with the three DEFAULT.md baselines.
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES name the detected blocker(s) + location. Options block per detected blocker with their respective options.
+
+B1 and B2 may fire in the same run — emit one combined Blocker result with separate Options sub-sections.
 
 Example (B1 — DeadlineManager + native):
 
@@ -258,6 +276,26 @@ return BLOCKER
 > - [ ] **skip** — keep `PaymentSaga` in its partially-migrated state (saga structure done, deadline code commented); queue moves on.
 > - [ ] **revert** — undo all edits; restore pre-recipe state.
 > - [ ] **solve-manually** — implement the deadline replacement (e.g., `@Scheduled` poller using the JPA state entity's timestamp field), uncomment the commented-out TODO blocks, and re-invoke.
+```
+
+Example (B2 — existing test uses `AxonTestFixture`):
+
+```
+return BLOCKER
+
+> **Result:** 🚧 Blocker
+> **Source:** `com.example.paymentsaga.PaymentSaga`
+> **Recipe:** axon4to5-saga
+>
+> **Notes:** 1 blocker detected. B2 (existing saga test uses AxonTestFixture) at `PaymentSagaTest.java:36` — `new AxonTestFixture(PaymentSaga.class)`. `AxonTestFixture` does not support non-aggregate types in AF5. Structural saga rewrite is complete; only the test requires a decision.
+>
+> **Options:**
+>
+> _For B2 (SagaTestFixture / AxonTestFixture in existing test):_
+> - [ ] **skip** *(Recommended)* — leave `PaymentSagaTest` in its current broken state; caller rewrites later; queue moves on.
+> - [ ] **rewrite-mockito** — recipe rewrites `PaymentSagaTest` as a plain Mockito unit test (mocked repository + `CommandDispatcher`, direct construction, `ArgumentCaptor` assertions). Test file added to scope.
+> - [ ] **revert** — undo all edits including the saga rewrite; restore pre-recipe state.
+> - [ ] **solve-manually** — pause; caller rewrites the test, then re-invokes.
 ```
 
 ### Rejected
