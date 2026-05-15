@@ -307,6 +307,7 @@ Record in Result Notes: *"JPA backend selected — user must apply AF5 schema ch
 - **`AxonServerEventStorageEngine` (DCB) vs `AggregateBasedAxonServerEventStorageEngine`**: DCB migration (flat event log, no aggregate routing) is a separate larger initiative. This recipe always targets the aggregate-based engine to preserve legacy semantics.
 - **Custom `Serializer` ≠ `Converter`**: subclassed serializers / custom `RevisionResolver` / custom `ContentTypeConverter` are not one-line ports. Surface as B4 (soft) and flag in Notes.
 - **JPA schema change is out-of-band and blocking for runtime.** The AF5 app will start cleanly with the new bean but fail at first command/replay until the schema change is applied. Always flag in Notes.
+- **`AxonServerConnectionManager` and `AggregateBasedAxonServerEventStorageEngine` live under `io.axoniq.framework`, NOT `org.axonframework`.** The connector artifact (`io.axoniq.framework:axon-server-connector`) moved its packages. Correct FQNs: `io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager`, `io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine`.
 
 ## Result
 
