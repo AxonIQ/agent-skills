@@ -88,16 +88,18 @@ Every hook that mutates `progress.md` commits the change in the same op. Code-be
 | `on:session-start` | Before pre-steps | Read `progress.md`; resume or fresh. | — |
 | `on:args-parsed` | After Parse validates | Init state dir if absent; write Selection frame (framework, configuration, mode, execution — **not** `source`). Resume + frame mismatch → AskUserQuestion (resume / start-over / abort) **before** writing. | `chore(af5): record selection frame` |
 | `on:openrewrite-done` | After pre-step #2 | Write outcome to `progress.md`. If status=`success`: stage **all** working-tree changes with `git add -A` (covers OpenRewrite recipe edits + `progress.md`); commit with canonical message (substitute `<framework>` from resolved arg). Resume + already `success` → skip pre-step entirely (no new commit). | `chore(af5): apply Axon 4 → 5 OpenRewrite migration (--framework <framework>)` |
-| `on:queue-built` | After Discover+Enqueue for current recipe | Snapshot queue for this recipe. Resume → merge: keep prior statuses; add only new items. | `chore(af5): build queue (<recipe> — <N> items)` |
-| `on:recipe-done` | When recipe drain empties (`mode=project`) | Update Recipe status table row: status → `done` (or `partially-blocked`), Items done/total, Last commit. | `chore(af5): recipe <id> done (<N> done · <M> blocked)` |
-| `on:item-start` | Drain pick | Status → `in-progress`. | `chore(af5): start <source>` |
-| `on:item-result` | After FLOW.md `## Result` emitted | Status per outcome emoji; update notes col. | `chore(af5): record <status> for <source>` |
-| `on:item-success` | Result=✅ + Verify ok | Stage code paths + `progress.md` (+ `learnings.md` if dirty). | `refactor(af5): <source> (recipe: <id>)` |
-| `on:caller-decision` | After BLOCKER_RESOLUTION choice applied | Append to decisions log. | `chore(af5): caller decision <chosen> for <source>` |
-| `on:learning` | Recipe emits `**Learnings:**` block | Append dated entry to `learnings.md`. | folded into next commit; if standalone: `chore(af5): record learning` |
-| `on:session-end` | At Render report | Refresh `▶︎ RESUME HERE`. | `chore(af5): update resume pointer` (only if changed) |
+| `on:queue-built` | After Discover+Enqueue for current recipe | Snapshot queue for this recipe into `progress.md`. Resume → merge: keep prior statuses; add only new items. **No standalone commit** — state is flushed with the first `on:item-success` of this recipe. | — |
+| `on:recipe-done` | When recipe drain empties (`mode=project`) | Update Recipe status table row: status → `done` (or `partially-blocked`), Items done/total, Last commit. Fold into last item commit of this recipe; no standalone commit. | — |
+| `on:item-start` | Drain pick | Write status → `in-progress` in memory only. **No commit** — state is flushed with `on:item-success` or `on:item-result`. | — |
+| `on:item-result` | After FLOW.md `## Result` emitted for non-success outcomes | Status per outcome emoji; update notes col; commit `progress.md` only. | `chore(af5): record <status> for <SimpleClassName>` |
+| `on:item-success` | Result=✅ + Verify ok | Stage code paths + `progress.md` (+ `learnings.md` if dirty). Subject uses `<SimpleClassName>` (last `.`-delimited segment of FQN) and the recipe's `title` field from its RECIPE.md frontmatter (lowercased). | `refactor(af5): migrate <recipe-title> <SimpleClassName> to AF5` |
+| `on:caller-decision` | After BLOCKER_RESOLUTION choice applied | Append to decisions log. | `chore(af5): record decision <chosen> for <SimpleClassName>` |
+| `on:learning` | Recipe emits `**Learnings:**` block | Append dated entry to `learnings.md`; fold into next commit. | — |
+| `on:session-end` | At Render report | Refresh `▶︎ RESUME HERE` **only if pointer changed**. Fold into last item commit when possible; emit standalone only when session ends with no new item commits. | `chore(af5): update resume pointer` |
 
-`on:item-result` + `on:item-success` MAY coalesce into one `refactor(af5)` commit.
+`on:item-result` + `on:item-success` MUST coalesce into one `refactor(af5)` commit (never two commits for one item).
+
+Example (recipe title = "Aggregate"): `refactor(af5): migrate aggregate DwellingAggregate to AF5`
 
 DURABILITY observes; SKILL/FLOW/BLOCKER never call it explicitly.
 
@@ -184,19 +186,18 @@ sequenceDiagram
     D->>G: commit (chore: queue built)
     loop drain
         S->>D: on:item-start
-        D->>F: status in-progress
-        D->>G: commit (chore: start <source>)
+        D->>F: status in-progress (memory only, no commit)
         S->>R: execute recipe
         R-->>S: RESULT (+ Learnings?)
         alt has Learnings
             S->>D: on:learning
-            D->>F: append learnings.md
+            D->>F: append learnings.md (folded into next commit)
         end
         alt Result = ✅
             S->>S: Verify
             S->>D: on:item-result + on:item-success (coalesced)
-            D->>F: stage code + progress.md
-            D->>G: commit (refactor: <source>)
+            D->>F: stage code + progress.md (+ learnings.md if dirty)
+            D->>G: commit (refactor(af5): migrate <recipe-title> <SimpleClassName> to AF5)
             S-->>C: ✅
         else Blocker
             S->>R: BLOCKER_RESOLUTION
@@ -204,17 +205,17 @@ sequenceDiagram
             C-->>R: choice
             R->>D: on:caller-decision
             D->>F: append decisions log
-            D->>G: commit (chore: decision)
+            D->>G: commit (chore(af5): record decision <chosen> for <SimpleClassName>)
             S-->>C: 🚧
         else Rejected / Failure
             S->>D: on:item-result
             D->>F: status
-            D->>G: commit (chore: record <status>)
+            D->>G: commit (chore(af5): record <status> for <SimpleClassName>)
         end
     end
     S->>D: on:session-end
-    D->>F: refresh ▶︎ RESUME HERE
-    D->>G: commit (chore: resume pointer)
+    D->>F: refresh ▶︎ RESUME HERE (only if changed)
+    D->>G: commit (chore(af5): update resume pointer) — only if no item commits this session
     S-->>C: 🏁
 
     Note over C,G: Resume session
