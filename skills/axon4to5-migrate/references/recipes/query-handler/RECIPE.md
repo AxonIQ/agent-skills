@@ -115,6 +115,7 @@ If `MetaData` type (not annotation) present: → `Metadata`; add `org.axonframew
 - **EventHandler imports**: Fix `@EventHandler` import ONLY on methods physically modified for QUE injection. Do not touch untouched @EventHandler methods — event-processor recipe owns those.
 - **Query records must be top-level classes**: Never nest them as inner classes of the handler. They are part of the shared API used by both dispatch and handler sides.
 - **queryName + dispatch side coupling**: Step 2 changes the handler side. The dispatch side (`queryGateway.query("name", ...)`) must also change — that belongs to the query-gateway recipe (use-case 04). Coordinate both recipes when source is a projection + dispatcher.
+- **`QueryUpdateEmitter.emit(String.class, predicate, update)` — `String.class` was an AF4 named-query workaround.** AF4 code that called `updateEmitter.emit(String.class, id::equals, update)` used `String.class` as a type marker for string-keyed named queries. This does NOT work in AF5. Replace `String.class` with the `@Query`-annotated payload record class introduced by the query-gateway recipe (e.g., `emit(FindBikeByIdQuery.class, q -> q.getBikeId().equals(id), update)`). The query-gateway recipe (Step 2) must run before this recipe so the payload record class exists.
 
 # Result
 

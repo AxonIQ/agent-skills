@@ -172,15 +172,27 @@ Notes:
 
 *Apply-condition:* `$SOURCE` uses `queryGateway.subscriptionQuery(...)`.
 
-AF4 `SubscriptionQueryResult` is split in AF5. Top-of-chain callers see the gateway flavour: `SubscriptionQueryResponse<I, U>` (FQN: `org.axonframework.messaging.queryhandling.*`). `initialResult()` is `Flux` in AF5 (not `Mono`) — AF5 supports 0/1/N initial results uniformly.
+AF5 `subscriptionQuery` returns `Publisher<R>` — a single unified stream combining the initial result(s) followed by updates. There is no split-result form and no `SubscriptionQueryResponse` wrapper.
+
+Primary signatures (verified against AF5 source):
+- `subscriptionQuery(Object query, Class<R> responseType)` → `Publisher<R>`
+- `subscriptionQuery(Object query, Class<R> responseType, @Nullable ProcessingContext context)` → `Publisher<R>`
+- `subscriptionQuery(Object query, Class<R> responseType, @Nullable ProcessingContext context, int updateBufferSize)` → `Publisher<R>`
+- Mapper variant: `subscriptionQuery(Object query, Class<R> responseType, Function<QueryResponseMessage<R>, R> mapper, ...)` — use to distinguish initial vs. update: mapper receives `SubscriptionQueryUpdateMessage<R>` for updates, plain `QueryResponseMessage<R>` for the initial result.
 
 ```java
-SubscriptionQueryResponse<R, U> resp = queryGateway.subscriptionQuery(payload, R.class, U.class);
-Flux<R> initial = resp.initialResult();   // Flux, not Mono in AF5
-Flux<U> updates = resp.updates();
+// Unified stream — initial result first, then live updates
+Flux<R> stream = Flux.from(queryGateway.subscriptionQuery(new GetStatusQuery(id), StatusDto.class));
+Mono<R> initialOnly = stream.next();             // first item = initial result
+Flux<R> allUpdates  = stream.skip(1);            // remaining items = updates
+
+// Take initial and complete (read-model lookup with live tail)
+Mono<R> firstOnly = Flux.from(queryGateway.subscriptionQuery(payload, R.class))
+                        .filter(Objects::nonNull)
+                        .next();
 ```
 
-If AF4 caller assumed single initial result, collapse with `.next()` / `.singleOrEmpty()`. Call `resp.cancel()` when done.
+To distinguish initial result from updates when using the mapper variant, check `instanceof SubscriptionQueryUpdateMessage` (`org.axonframework.messaging.queryhandling.SubscriptionQueryUpdateMessage`).
 
 ### Step 5 — Adapt return type and blocking calls
 
@@ -264,6 +276,7 @@ Use `.orElseThrow(...)` when AF4 assumed presence; propagate `Optional` otherwis
 - **`QueryGateway` stays `QueryGateway`** — never swap to any dispatcher variant inside this recipe.
 - **Config-reader: `QueryUpdateEmitter` inside a handler** — if the class uses `QueryUpdateEmitter` inside an `@QueryHandler` method, the method-parameter form is preferred in AF5. That variant belongs to the query-handler recipe — flag it instead of migrating here.
 - **Config-reader: `Configuration` vs `AxonConfiguration`** — use read-only `Configuration` when the class never touches root lifecycle; use `AxonConfiguration` otherwise.
+- **`subscriptionQuery` always returns `Publisher<R>`.** The `SubscriptionQueryResponse<R,U>` split-result form does not exist in AF5. The unified-stream form is the only shape — initial result first, then live updates. Use the mapper overload with `instanceof SubscriptionQueryUpdateMessage` to distinguish them if needed.
 
 ## Result
 
