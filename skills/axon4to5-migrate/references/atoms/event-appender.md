@@ -3,7 +3,7 @@ atom-id: event-appender
 title: "AggregateLifecycle.apply(…) → EventAppender.append(…)"
 af4-symbols: ["AggregateLifecycle.apply", "AggregateLifecycle", "org.axonframework.modelling.command.AggregateLifecycle"]
 af5-symbols: ["EventAppender", "eventAppender.append", "org.axonframework.messaging.eventhandling.gateway.EventAppender"]
-detect: grep -rn 'AggregateLifecycle\.apply\|import.*AggregateLifecycle' --include='*.java' .
+detect: grep -rn 'AggregateLifecycle\.apply\|import.*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -16,7 +16,7 @@ injected into every `@CommandHandler`.
 ## Detect
 
 ```bash
-grep -rn 'AggregateLifecycle\.apply\|import.*AggregateLifecycle' --include='*.java' .
+grep -rn 'AggregateLifecycle\.apply\|import.*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Before (AF4)

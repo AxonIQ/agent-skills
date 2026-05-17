@@ -3,7 +3,7 @@ atom-id: event-sourcing-handler
 title: "@EventSourcingHandler — import package move"
 af4-symbols: ["org.axonframework.eventsourcing.EventSourcingHandler"]
 af5-symbols: ["org.axonframework.eventsourcing.annotation.EventSourcingHandler"]
-detect: grep -rn 'import org.axonframework.eventsourcing.EventSourcingHandler' --include='*.java' .
+detect: grep -rn 'import org.axonframework.eventsourcing.EventSourcingHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -15,7 +15,7 @@ sub-package. Method signatures and behaviour are unchanged.
 ## Detect
 
 ```bash
-grep -rn 'import org\.axonframework\.eventsourcing\.EventSourcingHandler' --include='*.java' .
+grep -rn 'import org\.axonframework\.eventsourcing\.EventSourcingHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Transform

@@ -3,7 +3,7 @@ atom-id: interceptor-handler
 title: "MessageHandlerInterceptor.handle(UnitOfWork, InterceptorChain) → interceptOnHandle(M, ProcessingContext, Chain)"
 af4-symbols: ["MessageHandlerInterceptor", "handle(UnitOfWork", "InterceptorChain", "org.axonframework.messaging.InterceptorChain", "org.axonframework.messaging.unitofwork.UnitOfWork"]
 af5-symbols: ["interceptOnHandle", "MessageHandlerInterceptorChain", "org.axonframework.messaging.core.MessageHandlerInterceptor"]
-detect: grep -rn 'implements MessageHandlerInterceptor\|UnitOfWork.*InterceptorChain' --include='*.java' .
+detect: grep -rn 'implements MessageHandlerInterceptor\|UnitOfWork.*InterceptorChain' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [interceptors]
 ---
 

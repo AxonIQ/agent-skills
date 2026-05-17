@@ -21,7 +21,7 @@ argument-hint: $SOURCE
 - `$SOURCE` class itself.
 - Surrounding method return types that need adapting (e.g., blocking `.get()` → `.orTimeout(...).join()`).
 - Payload class(es) that need a new `@Query` annotation (only when `$SOURCE` uses named-query dispatch). Handler-side parameter type update is also in scope when payload shape changes (see Toolbox Step 2d).
-- **QueryBus/QueryUpdateEmitter config-reader companions** — during Research: `grep -RlnE 'config\.queryBus\(\)|config\.queryUpdateEmitter\(\)|findComponent\(QueryBus' --include='*.java' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
+- **QueryBus/QueryUpdateEmitter config-reader companions** — during Research: `grep -RlnE 'config\.queryBus\(\)|config\.queryUpdateEmitter\(\)|findComponent\(QueryBus' --include='*.java' --include='*.kt' --include='*.scala' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
 
 Scope grows during FLOW.md Research; never shrinks. External helpers returning stale `ResponseType` objects are NOT in scope — flag as follow-up.
 

@@ -16,7 +16,7 @@ AF4 used an implicit no-arg constructor to materialise an empty aggregate before
 
 ```bash
 # Find aggregates missing @EntityCreator
-grep -rln '@EventSourced\|@EventSourcedEntity' --include='*.java' . \
+grep -rln '@EventSourced\|@EventSourcedEntity' --include='*.java' --include='*.kt' --include='*.scala' . \
   | xargs grep -rL '@EntityCreator'
 ```
 

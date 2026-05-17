@@ -3,7 +3,7 @@ atom-id: command-handler
 title: "@CommandHandler — import package move + EventAppender parameter"
 af4-symbols: ["org.axonframework.commandhandling.CommandHandler"]
 af5-symbols: ["org.axonframework.messaging.commandhandling.annotation.CommandHandler"]
-detect: grep -rn 'import org.axonframework.commandhandling.CommandHandler' --include='*.java' .
+detect: grep -rn 'import org.axonframework.commandhandling.CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -16,7 +16,7 @@ The `@CommandHandler` annotation moved to the `messaging.commandhandling.annotat
 ## Detect
 
 ```bash
-grep -rn 'import org\.axonframework\.commandhandling\.CommandHandler' --include='*.java' .
+grep -rn 'import org\.axonframework\.commandhandling\.CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Import change

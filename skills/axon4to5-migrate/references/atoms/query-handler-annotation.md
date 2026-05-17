@@ -3,7 +3,7 @@ atom-id: query-handler-annotation
 title: "@QueryHandler import move: org.axonframework.queryhandling → messaging.queryhandling.annotation"
 af4-symbols: ["org.axonframework.queryhandling.QueryHandler"]
 af5-symbols: ["org.axonframework.messaging.queryhandling.annotation.QueryHandler"]
-detect: grep -rn 'import org.axonframework.queryhandling.QueryHandler' --include='*.java' .
+detect: grep -rn 'import org.axonframework.queryhandling.QueryHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [query-handler]
 ---
 

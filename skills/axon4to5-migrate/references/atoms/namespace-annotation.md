@@ -3,7 +3,7 @@ atom-id: namespace-annotation
 title: "@ProcessingGroup → @Namespace (class-level event processor grouping)"
 af4-symbols: ["@ProcessingGroup", "org.axonframework.config.ProcessingGroup"]
 af5-symbols: ["@Namespace", "org.axonframework.messaging.core.annotation.Namespace"]
-detect: grep -rn 'import org.axonframework.config.ProcessingGroup\|@ProcessingGroup' --include='*.java' .
+detect: grep -rn 'import org.axonframework.config.ProcessingGroup\|@ProcessingGroup' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [event-processor, query-handler]
 ---
 
@@ -16,7 +16,7 @@ AF4 grouped event handlers into a processing group with `@ProcessingGroup("group
 ## Detect
 
 ```bash
-grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|@ProcessingGroup' --include='*.java' .
+grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|@ProcessingGroup' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Import change
@@ -50,7 +50,7 @@ public class OrderProjector { … }
 After renaming, grep the repository for the **old** group string to find all references that also need updating:
 
 ```bash
-grep -rn '"orders"' --include='*.java' --include='*.yaml' --include='*.properties' .
+grep -rn '"orders"' --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' .
 ```
 
 References to update:

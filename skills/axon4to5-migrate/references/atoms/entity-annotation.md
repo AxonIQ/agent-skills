@@ -3,7 +3,7 @@ atom-id: entity-annotation
 title: "Class stereotype — @Aggregate / @AggregateRoot → @EventSourced / @EventSourcedEntity"
 af4-symbols: ["@Aggregate", "@AggregateRoot", "org.axonframework.spring.stereotype.Aggregate", "org.axonframework.modelling.command.AggregateRoot"]
 af5-symbols: ["@EventSourced", "@EventSourcedEntity", "org.axonframework.extension.spring.stereotype.EventSourced", "org.axonframework.eventsourcing.annotation.EventSourcedEntity"]
-detect: grep -rn '@Aggregate\|@AggregateRoot' --include='*.java' .
+detect: grep -rn '@Aggregate\|@AggregateRoot' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -15,7 +15,7 @@ both and requires **explicit** `tagKey` and `idType` on every usage — never re
 ## Detect
 
 ```bash
-grep -rn '@Aggregate\|@AggregateRoot' --include='*.java' .
+grep -rn '@Aggregate\|@AggregateRoot' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Path A — Spring Boot (`configuration=spring`)

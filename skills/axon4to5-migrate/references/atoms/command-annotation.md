@@ -3,7 +3,7 @@ atom-id: command-annotation
 title: "Command classes — @Command annotation + @TargetAggregateIdentifier → @TargetEntityId"
 af4-symbols: ["@TargetAggregateIdentifier", "org.axonframework.modelling.command.TargetAggregateIdentifier", "@RoutingKey"]
 af5-symbols: ["@Command", "@TargetEntityId", "org.axonframework.messaging.commandhandling.annotation.Command", "org.axonframework.modelling.annotation.TargetEntityId"]
-detect: grep -rn 'TargetAggregateIdentifier\|@RoutingKey' --include='*.java' .
+detect: grep -rn 'TargetAggregateIdentifier\|@RoutingKey' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -15,7 +15,7 @@ replaces this with `@TargetEntityId` and requires command classes to carry the `
 ## Detect
 
 ```bash
-grep -rn 'TargetAggregateIdentifier\|@RoutingKey' --include='*.java' .
+grep -rn 'TargetAggregateIdentifier\|@RoutingKey' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Transforms

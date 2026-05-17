@@ -2,6 +2,16 @@
 
 All-file content language: English.
 
+## Multi-language support
+
+This skill must work for **Java, Kotlin, Scala, and any other JVM language** a project may use. Never hardcode
+a single-language file filter.
+
+- All grep commands that search source files must include at minimum `--include='*.java' --include='*.kt' --include='*.scala'`. Do not use `--include='*.java'` alone.
+- Code examples in atoms/recipes may use Java syntax for conciseness, but the transformation rules apply to all JVM languages — the reader adapts idioms (e.g. `data class` for records in Kotlin, `case class` in Scala).
+- `detect:` grep in atom frontmatter is a **first-signal hint**, not a final judgment. A missing grep hit does not prove a pattern is absent — read the source file to confirm before deciding.
+- `$SOURCE` may be a `.kt`, `.scala`, or other JVM file. Do not assume `.java` extension anywhere in paths, glob patterns, or file-open instructions.
+
 Be proactive, challenge me. If you think you have a better idea than what I wanted from you, propose other things.
 
 ## Running evals

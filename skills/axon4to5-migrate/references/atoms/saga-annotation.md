@@ -3,7 +3,7 @@ atom-id: saga-annotation
 title: "@Saga → @Component @DisallowReplay class-level annotation swap"
 af4-symbols: ["@Saga", "org.axonframework.spring.stereotype.Saga", "org.axonframework.extension.spring.stereotype.Saga"]
 af5-symbols: ["@Component", "@DisallowReplay", "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay"]
-detect: grep -rn '@Saga\|stereotype.*Saga' --include='*.java' .
+detect: grep -rn '@Saga\|stereotype.*Saga' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [saga]
 ---
 

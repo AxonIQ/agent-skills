@@ -3,7 +3,7 @@ atom-id: event-annotation
 title: "Event classes — @Event annotation + @EventTag + @Revision removal"
 af4-symbols: ["@Revision", "org.axonframework.serialization.Revision"]
 af5-symbols: ["@Event", "@EventTag", "org.axonframework.messaging.eventhandling.annotation.Event", "org.axonframework.eventsourcing.annotation.EventTag"]
-detect: grep -rn '@EventSourcingHandler' --include='*.java' . | xargs grep -ln 'getOrderId\|apply(' # find event classes
+detect: grep -rn '@EventSourcingHandler' --include='*.java' --include='*.kt' --include='*.scala' . | xargs grep -ln 'getOrderId\|apply(' # find event classes
 used-by: [aggregate]
 ---
 

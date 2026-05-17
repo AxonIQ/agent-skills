@@ -3,7 +3,7 @@ atom-id: command-dispatcher
 title: "In-handler command dispatch — CommandGateway field → CommandDispatcher method parameter"
 af4-symbols: ["CommandGateway", "commandGateway.sendAndWait", "commandGateway.send", "org.axonframework.commandhandling.gateway.CommandGateway"]
 af5-symbols: ["CommandDispatcher", "commandDispatcher.send", "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher"]
-detect: grep -rn 'CommandGateway' --include='*.java' . # then filter: classes with @EventHandler that call commandGateway
+detect: grep -rn 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . # then filter: classes with @EventHandler that call commandGateway
 used-by: [event-processor, saga]
 ---
 
@@ -21,7 +21,7 @@ command-gateway recipe.
 
 ```bash
 # Find classes that inject CommandGateway AND have @EventHandler methods
-grep -rln 'CommandGateway' --include='*.java' . \
+grep -rln 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . \
   | xargs grep -l '@EventHandler'
 ```
 

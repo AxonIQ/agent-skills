@@ -3,7 +3,7 @@ atom-id: message-accessors
 title: "Message accessor renames — getPayload() → payload(), getMetaData() → metaData()"
 af4-symbols: ["getPayload()", "getMetaData()", "getIdentifier()", "getPayloadType()", "getTimestamp()", "getResponseType()", "getUpdateResponseType()"]
 af5-symbols: ["payload()", "metaData()", "identifier()", "payloadType()", "timestamp()", "responseType()", "updateResponseType()"]
-detect: grep -rn '\.getPayload()\|\.getMetaData()\|\.getIdentifier()\|\.getPayloadType()\|\.getTimestamp()' --include='*.java' .
+detect: grep -rn '\.getPayload()\|\.getMetaData()\|\.getIdentifier()\|\.getPayloadType()\|\.getTimestamp()' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [event-processor, saga, query-handler, interceptors]
 ---
 
@@ -16,7 +16,7 @@ unchanged.
 ## Detect
 
 ```bash
-grep -rn '\.getPayload()\|\.getMetaData()\|\.getIdentifier()\|\.getPayloadType()\|\.getTimestamp()' --include='*.java' .
+grep -rn '\.getPayload()\|\.getMetaData()\|\.getIdentifier()\|\.getPayloadType()\|\.getTimestamp()' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Rename table

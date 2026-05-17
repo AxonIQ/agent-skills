@@ -3,7 +3,7 @@ atom-id: sequencing-policy
 title: "SequencingPolicy — YAML/@Bean wiring → @SequencingPolicy annotation + interface rewrite"
 af4-symbols: ["org.axonframework.eventhandling.async.SequencingPolicy", "registerSequencingPolicy", "assignSequencingPolicy"]
 af5-symbols: ["@SequencingPolicy", "org.axonframework.messaging.core.annotation.SequencingPolicy", "org.axonframework.messaging.core.sequencing.SequencingPolicy", "sequenceIdentifierFor"]
-detect: grep -rn 'SequencingPolicy\|sequencing-policy' --include='*.java' --include='*.yaml' --include='*.properties' .
+detect: grep -rn 'SequencingPolicy\|sequencing-policy' --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' .
 used-by: [event-processor]
 ---
 
@@ -21,7 +21,7 @@ The AF4 `SequencingPolicy<EventMessage<?>>` interface is also renamed and its me
 
 ```bash
 grep -rn 'sequencing-policy\|assignSequencingPolicy\|registerSequencingPolicy' \
-  --include='*.java' --include='*.yaml' --include='*.properties' .
+  --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' .
 ```
 
 ### Add annotation to the event-handling class
@@ -72,7 +72,7 @@ Leave it; flag in Result NOTES if it becomes an orphan after all consumers are m
 ### Detect
 
 ```bash
-grep -rln 'implements.*SequencingPolicy' --include='*.java' .
+grep -rln 'implements.*SequencingPolicy' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ### Interface and method changes

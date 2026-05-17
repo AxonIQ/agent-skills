@@ -122,10 +122,10 @@ Run greps from `$SOURCE` project root before touching any file:
 
 ```bash
 # AF4 engine references
-grep -RnE 'JpaEventStorageEngine|JdbcEventStorageEngine|MongoEventStorageEngine|EmbeddedEventStore|AxonServerEventStore' --include='*.java' --include='*.kt' src
+grep -RnE 'JpaEventStorageEngine|JdbcEventStorageEngine|MongoEventStorageEngine|EmbeddedEventStore|AxonServerEventStore' --include='*.java' --include='*.kt' --include='*.scala' src
 
 # Mongo extension
-grep -RnE 'org\.axonframework\.extensions\.mongo|axon-mongo' --include='*.java' --include='*.kt' --include='pom.xml' --include='*.gradle*' .
+grep -RnE 'org\.axonframework\.extensions\.mongo|axon-mongo' --include='*.java' --include='*.kt' --include='*.scala' --include='pom.xml' --include='*.gradle*' .
 
 # Connector / starter presence (implies Axon Server backend preference)
 grep -RnE 'axon-server-connector|axoniq-spring-boot-starter|axon-spring-boot-starter' pom.xml */pom.xml

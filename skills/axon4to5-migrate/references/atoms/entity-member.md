@@ -3,7 +3,7 @@ atom-id: entity-member
 title: "@AggregateMember → @EntityMember (child entity collections)"
 af4-symbols: ["@AggregateMember", "org.axonframework.modelling.command.AggregateMember"]
 af5-symbols: ["@EntityMember", "org.axonframework.modelling.entity.annotation.EntityMember"]
-detect: grep -rn '@AggregateMember' --include='*.java' .
+detect: grep -rn '@AggregateMember' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -16,7 +16,7 @@ AF4 used `@AggregateMember` to declare child entity collections within an aggreg
 ## Detect
 
 ```bash
-grep -rn '@AggregateMember' --include='*.java' .
+grep -rn '@AggregateMember' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Import change

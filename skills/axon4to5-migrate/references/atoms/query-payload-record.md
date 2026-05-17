@@ -3,7 +3,7 @@ atom-id: query-payload-record
 title: "@QueryHandler(queryName) removal — introduce @Query-annotated top-level payload record"
 af4-symbols: ["@QueryHandler(queryName", "org.axonframework.queryhandling.QueryHandler#queryName"]
 af5-symbols: ["@Query", "org.axonframework.messaging.queryhandling.annotation.Query"]
-detect: grep -rn '@QueryHandler.*queryName' --include='*.java' .
+detect: grep -rn '@QueryHandler.*queryName' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [query-handler]
 ---
 

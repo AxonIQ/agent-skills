@@ -3,7 +3,7 @@ atom-id: test-fixture
 title: "AggregateTestFixture → AxonTestFixture (BDD test DSL migration)"
 af4-symbols: ["AggregateTestFixture", "org.axonframework.test.aggregate.AggregateTestFixture"]
 af5-symbols: ["AxonTestFixture", "org.axonframework.test.fixture.AxonTestFixture"]
-detect: grep -rn 'AggregateTestFixture' --include='*.java' .
+detect: grep -rn 'AggregateTestFixture' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [aggregate]
 ---
 
@@ -15,7 +15,7 @@ wraps an `EventSourcingConfigurer` rather than a class reference.
 ## Detect
 
 ```bash
-grep -rn 'AggregateTestFixture' --include='*.java' .
+grep -rn 'AggregateTestFixture' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Transforms

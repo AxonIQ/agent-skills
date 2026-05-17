@@ -3,7 +3,7 @@ atom-id: query-update-emitter
 title: "QueryUpdateEmitter: constructor field → method param; emit() 2-arg → 3-arg (class + predicate + update)"
 af4-symbols: ["QueryUpdateEmitter", "org.axonframework.queryhandling.QueryUpdateEmitter", "updateEmitter.emit(predicate, update)"]
 af5-symbols: ["org.axonframework.messaging.queryhandling.QueryUpdateEmitter", "emit(QueryClass.class, predicate, update)"]
-detect: grep -rn 'QueryUpdateEmitter' --include='*.java' .
+detect: grep -rn 'QueryUpdateEmitter' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [query-handler]
 ---
 

@@ -3,7 +3,7 @@ atom-id: processing-context
 title: "UnitOfWork → ProcessingContext — InterceptorChain.proceedSync + injection"
 af4-symbols: ["UnitOfWork", "CurrentUnitOfWork", "InterceptorChain.proceed()", "org.axonframework.messaging.unitofwork"]
 af5-symbols: ["ProcessingContext", "InterceptorChain.proceedSync(context)", "org.axonframework.messaging.core.ProcessingContext"]
-detect: grep -rn 'UnitOfWork\|CurrentUnitOfWork\|InterceptorChain' --include='*.java' .
+detect: grep -rn 'UnitOfWork\|CurrentUnitOfWork\|InterceptorChain' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [interceptors, event-processor, saga]
 ---
 

@@ -3,7 +3,7 @@ atom-id: metadata-value
 title: "@MetaDataValue (AF4) → @MetadataValue (AF5) — casing + package change"
 af4-symbols: ["@MetaDataValue", "org.axonframework.messaging.annotation.MetaDataValue"]
 af5-symbols: ["@MetadataValue", "org.axonframework.messaging.core.annotation.MetadataValue"]
-detect: grep -rn 'MetaDataValue' --include='*.java' .
+detect: grep -rn 'MetaDataValue' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [event-processor, query-handler]
 ---
 
@@ -24,7 +24,7 @@ also compile in mixed-jar setups but silently receive `null` at runtime.
 
 ```bash
 # Find any occurrence of the old casing (capital D)
-grep -rn 'MetaDataValue' --include='*.java' .
+grep -rn 'MetaDataValue' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Transform
@@ -51,7 +51,7 @@ Note the casing: `MetaData` (capital D) → `Metadata` (lowercase d after the ca
 
 ```bash
 # Confirm zero AF4 occurrences remain (capital-D form)
-grep -rn 'MetaDataValue' --include='*.java' .
+grep -rn 'MetaDataValue' --include='*.java' --include='*.kt' --include='*.scala' .
 # Should return no results
 ```
 

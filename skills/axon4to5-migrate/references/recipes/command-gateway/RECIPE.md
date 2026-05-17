@@ -20,7 +20,7 @@ argument-hint: $SOURCE
 
 - `$SOURCE` class itself.
 - Surrounding method return types that need upgrading to `CompletableFuture<R>` when the controller can serve futures async.
-- **CommandBus config-reader companions** — during Research: `grep -RlnE 'config\.commandBus\(\)|findComponent\(CommandBus' --include='*.java' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
+- **CommandBus config-reader companions** — during Research: `grep -RlnE 'config\.commandBus\(\)|findComponent\(CommandBus' --include='*.java' --include='*.kt' --include='*.scala' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
 
 Scope grows during FLOW.md Research; never shrinks. External helpers (e.g. `XxxMetaData.with(...)` returning AF4 `MetaData`) are NOT in scope — flag as follow-up.
 

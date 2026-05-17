@@ -3,7 +3,7 @@ atom-id: interceptor-dispatch
 title: "MessageDispatchInterceptor.handle(List) → interceptOnDispatch(M, @Nullable ProcessingContext, Chain)"
 af4-symbols: ["MessageDispatchInterceptor", "handle(List<? extends M>)", "BiFunction<Integer, M, M>", "java.util.List", "java.util.function.BiFunction"]
 af5-symbols: ["interceptOnDispatch", "MessageDispatchInterceptorChain", "MessageStream", "org.axonframework.messaging.core.MessageDispatchInterceptor"]
-detect: grep -rn 'implements MessageDispatchInterceptor\|BiFunction.*handle.*List' --include='*.java' .
+detect: grep -rn 'implements MessageDispatchInterceptor\|BiFunction.*handle.*List' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [interceptors]
 ---
 

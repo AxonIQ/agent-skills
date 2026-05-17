@@ -3,7 +3,7 @@ atom-id: event-handler
 title: "@EventHandler, @DisallowReplay, @ResetHandler — import package moves"
 af4-symbols: ["org.axonframework.eventhandling.EventHandler", "org.axonframework.eventhandling.DisallowReplay", "org.axonframework.eventhandling.ResetHandler"]
 af5-symbols: ["org.axonframework.messaging.eventhandling.annotation.EventHandler", "org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay", "org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler"]
-detect: grep -rn 'import org.axonframework.eventhandling.EventHandler\|import org.axonframework.eventhandling.DisallowReplay\|import org.axonframework.eventhandling.ResetHandler' --include='*.java' .
+detect: grep -rn 'import org.axonframework.eventhandling.EventHandler\|import org.axonframework.eventhandling.DisallowReplay\|import org.axonframework.eventhandling.ResetHandler' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [event-processor, saga]
 ---
 
@@ -15,7 +15,7 @@ The event-handling annotations moved from the `eventhandling` root package to `m
 ## Detect
 
 ```bash
-grep -rn 'import org\.axonframework\.eventhandling\.\(EventHandler\|DisallowReplay\|ResetHandler\)' --include='*.java' .
+grep -rn 'import org\.axonframework\.eventhandling\.\(EventHandler\|DisallowReplay\|ResetHandler\)' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Transforms

@@ -3,7 +3,7 @@ atom-id: saga-event-handler
 title: "@SagaEventHandler/@StartSaga/@EndSaga → @EventHandler + JPA state lookup; SagaLifecycle removed"
 af4-symbols: ["@SagaEventHandler", "@StartSaga", "@EndSaga", "SagaLifecycle", "org.axonframework.modelling.saga.SagaEventHandler", "org.axonframework.modelling.saga.StartSaga", "org.axonframework.modelling.saga.EndSaga", "org.axonframework.modelling.saga.SagaLifecycle"]
 af5-symbols: ["@EventHandler", "org.axonframework.messaging.eventhandling.annotation.EventHandler"]
-detect: grep -rn 'SagaEventHandler\|StartSaga\|EndSaga\|SagaLifecycle' --include='*.java' .
+detect: grep -rn 'SagaEventHandler\|StartSaga\|EndSaga\|SagaLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
 used-by: [saga]
 ---
 
