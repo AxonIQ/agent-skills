@@ -84,14 +84,32 @@ If `$SOURCE`'s processing group has a DLQ wired (`registerDeadLetterQueue*` or `
 
 ## References
 
-Inherits the catalog baseline (see DEFAULT.md § Toolbox baseline). Recipe-specific entries — each is a markdown link with apply-condition:
+Inherits the catalog baseline (see DEFAULT.md § Toolbox baseline). Loaded during FLOW.md S3 (Read References).
+The orchestrator never reads these — the recipe consults them at S3 and re-consults at S6 (Plan Migration).
+
+### Knowledge docs (architecture context)
 
 - [projectors-event-processors.adoc](../../docs/paths/projectors-event-processors.adoc) — *apply-condition:* always. Covers `@EventHandler` import move, `@ProcessingGroup` → `@Namespace`, `TrackingEventProcessor` removal, `EventProcessorDefinition` (Spring) and `MessagingConfigurer.eventProcessing(...)` (native).
-- [sequencing-policies.adoc](../../docs/paths/sequencing-policies.adoc) — *apply-condition:* scope contains a custom `SequencingPolicy` implementation OR the project's YAML declares `axon.eventhandling.processors.<group>.sequencing-policy` OR the AF4 wiring used a `@Bean SequencingPolicy`.
-- [dlq.adoc](../../docs/paths/dlq.adoc) — *apply-condition:* `$SOURCE`'s processing group has a DLQ wired (informational only — recipe flags, does not migrate).
-- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always. Covers the `@MetaDataValue` → `@MetadataValue` capitalisation flip and `getPayload()` / `getMetaData()` → `payload()` / `metaData()` accessor rename.
-- [interceptors.adoc](../../docs/paths/interceptors.adoc) — *apply-condition:* `$SOURCE` carries `@EventHandlerInterceptor` or `MessageHandlerInterceptor` — informational only (recipe flags, does not migrate).
-- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` AND the project's Configurer file is in scope for processor wiring.
+- [sequencing-policies.adoc](../../docs/paths/sequencing-policies.adoc) — *apply-condition:* scope contains a custom `SequencingPolicy` implementation OR YAML declares `axon.eventhandling.processors.<group>.sequencing-policy` OR `@Bean SequencingPolicy` is registered.
+- [dlq.adoc](../../docs/paths/dlq.adoc) — *apply-condition:* `$SOURCE`'s processing group has a DLQ wired (informational only).
+- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always.
+- [interceptors.adoc](../../docs/paths/interceptors.adoc) — *apply-condition:* `$SOURCE` carries `@EventHandlerInterceptor` or `MessageHandlerInterceptor` (informational only).
+- [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` AND Configurer file is in scope.
+
+### Atoms (code-change recipes — single-responsibility API transformations)
+
+Load each atom whose apply-condition matches. Atoms are the canonical source for exact imports, before/after
+patterns, and gotchas for each API change.
+
+| Atom file | Apply-condition |
+|-----------|-----------------|
+| [../../atoms/namespace-annotation.md](../../atoms/namespace-annotation.md) | always |
+| [../../atoms/event-handler.md](../../atoms/event-handler.md) | always (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`) |
+| [../../atoms/metadata-value.md](../../atoms/metadata-value.md) | `$SOURCE` uses `@MetaDataValue` on any handler parameter |
+| [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | `@EventHandler` bodies access event message API directly |
+| [../../atoms/command-dispatcher.md](../../atoms/command-dispatcher.md) | `$SOURCE` has a `CommandGateway` field + in-handler dispatch |
+| [../../atoms/sequencing-policy.md](../../atoms/sequencing-policy.md) | YAML or `@Bean SequencingPolicy` exists for `$SOURCE`'s group, OR custom `SequencingPolicy` impl in scope |
+| [../../atoms/processing-context.md](../../atoms/processing-context.md) | `$SOURCE` uses `CurrentUnitOfWork` or `UnitOfWork` directly, or has `@MessageHandlerInterceptor` using the chain |
 
 ## Success Criteria
 
@@ -146,61 +164,43 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 ## Toolbox
 
+> **Atom-based execution.** Atoms for this recipe are pre-loaded during Research (FLOW.md S3) per the
+> `### Atoms` table in `## References`. Consult the loaded atom file for complete before/after, exact imports,
+> and gotchas. The steps below provide ordering and apply-conditions; the atoms provide the HOW.
+
 ### Common steps (always — both paths)
 
 *Apply-condition:* always.
 
-1. **Class-level `@ProcessingGroup` → `@Namespace`** (same string argument). Replace import `org.axonframework.config.ProcessingGroup` with `org.axonframework.messaging.core.annotation.Namespace`. The string is the **binding contract**: it must match every external reference (YAML `axon.eventhandling.processors.<string>.*`, `EventProcessorDefinition.pooledStreaming("<string>")`, `MessagingConfigurer.eventProcessing(...).processor("<string>", …)`). Mismatch silently drops events at runtime — there is no compile-time signal.
-2. **Sibling annotation imports** — for every method-level annotation in scope, swap to its AF5 location:
-   - `@EventHandler` → `org.axonframework.messaging.eventhandling.annotation.EventHandler`.
-   - `@DisallowReplay` → `org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay`.
-   - `@ResetHandler` → `org.axonframework.messaging.eventhandling.replay.annotation.ResetHandler`.
-   - `@MetaDataValue` (AF4, capital-D `D`) → `@MetadataValue` (AF5, capital `M` lower `d`) at `org.axonframework.messaging.core.annotation.MetadataValue`. **Case-sensitive — typos silently no-op.**
-3. **Accessor renames inside handler bodies** — `event.getPayload()` → `event.payload()`, `event.getMetaData()` → `event.metaData()`. AF5 events are records with accessor methods, not getter-style.
+1. **`@ProcessingGroup` → `@Namespace`** — apply **[[namespace-annotation]] atom**. String value is the binding
+   contract; grep all external references after renaming.
+2. **Handler annotation imports** — apply **[[event-handler]] atom** for `@EventHandler`, `@DisallowReplay`,
+   `@ResetHandler` import package moves.
+3. **Accessor renames in handler bodies** — apply **[[message-accessors]] atom** for
+   `getPayload()` → `payload()`, `getMetaData()` → `metaData()`, etc.
 
-### Step 4 — In-handler command dispatch (CommandGateway → CommandDispatcher)
+### Step 4 — In-handler command dispatch (`CommandGateway` → `CommandDispatcher`)
 
-*Apply-condition:* `$SOURCE` has a class-level `CommandGateway` field AND at least one `@EventHandler` body that calls it.
+*Apply-condition:* `$SOURCE` has a class-level `CommandGateway` field AND at least one `@EventHandler` body calls it.
 
-1. Remove the class-level `CommandGateway` field and its constructor injection.
-2. For every `@EventHandler` method that uses the gateway, add `CommandDispatcher commandDispatcher` as a method parameter (`org.axonframework.messaging.commandhandling.gateway.CommandDispatcher`). The framework binds this parameter to the active `ProcessingContext` automatically.
-3. Rewrite every `commandGateway.sendAndWait(cmd)` to async: `commandDispatcher.send(cmd, metadata).getResultMessage()` returning `CompletableFuture<? extends Message>`. The method's return type becomes `CompletableFuture<?>` (or a narrower future). Add `import java.util.concurrent.CompletableFuture;`.
-4. Try/catch around the AF4 blocking `sendAndWait` (typically compensation logic) becomes `.exceptionallyCompose(error -> …)` on the future chain. Conditional dispatch becomes `.thenCompose(...)` / early-returns via `CompletableFuture.completedFuture(null)`.
-5. **Do not** keep `CommandGateway` AND introduce `CommandDispatcher` side-by-side. Pick one based on call-site context: in-handler ⇒ `CommandDispatcher`; top-of-chain (REST controller, CLI, MCP tool) ⇒ keep `CommandGateway` (owned by the command-gateway recipe, out of scope here).
+Apply **[[command-dispatcher]] atom** — covers removing the field, adding `CommandDispatcher` as a method
+parameter, rewriting `sendAndWait` → `send(…).getResultMessage()` returning `CompletableFuture`, and converting
+try/catch compensation to `.exceptionallyCompose(…)`.
 
-### Step 5 — `@MetadataValue` casing flip (capital-D loss)
+### Step 5 — `@MetaDataValue` casing flip
 
 *Apply-condition:* `$SOURCE` uses `@MetaDataValue` on any handler parameter.
 
-The AF4 annotation `@MetaDataValue` has capital `D`: `MetaData`. AF5's `@MetadataValue` has only the leading `M` capitalised: `Metadata`. Both the symbol AND the import package change:
+Apply **[[metadata-value]] atom** — covers both the annotation casing change AND the import package change.
+Both must change together; typos compile silently but inject `null` at runtime.
 
-- AF4 import: `org.axonframework.messaging.annotation.MetaDataValue`
-- AF5 import: `org.axonframework.messaging.core.annotation.MetadataValue`
+### Steps 6 & 7 — Sequencing policy
 
-Typos compile but silently no-op (the parameter receives `null`). Grep before and after the rewrite to confirm the AF4 form is fully gone.
+*Apply-condition (Step 6):* YAML or `@Bean SequencingPolicy` exists for `$SOURCE`'s processing group.
+*Apply-condition (Step 7):* project ships a custom `SequencingPolicy` implementation `$SOURCE` depends on.
 
-### Step 6 — `@SequencingPolicy` class-level annotation (YAML / @Bean → annotation)
-
-*Apply-condition:* the AF4 wiring referenced a sequencing policy for `$SOURCE`'s processing group — either via a `@Bean SequencingPolicy` registered with `EventProcessingConfigurer.registerSequencingPolicy(...)` / `assignSequencingPolicy(...)`, or via YAML `axon.eventhandling.processors.<group>.sequencing-policy`.
-
-1. Annotate `$SOURCE`'s class with `@SequencingPolicy(type = <PolicyClass>.class, parameters = "<param>")` (`org.axonframework.messaging.core.annotation.SequencingPolicy`).
-2. Built-in policy classes (no body migration needed):
-   - `MetadataSequencingPolicy.class` with `parameters = "<metadataKey>"` — the AF4 idiom of "sequence by a metadata key" (very common; legacy projects often had a per-tenant `@Bean SequencingPolicy` reading e.g. `GameMetaData.GAME_ID_KEY`).
-   - `SequentialPerAggregatePolicy.class` — AF4 default; rarely needs to be explicit.
-   - `SequentialPolicy.class` — DCB default.
-   - `FullConcurrencyPolicy.class` — no sequencing.
-3. **Custom policies** — see Step 7.
-4. Remove the corresponding YAML key `axon.eventhandling.processors.<group>.sequencing-policy` (Step 8).
-5. The `@Bean SequencingPolicy` definition itself is NOT deleted by this recipe (other processors may share it). Leave the bean in place; flag in Result NOTES if it becomes orphan after the migration is complete.
-
-### Step 7 — Custom `SequencingPolicy` implementation rewrite
-
-*Apply-condition:* the project ships a custom class implementing `org.axonframework.eventhandling.async.SequencingPolicy<EventMessage<?>>` that `$SOURCE` depends on.
-
-1. Swap the implemented interface to `org.axonframework.messaging.core.sequencing.SequencingPolicy` (no generic parameter — AF5 binds it through `EventMessage<?>` at registration time).
-2. Method rename + signature change: AF4 `Object getSequenceIdentifierFor(EventMessage<?> event)` becomes AF5 `Optional<Object> sequenceIdentifierFor(EventMessage<?> message, ProcessingContext context)`.
-3. Accessor renames inside the body: `event.getPayload()` → `event.payload()`, `event.getMetaData()` → `event.metaData()` (or `message.metaData()` using the new parameter name).
-4. Return wrapping: every `return value;` becomes `return Optional.ofNullable(value);`; every `return null;` becomes `return Optional.empty();`.
+Apply **[[sequencing-policy]] atom** — covers `@SequencingPolicy` class annotation (Step 6) and the interface +
+method signature rewrite for custom policy classes (Step 7).
 
 ### Step 8 — YAML / properties (when application.yaml is in scope)
 

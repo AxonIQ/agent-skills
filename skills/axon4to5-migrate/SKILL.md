@@ -116,6 +116,17 @@ Migrate **everything in the working directory** that any recipe in the catalog d
 
 Steps (after the common pre-steps):
 
+**Triage** — before the recipe loop, classify what needs migrating:
+1. Run `mvn compile` / `gradle classes` (or use the post-OpenRewrite build state if already available).
+2. Cluster compile errors by source class. For each class with errors, apply the recipe `# Applicable` predicates
+   to classify it as one of: `aggregate`, `event-processor`, `command-gateway`, `query-gateway`,
+   `query-handler`, `interceptors`, `saga`, `event-store`, or `cross-cutting` (errors not matching any component
+   — e.g. remaining `UnitOfWork` references, raw `Message` accessor calls in utility classes).
+3. Component classes → enqueue against their recipe using the standard discovery order below.
+4. Cross-cutting classes → enqueue against relevant atoms directly (see `references/atoms/INDEX.md`) after all
+   component recipes have drained. Atoms can be applied inline without a full recipe sub-flow — Read the atom,
+   apply the transform, verify compile-clean.
+
 **Recipe loop** — iterate recipes in discovery order. For each recipe:
 
 1. **Discover** — evaluate the recipe's `applicable` predicates across the codebase to produce candidate sources.
@@ -183,7 +194,8 @@ flowchart TD
     A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration, execution"]
     PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
     ORW -- fail --> XORW[STOP: bulk-rewrite failed]
-    ORW -- ok --> B["list-recipes (catalog)"]
+    ORW -- ok --> TRIAGE["<b>Triage</b><br/>compile → cluster errors by class<br/>classify: component | cross-cutting<br/>component classes → recipe queue<br/>cross-cutting → atom pass (post-drain)"]
+    TRIAGE --> B["list-recipes (catalog)"]
     B --> RL{"<b>Next recipe</b><br/>in order?"}
     RL -- "yes: &lt;recipe&gt;" --> DISC["<b>Discover</b><br/>execution=inline: Grep/Glob<br/>execution=subagent: 1 Explore<br/>→ <b>Enqueue</b> items"]
     DISC --> Q[(Recipe queue)]
@@ -208,13 +220,16 @@ flowchart TD
         direction TB
         DBG_COMP["<b>Full compile</b><br/>mvn compile / gradle classes"]
         DBG_REDISC["<b>Re-discover</b><br/>re-scan applicable predicates<br/>any recipe match remaining errors?"]
+        DBG_ATOMS["<b>Cross-cutting atom pass</b><br/>consult atoms/INDEX.md<br/>apply matching atoms inline<br/>(ProcessingContext, message-accessors, …)"]
         DBG_COMP -- "⚠️ errors" --> DBG_REDISC
+        DBG_REDISC -- "nothing new" --> DBG_ATOMS
     end
 
     DBG_COMP -- "✅ green" --> FIN["<b>Finalize</b><br/>remove isolated-* scaffolding<br/>final compile · count by recipe"]
     DBG_REDISC -- "new candidates" --> REENQ["re-enqueue as pending"]
     REENQ --> Q
-    DBG_REDISC -- "nothing new<br/>recipes exhausted" --> FIN
+    DBG_ATOMS -- "atoms applied" --> DBG_COMP
+    DBG_ATOMS -- "no atom matches<br/>exhausted" --> FIN
     FIN --> RPT["<b>Report</b> &amp; END"]
 ```
 
@@ -233,15 +248,26 @@ flowchart TD
 
 ## Debugging loop (project mode only)
 
-Entered when drain empties but build is still red. All known recipes have been applied — this phase asks: "is there still something a recipe can fix?"
+Entered when drain empties but build is still red. All known recipes have been applied — this phase asks:
+"is there still something a recipe or atom can fix?"
 
-**Before the first full compile:** Scan for application classes in subdirectories that OpenRewrite does NOT process by default — e.g., a `microservices/` tree or separately deployable modules at the same repo root. These classes often use the same AF4 patterns (AF4 `ConfigurationEnhancer`, `SagaEntry`, `DeadlineManager`) as the main modules but are missed by the recipe drain because discovery only scanned the main source sets. Add any found classes to the queue and drain them before running the full compile.
+**Before the first full compile:** Scan for application classes in subdirectories that OpenRewrite does NOT
+process by default — e.g., a `microservices/` tree or separately deployable modules at the same repo root.
+These classes often use the same AF4 patterns (AF4 `ConfigurationEnhancer`, `SagaEntry`, `DeadlineManager`)
+as the main modules but are missed by the recipe drain because discovery only scanned the main source sets.
+Add any found classes to the queue and drain them before running the full compile.
 
 1. **Full compile** — `mvn compile` / `gradle classes` (Java + Kotlin). Green → exit loop → Finalize.
 2. Errors remain:
-   - **Re-discover** — re-scan every recipe's `applicable` predicates against current codebase. Sources mutated during drain may now match recipes that rejected earlier.
+   - **Re-discover** — re-scan every recipe's `applicable` predicates against current codebase. Sources mutated
+     during drain may now match recipes that rejected earlier.
    - New `(recipe, source)` pairs not already terminal → re-enqueue as `pending`, resume drain (loop repeats).
-   - Nothing new → all applicable recipes exhausted → Finalize.
+   - **Cross-cutting atom pass** — if no recipe candidates emerge but errors remain, consult
+     `references/atoms/INDEX.md`. Identify which atoms address the remaining compile error patterns (e.g.,
+     surviving `UnitOfWork` references → [[processing-context]] atom; `getPayload()` calls in utility classes →
+     [[message-accessors]] atom). Apply the relevant atoms inline to the offending files — Read the atom, apply
+     the transform, verify compile-clean. Repeat until no new atom candidates or build is green.
+   - Nothing new from recipes OR atoms → all applicable recipes and atoms exhausted → Finalize.
 
 ## Finalize (project mode only)
 
@@ -278,6 +304,7 @@ See .axon4to5-migration/progress.md for full details.
 **Load order at skill start (before any pre-steps or mode logic):**
 1. `Read` [`references/recipes/FLOW.md`](references/recipes/FLOW.md) — recipe control-flow spec. Non-optional. Recipes fill in named sections; they never re-implement it.
 2. `Read` [`references/DURABILITY.md`](references/DURABILITY.md) — state + resume protocol (`mode=project`; skim for `mode=single`).
+3. `Read` [`references/atoms/INDEX.md`](references/atoms/INDEX.md) — atom catalog. Provides the full cross-reference of which atoms exist and which component recipes use them. Recipes load individual atom files on-demand during FLOW.md S3 (Read References) — the INDEX is loaded once at skill start for triage and discovery decisions.
 
 ### Recipe defaults ([`DEFAULT.md`](references/recipes/DEFAULT.md))
 

@@ -92,16 +92,34 @@ Detect with `grep -RnE '@DeadlineHandler|DeadlineManager|deadlineManager\\.sched
 
 ## References
 
-Inherits the catalog baseline (see DEFAULT.md § Toolbox baseline). Recipe-specific entries — each is a markdown link to the actual file under `references/docs/paths/`, followed by its apply-condition:
+Inherits the catalog baseline (see DEFAULT.md § Toolbox baseline). Loaded during FLOW.md S3 (Read References).
+The orchestrator never reads these — the recipe consults them at S3 and re-consults at S6 (Plan Migration).
+
+### Knowledge docs (architecture context)
 
 - [aggregates/index.adoc](../../docs/paths/aggregates/index.adoc) — *apply-condition:* always.
-- [aggregates/configuration-migration.adoc](../../docs/paths/aggregates/configuration-migration.adoc) — *apply-condition:* always (different sections of this file cover Path A `@EventSourced` annotation choice and Path B `EventSourcedEntityModule` registration; the recipe picks the relevant sub-section based on `configuration` argument).
+- [aggregates/configuration-migration.adoc](../../docs/paths/aggregates/configuration-migration.adoc) — *apply-condition:* always (Path A section for `configuration=spring`; Path B section for `configuration=native`).
 - [aggregates/multi-entity-migration.adoc](../../docs/paths/aggregates/multi-entity-migration.adoc) — *apply-condition:* scope contains at least one `@AggregateMember` field.
 - [aggregates/polymorphism-migration.adoc](../../docs/paths/aggregates/polymorphism-migration.adoc) — *apply-condition:* `$SOURCE` is abstract `@AggregateRoot` OR has concrete `@Aggregate` subclasses in the same module.
-- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* any command or event class in scope (always for this recipe).
+- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always.
 - [test-fixtures.adoc](../../docs/paths/test-fixtures.adoc) — *apply-condition:* `<target>Test` exists in scope AND blocker B3 did not fire.
 
-The orchestrator never reads these — the recipe consults them at FLOW.md S3 (Read References) and re-consults at S6 (Plan Migration).
+### Atoms (code-change recipes — single-responsibility API transformations)
+
+Load each atom whose apply-condition matches current scope. Atoms are the **canonical** source for exact
+imports, before/after patterns, and gotchas for each API change; they replace inline repetition in the Toolbox.
+
+| Atom file | Apply-condition |
+|-----------|-----------------|
+| [../../atoms/entity-annotation.md](../../atoms/entity-annotation.md) | always (Path A if `configuration=spring`, Path B if `configuration=native`) |
+| [../../atoms/event-sourcing-handler.md](../../atoms/event-sourcing-handler.md) | always |
+| [../../atoms/command-handler.md](../../atoms/command-handler.md) | always |
+| [../../atoms/event-appender.md](../../atoms/event-appender.md) | always |
+| [../../atoms/entity-creator.md](../../atoms/entity-creator.md) | always |
+| [../../atoms/command-annotation.md](../../atoms/command-annotation.md) | any command class in scope |
+| [../../atoms/event-annotation.md](../../atoms/event-annotation.md) | any event class in scope |
+| [../../atoms/entity-member.md](../../atoms/entity-member.md) | scope contains at least one `@AggregateMember` field |
+| [../../atoms/test-fixture.md](../../atoms/test-fixture.md) | `<target>Test` exists in scope AND B3 did not fire |
 
 ## Success Criteria
 
@@ -145,97 +163,82 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 ## Toolbox
 
+> **Atom-based execution.** Atoms for this recipe are pre-loaded during Research (FLOW.md S3) per the
+> `### Atoms` table in `## References`. Consult the loaded atom file for the complete before/after, exact imports,
+> and gotchas. The steps below provide ordering and apply-conditions; the atoms provide the HOW.
+
 ### Path A — Spring Boot (`configuration=spring`)
 
 *Apply-condition:* `configuration=spring`.
 
-1. Replace AF4 `@Aggregate` (`org.axonframework.spring.stereotype.Aggregate`) with AF5 `@EventSourced` (`org.axonframework.extension.spring.stereotype.EventSourced`). The `.extension.spring.` infix is mandatory — `org.axonframework.spring.stereotype.EventSourced` does not exist.
-2. Emit attributes **always explicitly**:
-   ```java
-   @EventSourced(tagKey = "<EntityName>", idType = <IdType>.class)
-   public class <EntityName> { ... }
-   ```
-   - `tagKey` — convey the *entity type*, e.g. `"Bike"`, not the field name `"bikeId"`. Always written even if it equals the framework default (simple class name) — renames otherwise break routing silently.
-   - `idType` — set to the type of the AF4 `@AggregateIdentifier` field. Default is `String.class`; mismatched type → silent identifier-resolution failure.
-   - If `snapshotTriggerDefinition` was present AND the companion bean was translatable, the B1 auto-migration path in Research already handled the annotation change and module registration — this step has nothing extra to do for the attribute. If the companion bean was NOT translatable, B1 fired as Blocker and the recipe never reached this step; after the caller resolves and re-invokes, the attribute is gone and this step proceeds normally.
+Apply **[[entity-annotation]] atom § Path A** — replace `@Aggregate` with `@EventSourced(tagKey = …, idType = …)`.
+The atom has the exact import path and attribute rules.
 
 ### Path B — Native Configurer (`configuration=native`)
 
 *Apply-condition:* `configuration=native`.
 
-1. Replace AF4 `@Aggregate` / `@AggregateRoot` with AF5 `@EventSourcedEntity` (`org.axonframework.eventsourcing.annotation.EventSourcedEntity`). Same `tagKey` / `idType` rules as Path A.
-2. Locate the project's Configurer wiring file (typical names: `*Configuration.java`, `*Application.java`, `*Bootstrap.java`, per-slice `<Slice>Configuration.java`). Add registration:
+1. Apply **[[entity-annotation]] atom § Path B** — replace `@Aggregate`/`@AggregateRoot` with
+   `@EventSourcedEntity(tagKey = …, idType = …)`.
+2. Locate the Configurer wiring file (typical names: `*Configuration.java`, `*Application.java`, `*Bootstrap.java`,
+   per-slice `<Slice>Configuration.java`). Add registration for `$SOURCE`:
    ```java
    EventSourcingConfigurer.create()
        .registerEntity(EventSourcedEntityModule.autodetected(<IdType>.class, <Entity>.class))
        .registerCommandHandlingModule(...)
        .start();
    ```
-   Or, for per-slice projects, inside the slice's `static EventSourcingConfigurer configure(EventSourcingConfigurer)` method. `<IdType>` must match the `idType` on `@EventSourcedEntity`.
-3. If the project's command handler lives in a separate class and is not registered, add via `CommandHandlingModule.autodetectedCommandHandlingComponent(...)`. If the configurer file cannot be located → emit Blocker `configurer-file-not-found` with NOTES naming the failed search.
+   Or, for per-slice projects, inside `static EventSourcingConfigurer configure(EventSourcingConfigurer)`.
+   `<IdType>` must match `idType` on `@EventSourcedEntity`.
+3. If the command handler is in a separate class not yet registered, add via
+   `CommandHandlingModule.autodetectedCommandHandlingComponent(…)`. If the configurer file cannot be located
+   → emit Blocker `configurer-file-not-found`.
 
 ### Common steps (always — both paths)
 
 *Apply-condition:* always.
 
-1. **Commands** — for each command class in `# Scope`:
-   - remove `import org.axonframework.modelling.command.TargetAggregateIdentifier`; add `import org.axonframework.modelling.annotation.TargetEntityId`; replace `@TargetAggregateIdentifier` with `@TargetEntityId`.
-   - annotate the class with `@Command` (`org.axonframework.messaging.commandhandling.annotation.Command`). `@RoutingKey` on a property → `@Command(routingKey = "<propertyName>")` + remove `@RoutingKey`.
-2. **Events** — for each event class in `# Scope`:
-   - identify the property the AF4 `@AggregateIdentifier` field is set from inside an `@EventSourcingHandler` — that's the property that must carry `@EventTag(key = "<EntityName>")`. Without DCB, exactly one `@EventTag` per event.
-   - annotate the class with `@Event` (`org.axonframework.messaging.eventhandling.annotation.Event`). `@Revision("x")` → `@Event(version = "x")`; remove `@Revision`.
-3. **Aggregate body**:
-   - remove `@AggregateIdentifier` annotation + import; the id field stays as a plain field.
-   - replace import `org.axonframework.eventsourcing.EventSourcingHandler` → `org.axonframework.eventsourcing.annotation.EventSourcingHandler`.
-   - replace import `org.axonframework.commandhandling.CommandHandler` → `org.axonframework.messaging.commandhandling.annotation.CommandHandler`.
-   - annotate the no-arg constructor with `@EntityCreator` (`org.axonframework.eventsourcing.annotation.reflection.EntityCreator` — the `.reflection.` infix is mandatory). Grep before adding — OpenRewrite often already added it; duplicates compile but signal partial state.
-   - replace `AggregateLifecycle.apply(event)` → `eventAppender.append(event)` body-by-body; add `EventAppender eventAppender` (`org.axonframework.messaging.eventhandling.gateway.EventAppender` — the `.messaging.` infix is mandatory) as the last parameter of every `@CommandHandler`. Remove the static import of `AggregateLifecycle.apply`.
-4. **`@CreationPolicy` mapping** (per `aggregates/index.adoc` § Removal of `@CreationPolicy`). OpenRewrite drops the annotation; verify the resulting handler shape matches the original semantics:
+1. **`@EventSourcingHandler` import** — apply **[[event-sourcing-handler]] atom**.
+2. **`@CommandHandler` import** — apply **[[command-handler]] atom** (import fix only; EventAppender comes next).
+3. **`EventAppender` threading** — apply **[[event-appender]] atom** — replace `AggregateLifecycle.apply(…)` with
+   `eventAppender.append(…)` and add `EventAppender eventAppender` as the last parameter of every `@CommandHandler`.
+4. **`@EntityCreator`** — apply **[[entity-creator]] atom** — annotate the no-arg constructor.
+5. **`@AggregateIdentifier`** — remove the annotation and its import; the id field stays as a plain field.
+6. **`@CreationPolicy` mapping** (per `aggregates/index.adoc` § Removal of `@CreationPolicy`). OpenRewrite drops
+   the annotation; verify the resulting handler shape matches the original semantics:
    - `ALWAYS` → make the `@CommandHandler` **static**. OpenRewrite usually does NOT flip to `static` — verify.
-   - `CREATE_IF_MISSING` → instance `@CommandHandler` + no-arg `@EntityCreator` (default post-OpenRewrite). Domain rule against empty state runs instead of the AF4 `AggregateNotFoundException` path — re-check the surrounding domain invariants don't NPE on null state.
+   - `CREATE_IF_MISSING` → instance `@CommandHandler` + no-arg `@EntityCreator`. Domain rule against empty state
+     runs instead of the AF4 `AggregateNotFoundException` path.
    - `NEVER` (or absent) → instance `@CommandHandler` (default).
+7. **Commands** — for each command class in `# Scope`, apply **[[command-annotation]] atom**.
+8. **Events** — for each event class in `# Scope`, apply **[[event-annotation]] atom**.
 
 ### Step M — Multi-entity (`@AggregateMember` → `@EntityMember`)
 
 *Apply-condition:* scope contains at least one `@AggregateMember` field.
 
-1. Replace import `org.axonframework.modelling.command.AggregateMember` → `org.axonframework.modelling.entity.annotation.EntityMember`.
-2. Replace `@AggregateMember` → `@EntityMember`. For collection-of-entity fields keep `routingKey = "<childIdProperty>"`.
-3. **Map-typed members** — emit Blocker B2, exit. No edits to Map-typed members.
-4. Each child entity gets `@EntityCreator` and uses `EventAppender` in its own `@CommandHandler` methods. Child entities do NOT get class-level `@EventSourced` / `@EventSourcedEntity` — they are discovered through the parent.
+Apply **[[entity-member]] atom** — covers the import rename, Blocker B2 (Map-typed), and child entity requirements
+(`@EntityCreator` + `EventAppender` per child `@CommandHandler`).
 
 ### Step P — Polymorphic (`concreteTypes`)
 
 *Apply-condition:* `$SOURCE` is abstract `@AggregateRoot` OR has concrete `@Aggregate` subclasses inheriting handlers.
 
-1. Keep the base class abstract; remove `@Aggregate` / `@AggregateRoot` and its import from the base.
-2. Add `@EventSourcedEntity(concreteTypes = { Sub1.class, Sub2.class, ... })` (Path B) OR `@EventSourced(concreteTypes = ...)` (Path A) to the base.
-3. Concrete subtypes do NOT carry `@EventSourced` / `@EventSourcedEntity` — discovered through the base.
-4. Inherited `@EventSourcingHandler` methods stay on the base. Subtype-specific handlers stay on subtypes. Both base and subtypes use `EventAppender` in their `@CommandHandler` methods.
-5. Each concrete subtype carries `@EntityCreator` on one constructor.
+1. Keep the base class abstract; remove `@Aggregate`/`@AggregateRoot` and its import from the base.
+2. Add `@EventSourcedEntity(concreteTypes = { Sub1.class, Sub2.class, … })` (Path B) OR
+   `@EventSourced(concreteTypes = …)` (Path A) to the base, retaining `tagKey` and `idType`.
+3. Concrete subtypes do **NOT** carry `@EventSourced`/`@EventSourcedEntity` — discovered through the base.
+4. Inherited `@EventSourcingHandler` methods stay on the base. Subtype-specific handlers stay on subtypes.
+   Both base and subtypes use `EventAppender` in their `@CommandHandler` methods (see [[event-appender]]).
+5. Each concrete subtype carries `@EntityCreator` on one constructor (see [[entity-creator]]).
 
-### T — Test fixture migration
+### Step T — Test fixture migration
 
-*Apply-condition:* `target_test` exists in `# Scope` AND Blocker B3 did not fire (no `SagaTestFixture` usage in the test class).
+*Apply-condition:* `target_test` exists in `# Scope` AND Blocker B3 did not fire.
 
-1. Migrate base test first, then any subclasses.
-2. Replace `AggregateTestFixture` with `AxonTestFixture`:
-   - import `org.axonframework.test.aggregate.AggregateTestFixture` → `org.axonframework.test.fixture.AxonTestFixture`.
-   - field type `AggregateTestFixture<?>` → `AxonTestFixture`.
-   - `@BeforeEach` body — `new AggregateTestFixture<>(<target>.class)` → `AxonTestFixture.with(<configurer>)` where `<configurer>` is:
-     ```java
-     EventSourcingConfigurer.create()
-         .registerEntity(EventSourcedEntityModule.autodetected(<IdType>.class, <Entity>.class))
-     ```
-   - add `@AfterEach tearDown() { fixture.stop(); }`.
-3. Fluent given/when/then:
-   - `fixture.given(events…)` → `fixture.given().events(events…)`
-   - `fixture.givenNoPriorActivity()` → `fixture.given().noPriorActivity()`
-   - `.when(cmd)` → `.when().command(cmd)`
-   - `.expectEvents(events…)` → `.then().events(events…)`
-   - `.expectException(Cls.class)` → `.then().exception(Cls.class)`
-   - inside `eventsSatisfy(events -> …)` lambdas: `events.get(0).payload()` / `.metaData()` (AF5 record-style — NOT `getPayload()` / `getMetaData()`).
-4. **AF5 exception flips** — `AggregateNotFoundException` is NOT thrown for instance handlers in AF5 with no-arg `@EntityCreator`. The framework materialises an empty entity and runs the handler — any project domain rule against empty state surfaces instead. Replace the assertion with the project's existing exception/rule on empty state (do NOT invent a new exception type). Static creational handlers throw `EntityAlreadyExistsForCreationalCommandHandlerException` when the entity already exists.
+Apply **[[test-fixture]] atom** — covers `AggregateTestFixture` → `AxonTestFixture`, configurer wiring,
+DSL chain changes (`given()/when()/then()`), `@AfterEach tearDown()`, accessor renames in lambdas,
+and the AF5 exception flip (`AggregateNotFoundException` → project domain exception).
 
 ## Use cases
 
