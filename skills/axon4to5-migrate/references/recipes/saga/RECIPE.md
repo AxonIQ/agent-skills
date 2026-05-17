@@ -116,18 +116,32 @@ When B2 option is `skip` or no test file exists: `axon4to5-isolatedtest` with `t
 No saga migration path exists in the docs catalog. Recipe is self-contained.
 
 - [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always. Covers `getPayload()` / `getMetaData()` → `payload()` / `metaData()` accessor renames inside event handler bodies.
-- [projectors-event-processors.adoc](../../docs/paths/projectors-event-processors.adoc) — *apply-condition:* processor wiring is in scope (caller needs to register the migrated component as an event processor via `EventProcessorDefinition` or `MessagingConfigurer`). Informational — out of scope for this recipe; flag in Result NOTES.
+- [projectors-event-processors.adoc](../../docs/paths/projectors-event-processors.adoc) — *apply-condition:* processor wiring is in scope. Informational — out of scope for this recipe; flag in Result NOTES.
+
+### Atoms (code-change recipes — single-responsibility API transformations)
+
+Load each atom whose apply-condition matches current scope. Atoms are the **canonical** source for exact
+imports, before/after patterns, and gotchas for each API change; they replace inline repetition in the Toolbox.
+
+| Atom file | Apply-condition |
+|-----------|-----------------|
+| [../../atoms/saga-annotation.md](../../atoms/saga-annotation.md) | always |
+| [../../atoms/saga-event-handler.md](../../atoms/saga-event-handler.md) | always |
+| [../../atoms/command-dispatcher.md](../../atoms/command-dispatcher.md) | any `@EventHandler` dispatches commands (class had `CommandGateway` field) |
+| [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | handler bodies use `event.getPayload()` / `event.getMetaData()` |
 
 ## Toolbox
+
+> **Atom-based execution.** Atoms for this recipe are pre-loaded during Research (FLOW.md S3) per the
+> `### Atoms` table above. Consult the loaded atom file for complete before/after, exact imports, and gotchas.
+> The steps below provide ordering and apply-conditions; the atoms provide the HOW.
 
 ### Step 1 — Class-level annotation swap (always)
 
 *Apply-condition:* always.
 
-1. Remove `@Saga` annotation and its import (`org.axonframework.spring.stereotype.Saga` / `org.axonframework.extension.spring.stereotype.Saga`).
-2. Add `@Component` (`org.springframework.stereotype.Component`).
-3. Add `@DisallowReplay` (`org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay`).
-4. Remove `@Autowired` on `CommandGateway` / `DeadlineManager` fields (will be constructor-injected or removed).
+Apply **[[saga-annotation]] atom** — covers removing `@Saga` (both import paths), adding `@Component` +
+`@DisallowReplay`, and removing `@Autowired` from fields that will be constructor-injected or removed.
 
 ### Step 2 — Create JPA state entity (always)
 
@@ -179,19 +193,14 @@ Add `findAllByTimestampLessThanAndStatusIn` — required if the caller later des
 
 *Apply-condition:* always.
 
-Mapping:
+Apply **[[saga-event-handler]] atom** — covers `@StartSaga/@SagaEventHandler/@EndSaga` → `@EventHandler` mapping,
+`SagaLifecycle.*` removal, all four AF4 import removals, and the AF5 `@EventHandler` import addition.
 
-| AF4 | AF5 |
-|-----|-----|
-| `@StartSaga @SagaEventHandler(associationProperty = "X")` | `@EventHandler` — body saves new state row; first param is the event |
-| `@SagaEventHandler(associationProperty = "X")` | `@EventHandler` — body looks up state by `event.X()` |
-| `@EndSaga @SagaEventHandler(associationProperty = "X")` | `@EventHandler` — body updates state to terminal status |
-| `SagaLifecycle.associateWith("key", value)` | REMOVE — state lookup uses the event's natural field; no explicit association needed |
-| `SagaLifecycle.removeAssociationWith(...)` | REMOVE |
-| `SagaLifecycle.end()` | REMOVE — call `repository.deleteById(...)` or set terminal status instead |
-| `SagaLifecycle.associateWith("secondaryKey", value)` | Store `value` in the state entity so future handlers can look it up |
+For handlers that dispatch commands: apply **[[command-dispatcher]] atom** — removes `CommandGateway` field,
+adds `CommandDispatcher commandDispatcher` as a method parameter, rewrites `sendAndWait` → async
+`commandDispatcher.send(...)`.
 
-Every `@EventHandler` that dispatches commands gets `CommandDispatcher commandDispatcher` as a method parameter (AF5 style). Remove the class-level `CommandGateway` field.
+For handler bodies using `event.getPayload()` / `event.getMetaData()`: apply **[[message-accessors]] atom**.
 
 ### Step 5 — Comment out DeadlineManager / @DeadlineHandler (when B1 in scope)
 

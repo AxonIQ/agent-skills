@@ -77,5 +77,7 @@ metadata values to non-String types must be updated to parse strings (e.g., `Int
 ## Used By
 
 - **[[event-processor]]** — common steps 3 (accessor renames inside handler bodies)
+- **[[interceptors]]** — Step 2/3 when interceptor body uses `message.getMetaData()` / `message.getPayload()` / `message.andMetaData(...)`
+- **[[saga]]** — Step 4 when handler bodies use `event.getPayload()` / `event.getMetaData()`
 - **[[sequencing-policy]]** — SequencingPolicy body uses `event.payload()` / `event.metaData()`
 - **[[test-fixture]]** — test assertion lambdas

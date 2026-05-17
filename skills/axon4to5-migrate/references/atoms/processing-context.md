@@ -4,7 +4,7 @@ title: "UnitOfWork → ProcessingContext — InterceptorChain.proceedSync + inje
 af4-symbols: ["UnitOfWork", "CurrentUnitOfWork", "InterceptorChain.proceed()", "org.axonframework.messaging.unitofwork"]
 af5-symbols: ["ProcessingContext", "InterceptorChain.proceedSync(context)", "org.axonframework.messaging.core.ProcessingContext"]
 detect: grep -rn 'UnitOfWork\|CurrentUnitOfWork\|InterceptorChain' --include='*.java' .
-used-by: [interceptors, saga, event-processor]
+used-by: [interceptors, event-processor, saga]
 ---
 
 # UnitOfWork → ProcessingContext
@@ -104,6 +104,6 @@ easily receive a parameter, pass the `ProcessingContext` through the call chain.
 
 ## Used By
 
-- **[[interceptors]]** — `@MessageHandlerInterceptor` bodies (always, when interceptor uses the chain)
-- **[[event-processor]]** — when handler methods reference `CurrentUnitOfWork`
-- **[[saga]]** — legacy saga components may require `ProcessingContext` on `InterceptorChain.proceedSync`
+- **[[interceptors]]** — Step 4 (`@MessageHandlerInterceptor` bodies that used `UnitOfWork` lifecycle hooks)
+- **[[event-processor]]** — when handler methods reference `CurrentUnitOfWork` or `UnitOfWork`
+- **[[saga]]** — referenced by [[interceptor-handler]] for lifecycle hook replacements

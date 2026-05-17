@@ -71,6 +71,10 @@ Project defines a class implementing `org.axonframework.messaging.responsetypes.
 - [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* always. Covers `QueryGateway` package move, `@Query`, `MessageType`, `ResponseType` removal.
 - [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` OR any config-reader class is in scope. Covers `AxonConfiguration` / `Configuration` split, `getOptionalComponent(...)`, component lookup model.
 
+### Atoms
+
+None — all transformations are call-site specific to `QueryGateway` dispatch patterns.
+
 ## Success Criteria
 
 Extends DEFAULT.md baseline. DEFAULT's three baseline criteria stay in force. Recipe adds:

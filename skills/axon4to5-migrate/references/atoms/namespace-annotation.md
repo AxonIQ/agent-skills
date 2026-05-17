@@ -4,7 +4,7 @@ title: "@ProcessingGroup → @Namespace (class-level event processor grouping)"
 af4-symbols: ["@ProcessingGroup", "org.axonframework.config.ProcessingGroup"]
 af5-symbols: ["@Namespace", "org.axonframework.messaging.core.annotation.Namespace"]
 detect: grep -rn 'import org.axonframework.config.ProcessingGroup\|@ProcessingGroup' --include='*.java' .
-used-by: [event-processor]
+used-by: [event-processor, query-handler]
 ---
 
 # @ProcessingGroup → @Namespace
@@ -74,3 +74,4 @@ References to update:
 ## Used By
 
 - **[[event-processor]]** — common steps 1 (always; every event-handling class)
+- **[[query-handler]]** — Step 4 (when `@ProcessingGroup` present on the query handler class)

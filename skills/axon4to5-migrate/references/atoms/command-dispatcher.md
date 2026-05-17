@@ -4,7 +4,7 @@ title: "In-handler command dispatch — CommandGateway field → CommandDispatch
 af4-symbols: ["CommandGateway", "commandGateway.sendAndWait", "commandGateway.send", "org.axonframework.commandhandling.gateway.CommandGateway"]
 af5-symbols: ["CommandDispatcher", "commandDispatcher.send", "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher"]
 detect: grep -rn 'CommandGateway' --include='*.java' . # then filter: classes with @EventHandler that call commandGateway
-used-by: [event-processor]
+used-by: [event-processor, saga]
 ---
 
 # In-Handler Command Dispatch — CommandGateway → CommandDispatcher
@@ -117,3 +117,4 @@ commandDispatcher.send(cmd).resultAs(Message.class)
 ## Used By
 
 - **[[event-processor]]** — Step 4 (when `$SOURCE` has a `CommandGateway` field + in-handler dispatch)
+- **[[saga]]** — Step 4 (when any `@EventHandler` dispatches commands via `CommandGateway` field)

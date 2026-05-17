@@ -37,17 +37,39 @@ for each API change; the component recipes provide scope, blockers, and componen
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[namespace-annotation]] | `@ProcessingGroup` → `@Namespace`; binding contract; external reference grep | event-processor |
-| [[metadata-value]] | `@MetaDataValue` (AF4) → `@MetadataValue` (AF5) — casing + package | event-processor |
+| [[namespace-annotation]] | `@ProcessingGroup` → `@Namespace`; binding contract; external reference grep | event-processor, query-handler |
+| [[metadata-value]] | `@MetaDataValue` (AF4) → `@MetadataValue` (AF5) — casing + package | event-processor, query-handler |
 | [[message-accessors]] | `getPayload()` → `payload()`, `getMetaData()` → `metaData()`, etc. | event-processor, saga, interceptors |
-| [[command-dispatcher]] | `CommandGateway` field → `CommandDispatcher` method param; async dispatch | event-processor |
+| [[command-dispatcher]] | `CommandGateway` field → `CommandDispatcher` method param; async dispatch | event-processor, saga |
 | [[sequencing-policy]] | YAML/`@Bean` → `@SequencingPolicy` class annotation; `SequencingPolicy` interface rewrite | event-processor |
+
+### Query Handling
+
+| Atom | What it covers | Components |
+|------|----------------|-----------|
+| [[query-handler-annotation]] | `@QueryHandler` import move: `queryhandling` → `messaging.queryhandling.annotation` | query-handler |
+| [[query-payload-record]] | `@QueryHandler(queryName)` removal; introduce `@Query`-annotated top-level payload record | query-handler |
+| [[query-update-emitter]] | `QueryUpdateEmitter` constructor field → method param; `emit()` 2-arg → 3-arg | query-handler |
+
+### Interceptors
+
+| Atom | What it covers | Components |
+|------|----------------|-----------|
+| [[interceptor-dispatch]] | `handle(List<M>)` → `interceptOnDispatch(M, @Nullable ProcessingContext, Chain)`; BiFunction collapse | interceptors |
+| [[interceptor-handler]] | `handle(UnitOfWork, InterceptorChain)` → `interceptOnHandle(M, ProcessingContext, Chain)`; `chain.proceed(message, context)` | interceptors |
+
+### Saga
+
+| Atom | What it covers | Components |
+|------|----------------|-----------|
+| [[saga-annotation]] | `@Saga` → `@Component @DisallowReplay`; both AF4 import paths | saga |
+| [[saga-event-handler]] | `@SagaEventHandler`/`@StartSaga`/`@EndSaga` → `@EventHandler` + JPA state lookup; `SagaLifecycle` removal | saga |
 
 ### Infrastructure
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[processing-context]] | `UnitOfWork` → `ProcessingContext`; `InterceptorChain.proceedSync(context)` | interceptors, saga, event-processor |
+| [[processing-context]] | `UnitOfWork` → `ProcessingContext`; `InterceptorChain.proceedSync(context)`; lifecycle hooks | interceptors, saga, event-processor |
 
 ### Testing
 
@@ -61,8 +83,12 @@ for each API change; the component recipes provide scope, blockers, and componen
 |---|---|
 | `aggregate` | entity-annotation · entity-creator · event-appender · event-sourcing-handler · command-handler · command-annotation · event-annotation · entity-member (M) · test-fixture (T) |
 | `event-processor` | namespace-annotation · event-handler · metadata-value · message-accessors · command-dispatcher (4) · sequencing-policy (6/7) · processing-context (when UnitOfWork used) |
-| `interceptors` | processing-context |
-| `saga` | processing-context · message-accessors |
+| `interceptors` | interceptor-dispatch (dispatch) · interceptor-handler (handler) · processing-context (when UnitOfWork lifecycle hooks used) · message-accessors (when body uses message API) |
+| `query-handler` | query-handler-annotation · query-payload-record (queryName) · query-update-emitter (QUE) · namespace-annotation (ProcessingGroup) · metadata-value (MetaDataValue) · event-handler (QUE-touched methods) |
+| `saga` | saga-annotation · saga-event-handler · command-dispatcher (when CommandGateway present) · message-accessors (when body uses message API) |
+| `command-gateway` | — (no atoms) |
+| `event-store` | — (no atoms) |
+| `query-gateway` | — (no atoms) |
 
 ## Adding a new atom
 

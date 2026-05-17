@@ -4,7 +4,7 @@ title: "@MetaDataValue (AF4) → @MetadataValue (AF5) — casing + package chang
 af4-symbols: ["@MetaDataValue", "org.axonframework.messaging.annotation.MetaDataValue"]
 af5-symbols: ["@MetadataValue", "org.axonframework.messaging.core.annotation.MetadataValue"]
 detect: grep -rn 'MetaDataValue' --include='*.java' .
-used-by: [event-processor]
+used-by: [event-processor, query-handler]
 ---
 
 # @MetaDataValue → @MetadataValue
@@ -67,3 +67,4 @@ grep -rn 'MetaDataValue' --include='*.java' .
 ## Used By
 
 - **[[event-processor]]** — Step 5 (when `@MetaDataValue` is used on handler parameters)
+- **[[query-handler]]** — Step 5 (when `@MetaDataValue` is used on query handler parameters)

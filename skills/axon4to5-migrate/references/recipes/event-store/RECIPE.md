@@ -108,6 +108,10 @@ Aggregation rule: **all match (AND)** — DEFAULT.md baseline AND all applicable
 - [serializers.adoc](../../docs/paths/serializers.adoc) — *apply-condition:* custom `Serializer` / `XStreamSerializer` detected (B4 soft blocker). `Serializer` → `Converter` / `EventConverter` SPI.
 - [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native`. `DefaultConfigurer` → `EventSourcingConfigurer`, `ConfigurerModule` → `ConfigurationEnhancer`, bootstrap-layer reads.
 
+### Atoms
+
+None — all transformations are bean-wiring specific to `EventStorageEngine` configuration.
+
 ## Toolbox
 
 ### Step 1 — Preflight detection (always)

@@ -57,46 +57,55 @@ Aggregation: all (AND).
 - `references/docs/paths/messages.adoc` — package mapping for all messaging types
 - `references/recipes/query-gateway/RECIPE.md` — companion recipe for query dispatch side
 
+### Atoms (code-change recipes — single-responsibility API transformations)
+
+Load each atom whose apply-condition matches current scope. Atoms are the **canonical** source for exact
+imports, before/after patterns, and gotchas for each API change; they replace inline repetition in the Toolbox.
+
+| Atom file | Apply-condition |
+|-----------|-----------------|
+| [../../atoms/query-handler-annotation.md](../../atoms/query-handler-annotation.md) | always |
+| [../../atoms/query-payload-record.md](../../atoms/query-payload-record.md) | any `@QueryHandler(queryName = "…")` present |
+| [../../atoms/query-update-emitter.md](../../atoms/query-update-emitter.md) | `QueryUpdateEmitter` is constructor-injected |
+| [../../atoms/namespace-annotation.md](../../atoms/namespace-annotation.md) | `@ProcessingGroup` present |
+| [../../atoms/metadata-value.md](../../atoms/metadata-value.md) | `@MetaDataValue` on any method parameter |
+| [../../atoms/event-handler.md](../../atoms/event-handler.md) | `@EventHandler` imports touched by Step 3 (QUE migration) |
+
 # Toolbox
+
+> **Atom-based execution.** Atoms for this recipe are pre-loaded during Research (FLOW.md S3) per the
+> `### Atoms` table above. Consult the loaded atom file for complete before/after, exact imports, and gotchas.
+> The steps below provide ordering and apply-conditions; the atoms provide the HOW.
 
 ### Step 1 — @QueryHandler import swap
 *Apply-condition:* always.
 
-`org.axonframework.queryhandling.QueryHandler` → `org.axonframework.messaging.queryhandling.annotation.QueryHandler`
+Apply **[[query-handler-annotation]] atom** — `org.axonframework.queryhandling.QueryHandler` → `org.axonframework.messaging.queryhandling.annotation.QueryHandler`.
 
 ### Step 2 — queryName removal + query payload record introduction
 *Apply-condition:* any `@QueryHandler(queryName = "…")` present.
 
-For each named handler:
-
-a. Record the `queryName` value (e.g. `"findAvailable"`).
-b. Identify parameter: no-param → introduce `record FindAvailableQuery() {}`; bare scalar `String bikeType` → `record FindAvailableQuery(String bikeType) {}`. Place as a **separate top-level class** in the project's query API package (e.g. `queries/FindAvailableQuery.java`). Inner record inside the handler class is NOT acceptable — query classes are part of the API contract shared with dispatch sites.
-c. Add `@Query(name = "findAvailable")` from `org.axonframework.messaging.queryhandling.annotation.Query` when record simple name (case-sensitive) ≠ queryName string. `FindAvailableQuery` ≠ `findAvailable` → annotation required.
-d. Change handler param from bare type to query record; update body references (e.g. `bikeType` → `query.bikeType()`). No-param case: `FindAvailableQuery ignored`.
-e. Remove `queryName` attribute. Result: `@QueryHandler public Iterable<BikeStatus> findAvailable(FindAvailableQuery query)`.
+Apply **[[query-payload-record]] atom** — covers recording the `queryName` value, introducing a top-level
+`@Query`-annotated payload record (never nested), updating the handler parameter + body references, and
+removing the `queryName` attribute. Key rule: `@Query` name must match the AF4 string exactly.
 
 ### Step 3 — QueryUpdateEmitter: constructor → method parameter
 *Apply-condition:* `QueryUpdateEmitter` is a constructor dependency.
 
-a. Remove `private final QueryUpdateEmitter updateEmitter` field.
-b. Remove `QueryUpdateEmitter updateEmitter` from constructor params and body.
-c. Add `QueryUpdateEmitter updateEmitter` parameter to each `@EventHandler` method that calls `updateEmitter.*`.
-d. Swap QUE import: `org.axonframework.queryhandling.QueryUpdateEmitter` → `org.axonframework.messaging.queryhandling.QueryUpdateEmitter`.
-e. Update `updateEmitter.emit(predicate, update)` 2-arg → `updateEmitter.emit(QueryPayloadClass.class, q -> true, update)` 3-arg. String predicates `q -> "findAll".equals(q.getQueryName())` → `FindAllQuery.class, q -> true`.
-f. Also fix `@EventHandler` import on touched methods: `org.axonframework.eventhandling.EventHandler` → `org.axonframework.messaging.eventhandling.annotation.EventHandler`.
+Apply **[[query-update-emitter]] atom** — covers removing the field + constructor param, adding
+`QueryUpdateEmitter updateEmitter` to each `@EventHandler` method that uses it, rewriting `emit(predicate, update)`
+to `emit(QueryClass.class, predicate, update)`, swapping the import, and fixing `@EventHandler` imports on
+**touched methods only**.
 
 ### Step 4 — @ProcessingGroup → @Namespace
 *Apply-condition:* `@ProcessingGroup` present.
 
-`@ProcessingGroup("Read_Something")` → `@Namespace("Read_Something")`.
-Remove `org.axonframework.config.ProcessingGroup`; add `org.axonframework.messaging.core.annotation.Namespace`.
+Apply **[[namespace-annotation]] atom** — same string value, import swap only.
 
 ### Step 5 — @MetaDataValue → @MetadataValue
 *Apply-condition:* `@MetaDataValue` on method parameters.
 
-`@MetaDataValue("key")` → `@MetadataValue("key")`.
-Remove `org.axonframework.messaging.annotation.MetaDataValue`; add `org.axonframework.messaging.core.annotation.MetadataValue`.
-If `MetaData` type (not annotation) present: → `Metadata`; add `org.axonframework.messaging.core.Metadata`.
+Apply **[[metadata-value]] atom** — annotation casing + import package change. Both must change together.
 
 # Use cases
 

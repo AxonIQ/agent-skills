@@ -93,9 +93,25 @@ Use `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-name` 
 
 - [interceptors.adoc](../../docs/paths/interceptors.adoc) — *apply-condition:* always. Covers `interceptOnDispatch` / `interceptOnHandle` signatures, `ProcessingContext` lifecycle hooks, Spring auto-discovery, `MessagingConfigurer` registration methods, `@Order`, component-scoping factory pattern.
 - [configuration.adoc](../../docs/paths/configuration.adoc) — *apply-condition:* `configuration=native` AND Path B registration site is in scope.
-- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* interceptor body references `message.getMetaData()` / `message.getPayload()` / `message.withMetaData(...)` / `message.andMetaData(...)` — accessor rename to `message.metaData()` / `message.payload()` / `message.andMetadata(...)`.
+- [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* interceptor body references `message.getMetaData()` / `message.getPayload()` / `message.withMetaData(...)` / `message.andMetaData(...)`.
+
+### Atoms (code-change recipes — single-responsibility API transformations)
+
+Load each atom whose apply-condition matches current scope. Atoms are the **canonical** source for exact
+imports, before/after patterns, and gotchas for each API change; they replace inline repetition in the Toolbox.
+
+| Atom file | Apply-condition |
+|-----------|-----------------|
+| [../../atoms/interceptor-dispatch.md](../../atoms/interceptor-dispatch.md) | `variant=dispatch` or `variant=both` |
+| [../../atoms/interceptor-handler.md](../../atoms/interceptor-handler.md) | `variant=handler` or `variant=both` |
+| [../../atoms/processing-context.md](../../atoms/processing-context.md) | handler variant AND body uses `UnitOfWork` lifecycle hooks |
+| [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | interceptor body uses `message.getMetaData()` / `message.getPayload()` / `message.andMetaData(...)` |
 
 ## Toolbox
+
+> **Atom-based execution.** Atoms for this recipe are pre-loaded during Research (FLOW.md S3) per the
+> `### Atoms` table above. Consult the loaded atom file for complete before/after, exact imports, and gotchas.
+> The steps below provide ordering and apply-conditions; the atoms provide the HOW.
 
 ### Step 1 — Detect variant
 
@@ -107,43 +123,23 @@ Grep `$SOURCE`:
 - both → `variant=both`
 - `@MessageHandlerInterceptor` on a method → emit Blocker B1 (stop here)
 
-### Step 2 — Rewrite interface method (dispatch)
+### Step 2 — Rewrite dispatch method
 
 *Apply-condition:* `variant=dispatch` or `variant=both`.
 
-| Element | AF4 | AF5 |
-|---------|-----|-----|
-| Method | `BiFunction<Integer, M, M> handle(List<? extends M> messages)` | `MessageStream<?> interceptOnDispatch(M message, @Nullable ProcessingContext context, MessageDispatchInterceptorChain<M> chain)` |
-| Body | `return (index, msg) -> { ... return modified; }` | inline modify + `return chain.proceed(modifiedMessage, context)` |
-| Generic | `CommandMessage<?>` | `CommandMessage` |
+Apply **[[interceptor-dispatch]] atom** — covers `handle(List<M>)` → `interceptOnDispatch(M, @Nullable ProcessingContext, Chain)`, BiFunction lambda collapse, generic de-wildcard, and all import changes.
 
-Remove imports: `java.util.List`, `java.util.function.BiFunction` (unless used elsewhere).
-Add imports: `org.axonframework.messaging.core.MessageDispatchInterceptor`, `org.axonframework.messaging.core.MessageDispatchInterceptorChain`, `org.axonframework.messaging.core.MessageStream`, `org.axonframework.messaging.core.unitofwork.ProcessingContext`, `org.jspecify.annotations.Nullable`.
-
-### Step 3 — Rewrite interface method (handler)
+### Step 3 — Rewrite handler method
 
 *Apply-condition:* `variant=handler` or `variant=both`.
 
-| Element | AF4 | AF5 |
-|---------|-----|-----|
-| Method | `Object handle(UnitOfWork<? extends M> unitOfWork, InterceptorChain interceptorChain) throws Exception` | `MessageStream<?> interceptOnHandle(M message, ProcessingContext context, MessageHandlerInterceptorChain<M> chain)` |
-| Chain | `return interceptorChain.proceed()` | `return chain.proceed(message, context)` |
-| Generic | `CommandMessage<?>` | `CommandMessage` |
-
-Remove imports: `org.axonframework.messaging.unitofwork.UnitOfWork`, `org.axonframework.messaging.InterceptorChain`.
-Add imports: `org.axonframework.messaging.core.MessageHandlerInterceptor`, `org.axonframework.messaging.core.MessageHandlerInterceptorChain`, `org.axonframework.messaging.core.MessageStream`, `org.axonframework.messaging.core.unitofwork.ProcessingContext`.
+Apply **[[interceptor-handler]] atom** — covers `handle(UnitOfWork, InterceptorChain)` → `interceptOnHandle(M, ProcessingContext, Chain)`, `chain.proceed()` → `chain.proceed(message, context)`, generic de-wildcard, and all import changes.
 
 ### Step 4 — Sweep `UnitOfWork` callsites
 
-*Apply-condition:* handler variant AND body uses `UnitOfWork` API.
+*Apply-condition:* handler variant AND body uses `UnitOfWork` lifecycle hooks.
 
-| AF4 | AF5 |
-|-----|-----|
-| `unitOfWork.getMessage()` | use `message` param directly |
-| `CurrentUnitOfWork.get()` | use `context` param |
-| `unitOfWork.onCommit(uow -> {...})` | `context.runOnAfterCommit(ctx -> {...})` |
-| `unitOfWork.onPrepareCommit(uow -> {...})` | `context.runOnPreInvocation(ctx -> {...})` |
-| `unitOfWork.onRollback(uow -> {...})` | `context.onError((ctx, err) -> {...})` |
+Apply **[[processing-context]] atom** lifecycle table — covers `unitOfWork.onCommit` → `context.runOnAfterCommit`, `onRollback` → `context.onError`, `onCleanup` → `context.doFinally`, etc. Note: `unitOfWork.getMessage()` is replaced by the `message` parameter directly available in `interceptOnHandle`.
 
 ### Step 5 — Pick path and configure
 
