@@ -125,7 +125,7 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 
 | Atom file | Apply-condition |
 |-----------|-----------------|
-| [../../atoms/saga-annotation.md](../../atoms/saga-annotation.md) | always |
+| [../../atoms/saga-spi-to-spring-component.md](../../atoms/saga-spi-to-spring-component.md) | always |
 | [../../atoms/saga-event-handler.md](../../atoms/saga-event-handler.md) | always |
 | [../../atoms/command-dispatcher.md](../../atoms/command-dispatcher.md) | any `@EventHandler` dispatches commands (class had `CommandGateway` field) |
 | [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | handler bodies use `event.getPayload()` / `event.getMetaData()` |
@@ -140,7 +140,7 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 
 *Apply-condition:* always.
 
-Apply **[[saga-annotation]] atom** — covers removing `@Saga` (both import paths), adding `@Component` +
+Apply **[[saga-spi-to-spring-component]] atom** — covers removing `@Saga` (both import paths), adding `@Component` +
 `@DisallowReplay`, and removing `@Autowired` from fields that will be constructor-injected or removed.
 
 ### Step 2 — Create JPA state entity (always)

@@ -62,7 +62,7 @@ for each API change; the component recipes provide scope, blockers, and componen
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[saga-annotation]] | `@Saga` → `@Component @DisallowReplay`; both AF4 import paths | saga |
+| [[saga-spi-to-spring-component]] | `@Saga` → `@Component @DisallowReplay`; both AF4 import paths | saga |
 | [[saga-event-handler]] | `@SagaEventHandler`/`@StartSaga`/`@EndSaga` → `@EventHandler` + JPA state lookup; `SagaLifecycle` removal | saga |
 
 ### Infrastructure
@@ -85,7 +85,7 @@ for each API change; the component recipes provide scope, blockers, and componen
 | `event-processor` | namespace-annotation · event-handler · metadata-value · message-accessors · command-dispatcher (4) · sequencing-policy (6/7) · processing-context (when UnitOfWork used) |
 | `interceptors` | interceptor-dispatch (dispatch) · interceptor-handler (handler) · processing-context (when UnitOfWork lifecycle hooks used) · message-accessors (when body uses message API) |
 | `query-handler` | query-handler-annotation · query-payload-record (queryName) · query-update-emitter (QUE) · namespace-annotation (ProcessingGroup) · metadata-value (MetaDataValue) · event-handler (QUE-touched methods) |
-| `saga` | saga-annotation · saga-event-handler · command-dispatcher (when CommandGateway present) · message-accessors (when body uses message API) |
+| `saga` | saga-spi-to-spring-component · saga-event-handler · command-dispatcher (when CommandGateway present) · message-accessors (when body uses message API) |
 | `command-gateway` | — (no atoms) |
 | `event-store` | — (no atoms) |
 | `query-gateway` | — (no atoms) |
