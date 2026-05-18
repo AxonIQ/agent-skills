@@ -1,5 +1,5 @@
 ---
-atom-id: namespace-annotation
+atom-id: processing-group-annotation
 title: "@ProcessingGroup → @Namespace (class-level event processor grouping)"
 af4-symbols: ["@ProcessingGroup", "org.axonframework.config.ProcessingGroup"]
 af5-symbols: ["@Namespace", "org.axonframework.messaging.core.annotation.Namespace"]

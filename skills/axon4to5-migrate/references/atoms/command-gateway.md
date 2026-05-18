@@ -1,5 +1,5 @@
 ---
-atom-id: command-dispatcher
+atom-id: command-gateway
 title: "In-handler command dispatch — CommandGateway field → CommandDispatcher method parameter"
 af4-symbols: ["CommandGateway", "commandGateway.sendAndWait", "commandGateway.send", "org.axonframework.commandhandling.gateway.CommandGateway"]
 af5-symbols: ["CommandDispatcher", "commandDispatcher.send", "org.axonframework.messaging.commandhandling.gateway.CommandDispatcher"]

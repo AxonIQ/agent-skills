@@ -1,5 +1,5 @@
 ---
-atom-id: entity-member
+atom-id: aggregate-member
 title: "@AggregateMember → @EntityMember (child entity collections)"
 af4-symbols: ["@AggregateMember", "org.axonframework.modelling.command.AggregateMember"]
 af5-symbols: ["@EntityMember", "org.axonframework.modelling.entity.annotation.EntityMember"]
@@ -70,7 +70,7 @@ Each child entity class in the aggregate's scope must:
 1. **NOT carry** a class-level `@EventSourced`/`@EventSourcedEntity` — it is discovered through the parent.
 2. Have `@EntityCreator` on its no-arg constructor (see [[entity-creator]]).
 3. Have `EventAppender eventAppender` as the last parameter on each of its own `@CommandHandler` methods
-   (see [[event-appender]]).
+   (see [[aggregate-lifecycle]]).
 
 ## Example — full child entity after migration
 

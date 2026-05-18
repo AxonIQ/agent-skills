@@ -80,4 +80,4 @@ Tests that expected `AggregateNotFoundException` must flip to the project's doma
 ## Used By
 
 - **[[aggregate]]** — common steps (always), Step 3 "Aggregate body"
-- **[[entity-member]]** — child entities within a multi-entity aggregate also need `@EntityCreator`
+- **[[aggregate-member]]** — child entities within a multi-entity aggregate also need `@EntityCreator`

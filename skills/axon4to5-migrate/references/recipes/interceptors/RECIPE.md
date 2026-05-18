@@ -104,7 +104,7 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 |-----------|-----------------|
 | [../../atoms/interceptor-dispatch.md](../../atoms/interceptor-dispatch.md) | `variant=dispatch` or `variant=both` |
 | [../../atoms/interceptor-handler.md](../../atoms/interceptor-handler.md) | `variant=handler` or `variant=both` |
-| [../../atoms/processing-context.md](../../atoms/processing-context.md) | handler variant AND body uses `UnitOfWork` lifecycle hooks |
+| [../../atoms/unit-of-work.md](../../atoms/unit-of-work.md) | handler variant AND body uses `UnitOfWork` lifecycle hooks |
 | [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | interceptor body uses `message.getMetaData()` / `message.getPayload()` / `message.andMetaData(...)` |
 
 ## Toolbox
@@ -139,7 +139,7 @@ Apply **[[interceptor-handler]] atom** — covers `handle(UnitOfWork, Intercepto
 
 *Apply-condition:* handler variant AND body uses `UnitOfWork` lifecycle hooks.
 
-Apply **[[processing-context]] atom** lifecycle table — covers `unitOfWork.onCommit` → `context.runOnAfterCommit`, `onRollback` → `context.onError`, `onCleanup` → `context.doFinally`, etc. Note: `unitOfWork.getMessage()` is replaced by the `message` parameter directly available in `interceptOnHandle`.
+Apply **[[unit-of-work]] atom** lifecycle table — covers `unitOfWork.onCommit` → `context.runOnAfterCommit`, `onRollback` → `context.onError`, `onCleanup` → `context.doFinally`, etc. Note: `unitOfWork.getMessage()` is replaced by the `message` parameter directly available in `interceptOnHandle`.
 
 ### Step 5 — Pick path and configure
 

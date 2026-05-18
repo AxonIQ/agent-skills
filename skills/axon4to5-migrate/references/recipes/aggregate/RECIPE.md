@@ -111,15 +111,15 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 
 | Atom file | Apply-condition |
 |-----------|-----------------|
-| [../../atoms/entity-annotation.md](../../atoms/entity-annotation.md) | always (Path A if `configuration=spring`, Path B if `configuration=native`) |
+| [../../atoms/aggregate-annotation.md](../../atoms/aggregate-annotation.md) | always (Path A if `configuration=spring`, Path B if `configuration=native`) |
 | [../../atoms/event-sourcing-handler.md](../../atoms/event-sourcing-handler.md) | always |
 | [../../atoms/command-handler.md](../../atoms/command-handler.md) | always |
-| [../../atoms/event-appender.md](../../atoms/event-appender.md) | always |
+| [../../atoms/aggregate-lifecycle.md](../../atoms/aggregate-lifecycle.md) | always |
 | [../../atoms/entity-creator.md](../../atoms/entity-creator.md) | always |
 | [../../atoms/command-annotation.md](../../atoms/command-annotation.md) | any command class in scope |
 | [../../atoms/event-annotation.md](../../atoms/event-annotation.md) | any event class in scope |
-| [../../atoms/entity-member.md](../../atoms/entity-member.md) | scope contains at least one `@AggregateMember` field |
-| [../../atoms/test-fixture.md](../../atoms/test-fixture.md) | `<target>Test` exists in scope AND B3 did not fire |
+| [../../atoms/aggregate-member.md](../../atoms/aggregate-member.md) | scope contains at least one `@AggregateMember` field |
+| [../../atoms/aggregate-test-fixture.md](../../atoms/aggregate-test-fixture.md) | `<target>Test` exists in scope AND B3 did not fire |
 
 ## Success Criteria
 
@@ -171,14 +171,14 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 *Apply-condition:* `configuration=spring`.
 
-Apply **[[entity-annotation]] atom § Path A** — replace `@Aggregate` with `@EventSourced(tagKey = …, idType = …)`.
+Apply **[[aggregate-annotation]] atom § Path A** — replace `@Aggregate` with `@EventSourced(tagKey = …, idType = …)`.
 The atom has the exact import path and attribute rules.
 
 ### Path B — Native Configurer (`configuration=native`)
 
 *Apply-condition:* `configuration=native`.
 
-1. Apply **[[entity-annotation]] atom § Path B** — replace `@Aggregate`/`@AggregateRoot` with
+1. Apply **[[aggregate-annotation]] atom § Path B** — replace `@Aggregate`/`@AggregateRoot` with
    `@EventSourcedEntity(tagKey = …, idType = …)`.
 2. Locate the Configurer wiring file (typical names: `*Configuration.java`, `*Application.java`, `*Bootstrap.java`,
    per-slice `<Slice>Configuration.java`). Add registration for `$SOURCE`:
@@ -200,7 +200,7 @@ The atom has the exact import path and attribute rules.
 
 1. **`@EventSourcingHandler` import** — apply **[[event-sourcing-handler]] atom**.
 2. **`@CommandHandler` import** — apply **[[command-handler]] atom** (import fix only; EventAppender comes next).
-3. **`EventAppender` threading** — apply **[[event-appender]] atom** — replace `AggregateLifecycle.apply(…)` with
+3. **`EventAppender` threading** — apply **[[aggregate-lifecycle]] atom** — replace `AggregateLifecycle.apply(…)` with
    `eventAppender.append(…)` and add `EventAppender eventAppender` as the last parameter of every `@CommandHandler`.
 4. **`@EntityCreator`** — apply **[[entity-creator]] atom** — annotate the no-arg constructor.
 5. **`@AggregateIdentifier`** — remove the annotation and its import; the id field stays as a plain field.
@@ -217,7 +217,7 @@ The atom has the exact import path and attribute rules.
 
 *Apply-condition:* scope contains at least one `@AggregateMember` field.
 
-Apply **[[entity-member]] atom** — covers the import rename, Blocker B2 (Map-typed), and child entity requirements
+Apply **[[aggregate-member]] atom** — covers the import rename, Blocker B2 (Map-typed), and child entity requirements
 (`@EntityCreator` + `EventAppender` per child `@CommandHandler`).
 
 ### Step P — Polymorphic (`concreteTypes`)
@@ -229,14 +229,14 @@ Apply **[[entity-member]] atom** — covers the import rename, Blocker B2 (Map-t
    `@EventSourced(concreteTypes = …)` (Path A) to the base, retaining `tagKey` and `idType`.
 3. Concrete subtypes do **NOT** carry `@EventSourced`/`@EventSourcedEntity` — discovered through the base.
 4. Inherited `@EventSourcingHandler` methods stay on the base. Subtype-specific handlers stay on subtypes.
-   Both base and subtypes use `EventAppender` in their `@CommandHandler` methods (see [[event-appender]]).
+   Both base and subtypes use `EventAppender` in their `@CommandHandler` methods (see [[aggregate-lifecycle]]).
 5. Each concrete subtype carries `@EntityCreator` on one constructor (see [[entity-creator]]).
 
 ### Step T — Test fixture migration
 
 *Apply-condition:* `target_test` exists in `# Scope` AND Blocker B3 did not fire.
 
-Apply **[[test-fixture]] atom** — covers `AggregateTestFixture` → `AxonTestFixture`, configurer wiring,
+Apply **[[aggregate-test-fixture]] atom** — covers `AggregateTestFixture` → `AxonTestFixture`, configurer wiring,
 DSL chain changes (`given()/when()/then()`), `@AfterEach tearDown()`, accessor renames in lambdas,
 and the AF5 exception flip (`AggregateNotFoundException` → project domain exception).
 

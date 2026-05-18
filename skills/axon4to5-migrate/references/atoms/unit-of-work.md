@@ -1,5 +1,5 @@
 ---
-atom-id: processing-context
+atom-id: unit-of-work
 title: "UnitOfWork → ProcessingContext — InterceptorChain.proceedSync + injection"
 af4-symbols: ["UnitOfWork", "CurrentUnitOfWork", "InterceptorChain.proceed()", "org.axonframework.messaging.unitofwork"]
 af5-symbols: ["ProcessingContext", "InterceptorChain.proceedSync(context)", "org.axonframework.messaging.core.ProcessingContext"]

@@ -67,7 +67,7 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 | [../../atoms/query-handler-annotation.md](../../atoms/query-handler-annotation.md) | always |
 | [../../atoms/query-payload-record.md](../../atoms/query-payload-record.md) | any `@QueryHandler(queryName = "…")` present |
 | [../../atoms/query-update-emitter.md](../../atoms/query-update-emitter.md) | `QueryUpdateEmitter` is constructor-injected |
-| [../../atoms/namespace-annotation.md](../../atoms/namespace-annotation.md) | `@ProcessingGroup` present |
+| [../../atoms/processing-group-annotation.md](../../atoms/processing-group-annotation.md) | `@ProcessingGroup` present |
 | [../../atoms/metadata-value.md](../../atoms/metadata-value.md) | `@MetaDataValue` on any method parameter |
 | [../../atoms/event-handler.md](../../atoms/event-handler.md) | `@EventHandler` imports touched by Step 3 (QUE migration) |
 
@@ -100,7 +100,7 @@ to `emit(QueryClass.class, predicate, update)`, swapping the import, and fixing 
 ### Step 4 — @ProcessingGroup → @Namespace
 *Apply-condition:* `@ProcessingGroup` present.
 
-Apply **[[namespace-annotation]] atom** — same string value, import swap only.
+Apply **[[processing-group-annotation]] atom** — same string value, import swap only.
 
 ### Step 5 — @MetaDataValue → @MetadataValue
 *Apply-condition:* `@MetaDataValue` on method parameters.

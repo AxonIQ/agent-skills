@@ -85,7 +85,7 @@ public void on(PaymentReservedEvent event) {
 ## In-handler command dispatch
 
 Every `@EventHandler` that dispatches commands gets `CommandDispatcher commandDispatcher` as a method
-parameter — see [[command-dispatcher]] atom for the full field-removal + async dispatch transformation.
+parameter — see [[command-gateway]] atom for the full field-removal + async dispatch transformation.
 
 ## Gotchas
 

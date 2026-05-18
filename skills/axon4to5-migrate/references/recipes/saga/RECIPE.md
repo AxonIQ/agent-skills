@@ -127,7 +127,7 @@ imports, before/after patterns, and gotchas for each API change; they replace in
 |-----------|-----------------|
 | [../../atoms/saga-spi-to-spring-component.md](../../atoms/saga-spi-to-spring-component.md) | always |
 | [../../atoms/saga-event-handler.md](../../atoms/saga-event-handler.md) | always |
-| [../../atoms/command-dispatcher.md](../../atoms/command-dispatcher.md) | any `@EventHandler` dispatches commands (class had `CommandGateway` field) |
+| [../../atoms/command-gateway.md](../../atoms/command-gateway.md) | any `@EventHandler` dispatches commands (class had `CommandGateway` field) |
 | [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | handler bodies use `event.getPayload()` / `event.getMetaData()` |
 
 ## Toolbox
@@ -196,7 +196,7 @@ Add `findAllByTimestampLessThanAndStatusIn` — required if the caller later des
 Apply **[[saga-event-handler]] atom** — covers `@StartSaga/@SagaEventHandler/@EndSaga` → `@EventHandler` mapping,
 `SagaLifecycle.*` removal, all four AF4 import removals, and the AF5 `@EventHandler` import addition.
 
-For handlers that dispatch commands: apply **[[command-dispatcher]] atom** — removes `CommandGateway` field,
+For handlers that dispatch commands: apply **[[command-gateway]] atom** — removes `CommandGateway` field,
 adds `CommandDispatcher commandDispatcher` as a method parameter, rewrites `sendAndWait` → async
 `commandDispatcher.send(...)`.
 

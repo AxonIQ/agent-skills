@@ -61,7 +61,7 @@ Add: `org.axonframework.messaging.core.MessageHandlerInterceptor`, `org.axonfram
 
 ## UnitOfWork callsite replacements
 
-When the handler body used `UnitOfWork` lifecycle hooks, apply [[processing-context]] atom's lifecycle table:
+When the handler body used `UnitOfWork` lifecycle hooks, apply [[unit-of-work]] atom's lifecycle table:
 
 | AF4 | AF5 |
 |-----|-----|

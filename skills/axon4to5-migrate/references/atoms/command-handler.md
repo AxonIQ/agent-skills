@@ -11,7 +11,7 @@ used-by: [aggregate]
 
 The `@CommandHandler` annotation moved to the `messaging.commandhandling.annotation` package. Additionally, every
 `@CommandHandler` on an aggregate (or child entity) must receive an `EventAppender` as its last parameter — see
-[[event-appender]] for the full `AggregateLifecycle.apply → eventAppender.append` transformation.
+[[aggregate-lifecycle]] for the full `AggregateLifecycle.apply → eventAppender.append` transformation.
 
 ## Detect
 
@@ -37,7 +37,7 @@ import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
 ## Signature change (aggregates only)
 
 Every `@CommandHandler` method on an aggregate or child entity gains `EventAppender eventAppender` as its **last**
-parameter. See [[event-appender]] for the complete transformation including replacing `AggregateLifecycle.apply(…)`.
+parameter. See [[aggregate-lifecycle]] for the complete transformation including replacing `AggregateLifecycle.apply(…)`.
 
 ```java
 // AF4

@@ -1,5 +1,5 @@
 ---
-atom-id: entity-annotation
+atom-id: aggregate-annotation
 title: "Class stereotype — @Aggregate / @AggregateRoot → @EventSourced / @EventSourcedEntity"
 af4-symbols: ["@Aggregate", "@AggregateRoot", "org.axonframework.spring.stereotype.Aggregate", "org.axonframework.modelling.command.AggregateRoot"]
 af5-symbols: ["@EventSourced", "@EventSourcedEntity", "org.axonframework.extension.spring.stereotype.EventSourced", "org.axonframework.eventsourcing.annotation.EventSourcedEntity"]

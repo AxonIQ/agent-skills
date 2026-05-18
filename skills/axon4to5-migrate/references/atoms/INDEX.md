@@ -13,10 +13,10 @@ for each API change; the component recipes provide scope, blockers, and componen
 
 | Atom | What it covers | Component |
 |------|----------------|-----------|
-| [[entity-annotation]] | `@Aggregate`/`@AggregateRoot` → `@EventSourced`/`@EventSourcedEntity`; `tagKey`/`idType` attributes | aggregate |
+| [[aggregate-annotation]] | `@Aggregate`/`@AggregateRoot` → `@EventSourced`/`@EventSourcedEntity`; `tagKey`/`idType` attributes | aggregate |
 | [[entity-creator]] | `@EntityCreator` on the no-arg constructor; `.reflection.` import infix | aggregate |
-| [[event-appender]] | `AggregateLifecycle.apply(…)` → `EventAppender.append(…)`; `.messaging.` import infix | aggregate |
-| [[entity-member]] | `@AggregateMember` → `@EntityMember`; Map-typed Blocker B2; child entity requirements | aggregate |
+| [[aggregate-lifecycle]] | `AggregateLifecycle.apply(…)` → `EventAppender.append(…)`; `.messaging.` import infix | aggregate |
+| [[aggregate-member]] | `@AggregateMember` → `@EntityMember`; Map-typed Blocker B2; child entity requirements | aggregate |
 
 ### Handler Annotations
 
@@ -37,10 +37,10 @@ for each API change; the component recipes provide scope, blockers, and componen
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[namespace-annotation]] | `@ProcessingGroup` → `@Namespace`; binding contract; external reference grep | event-processor, query-handler |
+| [[processing-group-annotation]] | `@ProcessingGroup` → `@Namespace`; binding contract; external reference grep | event-processor, query-handler |
 | [[metadata-value]] | `@MetaDataValue` (AF4) → `@MetadataValue` (AF5) — casing + package | event-processor, query-handler |
 | [[message-accessors]] | `getPayload()` → `payload()`, `getMetaData()` → `metaData()`, etc. | event-processor, saga, interceptors |
-| [[command-dispatcher]] | `CommandGateway` field → `CommandDispatcher` method param; async dispatch | event-processor, saga |
+| [[command-gateway]] | `CommandGateway` field → `CommandDispatcher` method param; async dispatch | event-processor, saga |
 | [[sequencing-policy]] | YAML/`@Bean` → `@SequencingPolicy` class annotation; `SequencingPolicy` interface rewrite | event-processor |
 
 ### Query Handling
@@ -69,23 +69,23 @@ for each API change; the component recipes provide scope, blockers, and componen
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[processing-context]] | `UnitOfWork` → `ProcessingContext`; `InterceptorChain.proceedSync(context)`; lifecycle hooks | interceptors, saga, event-processor |
+| [[unit-of-work]] | `UnitOfWork` → `ProcessingContext`; `InterceptorChain.proceedSync(context)`; lifecycle hooks | interceptors, saga, event-processor |
 
 ### Testing
 
 | Atom | What it covers | Components |
 |------|----------------|-----------|
-| [[test-fixture]] | `AggregateTestFixture` → `AxonTestFixture`; DSL changes; AF5 exception flip | aggregate |
+| [[aggregate-test-fixture]] | `AggregateTestFixture` → `AxonTestFixture`; DSL changes; AF5 exception flip | aggregate |
 
 ## Cross-reference: component → atoms
 
 | Component recipe | Atoms applied |
 |---|---|
-| `aggregate` | entity-annotation · entity-creator · event-appender · event-sourcing-handler · command-handler · command-annotation · event-annotation · entity-member (M) · test-fixture (T) |
-| `event-processor` | namespace-annotation · event-handler · metadata-value · message-accessors · command-dispatcher (4) · sequencing-policy (6/7) · processing-context (when UnitOfWork used) |
-| `interceptors` | interceptor-dispatch (dispatch) · interceptor-handler (handler) · processing-context (when UnitOfWork lifecycle hooks used) · message-accessors (when body uses message API) |
-| `query-handler` | query-handler-annotation · query-payload-record (queryName) · query-update-emitter (QUE) · namespace-annotation (ProcessingGroup) · metadata-value (MetaDataValue) · event-handler (QUE-touched methods) |
-| `saga` | saga-spi-to-spring-component · saga-event-handler · command-dispatcher (when CommandGateway present) · message-accessors (when body uses message API) |
+| `aggregate` | aggregate-annotation · entity-creator · aggregate-lifecycle · event-sourcing-handler · command-handler · command-annotation · event-annotation · aggregate-member (M) · aggregate-test-fixture (T) |
+| `event-processor` | processing-group-annotation · event-handler · metadata-value · message-accessors · command-gateway (4) · sequencing-policy (6/7) · unit-of-work (when UnitOfWork used) |
+| `interceptors` | interceptor-dispatch (dispatch) · interceptor-handler (handler) · unit-of-work (when UnitOfWork lifecycle hooks used) · message-accessors (when body uses message API) |
+| `query-handler` | query-handler-annotation · query-payload-record (queryName) · query-update-emitter (QUE) · processing-group-annotation (ProcessingGroup) · metadata-value (MetaDataValue) · event-handler (QUE-touched methods) |
+| `saga` | saga-spi-to-spring-component · saga-event-handler · command-gateway (when CommandGateway present) · message-accessors (when body uses message API) |
 | `command-gateway` | — (no atoms) |
 | `event-store` | — (no atoms) |
 | `query-gateway` | — (no atoms) |

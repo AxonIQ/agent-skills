@@ -103,13 +103,13 @@ patterns, and gotchas for each API change.
 
 | Atom file | Apply-condition |
 |-----------|-----------------|
-| [../../atoms/namespace-annotation.md](../../atoms/namespace-annotation.md) | always |
+| [../../atoms/processing-group-annotation.md](../../atoms/processing-group-annotation.md) | always |
 | [../../atoms/event-handler.md](../../atoms/event-handler.md) | always (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`) |
 | [../../atoms/metadata-value.md](../../atoms/metadata-value.md) | `$SOURCE` uses `@MetaDataValue` on any handler parameter |
 | [../../atoms/message-accessors.md](../../atoms/message-accessors.md) | `@EventHandler` bodies access event message API directly |
-| [../../atoms/command-dispatcher.md](../../atoms/command-dispatcher.md) | `$SOURCE` has a `CommandGateway` field + in-handler dispatch |
+| [../../atoms/command-gateway.md](../../atoms/command-gateway.md) | `$SOURCE` has a `CommandGateway` field + in-handler dispatch |
 | [../../atoms/sequencing-policy.md](../../atoms/sequencing-policy.md) | YAML or `@Bean SequencingPolicy` exists for `$SOURCE`'s group, OR custom `SequencingPolicy` impl in scope |
-| [../../atoms/processing-context.md](../../atoms/processing-context.md) | `$SOURCE` uses `CurrentUnitOfWork` or `UnitOfWork` directly, or has `@MessageHandlerInterceptor` using the chain |
+| [../../atoms/unit-of-work.md](../../atoms/unit-of-work.md) | `$SOURCE` uses `CurrentUnitOfWork` or `UnitOfWork` directly, or has `@MessageHandlerInterceptor` using the chain |
 
 ## Success Criteria
 
@@ -172,7 +172,7 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 *Apply-condition:* always.
 
-1. **`@ProcessingGroup` → `@Namespace`** — apply **[[namespace-annotation]] atom**. String value is the binding
+1. **`@ProcessingGroup` → `@Namespace`** — apply **[[processing-group-annotation]] atom**. String value is the binding
    contract; grep all external references after renaming.
 2. **Handler annotation imports** — apply **[[event-handler]] atom** for `@EventHandler`, `@DisallowReplay`,
    `@ResetHandler` import package moves.
@@ -183,7 +183,7 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 *Apply-condition:* `$SOURCE` has a class-level `CommandGateway` field AND at least one `@EventHandler` body calls it.
 
-Apply **[[command-dispatcher]] atom** — covers removing the field, adding `CommandDispatcher` as a method
+Apply **[[command-gateway]] atom** — covers removing the field, adding `CommandDispatcher` as a method
 parameter, rewriting `sendAndWait` → `send(…).getResultMessage()` returning `CompletableFuture`, and converting
 try/catch compensation to `.exceptionallyCompose(…)`.
 

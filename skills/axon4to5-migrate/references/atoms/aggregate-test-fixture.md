@@ -1,5 +1,5 @@
 ---
-atom-id: test-fixture
+atom-id: aggregate-test-fixture
 title: "AggregateTestFixture → AxonTestFixture (BDD test DSL migration)"
 af4-symbols: ["AggregateTestFixture", "org.axonframework.test.aggregate.AggregateTestFixture"]
 af5-symbols: ["AxonTestFixture", "org.axonframework.test.fixture.AxonTestFixture"]

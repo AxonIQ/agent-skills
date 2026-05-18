@@ -1,5 +1,5 @@
 ---
-atom-id: event-appender
+atom-id: aggregate-lifecycle
 title: "AggregateLifecycle.apply(…) → EventAppender.append(…)"
 af4-symbols: ["AggregateLifecycle.apply", "AggregateLifecycle", "org.axonframework.modelling.command.AggregateLifecycle"]
 af5-symbols: ["EventAppender", "eventAppender.append", "org.axonframework.messaging.eventhandling.gateway.EventAppender"]
