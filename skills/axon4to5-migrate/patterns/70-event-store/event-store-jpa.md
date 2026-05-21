@@ -7,9 +7,9 @@ auto-configured by `axoniq-spring-boot-starter` when Axon Server is disabled.
 
 | AF4 | AF5 |
 |-----|-----|
-| *(auto-configured; no explicit bean)* | `org.axonframework.eventsourcing.jpa.AggregateBasedJpaEventStorageEngine` |
-| — | `org.axonframework.eventsourcing.jpa.JpaTransactionalExecutorProvider` |
-| — | `org.axonframework.eventsourcing.jpa.EventConverter` |
+| *(auto-configured; no explicit bean)* | `org.axonframework.eventsourcing.eventstore.jpa.AggregateBasedJpaEventStorageEngine` |
+| — | `org.axonframework.messaging.core.unitofwork.transaction.jpa.JpaTransactionalExecutorProvider` |
+| — | `org.axonframework.messaging.eventhandling.conversion.EventConverter` |
 
 ## Detection
 
@@ -28,9 +28,9 @@ grep -rn 'EventStorageEngine\|EmbeddedEventStore\|JpaEventStorageEngine' \
 ## Axon Framework 5 Code
 
 ```java
-import org.axonframework.eventsourcing.jpa.AggregateBasedJpaEventStorageEngine;
-import org.axonframework.eventsourcing.jpa.JpaTransactionalExecutorProvider;
-import org.axonframework.eventsourcing.jpa.EventConverter;
+import org.axonframework.eventsourcing.eventstore.jpa.AggregateBasedJpaEventStorageEngine;
+import org.axonframework.messaging.core.unitofwork.transaction.jpa.JpaTransactionalExecutorProvider;
+import org.axonframework.messaging.eventhandling.conversion.EventConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 

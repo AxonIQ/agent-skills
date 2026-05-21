@@ -8,8 +8,8 @@ which wraps an `EventSourcingConfigurer` rather than a bare class reference.
 | AF4 | AF5 |
 |-----|-----|
 | `org.axonframework.test.aggregate.AggregateTestFixture` | `org.axonframework.test.fixture.AxonTestFixture` |
-| — | `org.axonframework.eventsourcing.EventSourcingConfigurer` |
-| — | `org.axonframework.eventsourcing.modules.EventSourcedEntityModule` |
+| — | `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer` |
+| — | `org.axonframework.eventsourcing.configuration.EventSourcedEntityModule` |
 
 ## Detection
 
@@ -44,8 +44,8 @@ class OrderTest {
 
 ```java
 import org.axonframework.test.fixture.AxonTestFixture;
-import org.axonframework.eventsourcing.EventSourcingConfigurer;
-import org.axonframework.eventsourcing.modules.EventSourcedEntityModule;
+import org.axonframework.eventsourcing.configuration.EventSourcingConfigurer;
+import org.axonframework.eventsourcing.configuration.EventSourcedEntityModule;
 
 class OrderTest {
 

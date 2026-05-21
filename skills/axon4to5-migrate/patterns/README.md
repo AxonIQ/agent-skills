@@ -1,23 +1,28 @@
 # Migration Patterns — Axon Framework 4 → 5
 
-This directory contains flat, per-topic migration patterns following the same structure as
-[camunda-7-to-8-migration-tooling](https://github.com/camunda/camunda-7-to-8-migration-tooling/tree/main/code-conversion/patterns).
+Flat, per-topic migration patterns. Each file covers one transformation: import mapping table, detection
+hint, before/after code, and notes.
 
 ## How to use
 
-Load `ALL_IN_ONE.md` at the start of every migration session — it aggregates all patterns below
-into a single document. The skill loads it automatically in Step 3.
+Load `ALL_IN_ONE.md` at the start of every migration session — it aggregates all patterns into a single
+document. The skill loads it automatically in Step 3.
+
+Regenerate `ALL_IN_ONE.md` after editing any pattern file:
+```
+python3 scripts/generate_all_in_one.py
+```
 
 ## Pattern Categories
 
 | # | Directory | Topic |
 |---|-----------|-------|
-| 10 | [10-dependencies](10-dependencies/) | Maven/Gradle dependency and plugin changes |
-| 20 | [20-aggregates](20-aggregates/) | Aggregate class, event emission, entity lifecycle |
-| 30 | [30-event-handlers](30-event-handlers/) | Event processor routing, command dispatch, metadata |
-| 40 | [40-query-handlers](40-query-handlers/) | Query handler annotations, update emitter |
+| 10 | [10-dependencies](10-dependencies/) | Maven/Gradle dependency and YAML config changes |
+| 20 | [20-aggregates](20-aggregates/) | Aggregate class, event emission, entity lifecycle, command routing |
+| 30 | [30-event-handlers](30-event-handlers/) | Event processor routing, command dispatch, metadata, sequencing |
+| 40 | [40-query-handlers](40-query-handlers/) | Query handler annotations |
 | 50 | [50-interceptors](50-interceptors/) | Command/event handler interceptors |
-| 60 | [60-sagas](60-sagas/) | Saga → Spring component |
+| 60 | [60-sagas](60-sagas/) | Saga → Spring JPA component |
 | 70 | [70-event-store](70-event-store/) | Event storage engine configuration |
 | 80 | [80-tests](80-tests/) | Test fixture migration |
 
@@ -29,9 +34,4 @@ Each file contains:
 3. Detection hint (grep command)
 4. **Axon Framework 4 Code** — before
 5. **Axon Framework 5 Code** — after
-6. Notes and caveats
-
-## ALL_IN_ONE.md
-
-[ALL_IN_ONE.md](ALL_IN_ONE.md) — aggregated reference (all patterns in one file).
-Load this file to give the model complete migration context before touching any code.
+6. Notes and caveats (including blockers where applicable)
