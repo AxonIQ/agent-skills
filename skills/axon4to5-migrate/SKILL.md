@@ -1,350 +1,360 @@
 ---
 name: axon4to5-migrate
 description: >-
-  Migrate Axon Framework 4 project to Axon(iq) Framework 5.
-argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>] [max-subagents=<0..N>] [auto=<true|false>]"
-disable-model-invocation: true
+  Migrate Axon Framework 4 project to Axon(iq) Framework 5. Handles Spring Boot and native configurations.
+  Covers aggregates, event handlers, sagas, query handlers, interceptors, event store, and tests.
+argument-hint: "[project-path] [configuration=spring|native] [skip-openrewrite=true|false]"
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # axon4to5-migrate
 
 ## Goal
 
-> Fully (or as most as possible) compiling, green-test codebase on AF5, **same architecture as AF4**.
-> No DCB. No new patterns. Legacy event storage preserved.
-> The migration preserves the project's existing configuration style: a Spring Boot
-> project stays on Spring auto-config (recipes use `@Component` / `@Bean`
-> idioms); a plain framework-configuration project stays on the direct
-> `Configurer` API (recipes use `EventSourcingConfigurer` /
-> `MessagingConfigurer` / `CommandHandlingModule` / `EventSourcedEntityModule`).
+Fully (or as far as possible) compiling, green-test codebase on AF5, **same architecture as AF4**.
+No DCB. No new patterns. Legacy event storage preserved.
 
-## Available recipes (auto-listed)
+---
 
-Run `bash scripts/list-recipes.sh` from the skill root directory. Output format:
+## Step 1: Gather inputs
 
-```
-- file: references/recipes/<dir>/RECIPE.md
-  id: <id>
-  title: <title>
-  description: <description>
-  applicable: |
-    <applicable section content, or "(none)" if missing>
-```
+Ask the user the following questions using `AskUserQuestion`:
 
-## Inputs
+**Q1 — Project root path**
+What is the path to the project root? (Default: current working directory)
 
-- `framework` (**required**): which Axon flavor to migrate. Currently supported values: `axon`, `axoniq`. Any other
-  value → STOP.
-- `configuration` (**required**): how the application wires Axon. Currently supported values: `native`, `spring`. Any
-  other value → STOP.
-- `mode` (required): what gets migrated in one invocation.
-    - `single` — one element (a class, e.g. an Aggregate). Requires `source`.
-    - `project` — the whole application (default: current working directory). `source` ignored.
-- `execution` (optional, default `inline`): how the orchestrator runs its steps. Only meaningful for `mode=project` —
-  for `mode=single` it has no observable effect.
-    - `inline` — main session does discovery + recipe runs sequentially. No `Agent` tool use.
-    - `subagent` — orchestrator MAY dispatch via the `Agent` tool: discovery → `Explore` subagent, recipe sub-flow per
-      item → `general-purpose` subagent (parallel batches). Useful for `project` mode on large codebases.
-- `source` (required for `mode=single`): hint identifying the thing to migrate (class name, file path, FQN).
-- `skip-openrewrite` (optional, default `false`): when `true`, the orchestrator SKIPS Pre-step 2 (the OpenRewrite bulk pass) and goes straight to the mode-specific producer. Use this when (a) OpenRewrite Phase 1 has already been run separately on the tree, (b) the caller is exercising a recipe in isolation (e.g. evals — subagents cannot recursively invoke another Skill), or (c) the project is not built with Maven/Gradle so the OpenRewrite plugin is unreachable. Values: `true` / `false`. Any other value → STOP. The downstream recipe must still tolerate both AF4-shaped and partially-migrated sources (see each recipe's `# Applicable` predicates).
-- `max-subagents` (optional, default `0`): max parallel `general-purpose` subagents for item processing in the drain loop. `mode=project` only — ignored for `mode=single`. `0` = inline (no subagents, sequential). `N > 0` = dispatch up to N items simultaneously as subagents; **BLOCKER_RESOLUTION always runs in main session** regardless of this value. Any non-integer or value < 0 → STOP.
-- `auto` (optional, default `false`): when `true`, never calls `AskUserQuestion` — all interactive decisions resolved automatically (see `## Auto mode`). Values: `true` / `false`. Any other value → STOP.
+**Q2 — Configuration style**
+How does the application wire Axon?
+- **spring** — Spring Boot auto-configuration (`@Aggregate`, `@Component`, `@Bean` idioms)
+- **native** — Direct `Configurer` / `EventSourcingConfigurer` API
 
-## Auto mode (`auto=true`)
+**Q3 — Migration approach**
+Choose an approach:
+- **A — OpenRewrite + AI (recommended)**: Run the OpenRewrite bulk recipe first (handles ~60% of mechanical renames automatically), then the AI handles remaining semantic changes.
+- **B — AI only**: Skip OpenRewrite; the AI applies all patterns directly. Use when Maven/Gradle is not available or OpenRewrite has already run.
+- **C — Assessment only**: Scan and report what needs migration, estimate effort, make no changes.
 
-Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved choice emits `⚙️ auto: <decision>` so the log stays auditable.
+**Q4 — Skip specific components** (optional)
+Are there component types to skip? (aggregates / event-handlers / query-handlers / interceptors / sagas / event-store / tests / none)
 
-| Decision point | Auto action |
-|---|---|
-| Ambiguous recipe match (`mode=single`) | Pick first candidate by `applicable` score. |
-| Blocker | Auto-select `skip` — leave `$SOURCE` in current partial state, queue moves on. |
-| Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
-| Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
-| OpenRewrite step completes | Immediately continue to mode-specific producer. Do NOT pause or end session. |
+---
 
-## Durability
+## Step 2: Assessment
 
-**Load order — see § Recipe sub-flow.** FLOW.md first, then DURABILITY.md (second). Defines state files under `.axon4to5-migration/`, hooks across pre-steps + queue + recipe results + caller decisions, and commit protocol. Reads `progress.md` on entry to decide resume vs fresh.
-
-## Pre-steps (common to every mode)
-
-These run **before** any mode-specific logic — independent of whether `mode=single`, `project`, or anything added later.
-
-1. **Parse** — read `framework`, `configuration`, `mode`, `execution`, `skip-openrewrite`, `max-subagents`, `auto` from `$ARGUMENTS`.
-    - If `framework` is missing or ∉ {`axon`, `axoniq`} → STOP and report unsupported framework.
-    - If `configuration` is missing or ∉ {`native`, `spring`} → STOP and report unsupported configuration.
-    - If `mode` is missing or ∉ {`single`, `project`} → STOP and report unsupported mode.
-    - `execution` defaults to `inline` if missing. If present and ∉ {`inline`, `subagent`} → STOP and report unsupported execution.
-    - `skip-openrewrite` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP and report unsupported value.
-    - `max-subagents` defaults to `0` if missing. If present and not a non-negative integer → STOP.
-    - `auto` defaults to `false` if missing. If present and ∉ {`true`, `false`} → STOP.
-2. **OpenRewrite** — **skipped entirely when `skip-openrewrite=true`.** Otherwise, internally invoke
-   `axon4to5-openrewrite` via the `Skill` tool, passing `--framework $framework --commit false`. Do NOT pass `--commit true` or omit `--commit`; DURABILITY's `on:openrewrite-done` hook owns the single combined commit. This is a step of this orchestrator, not a separate command. Idempotent — safe even on a partially-migrated tree. If it fails → STOP and report the failure (no gap-filling on a broken bulk pass). When skipped, surface that fact in the eventual report (Notes or Learnings) so the caller knows the queue ran against unprocessed AF4 (or already-partially-migrated) sources and the recipes did all the work themselves.
-   **`auto=true`: after this step returns (success or skip), immediately continue to the mode-specific producer — do NOT end the session or pause.**
-
-Only after pre-steps complete does the mode-specific producer below run.
-
-## Modes
-
-### `single`
-
-Migrate ONE element (one aggregate, one event processor, etc.) using exactly one recipe from the list above.
-
-Steps (after the common pre-steps):
-
-1. **Match** — map user's request + `source` to ONE recipe in the auto-listed set. Primary signal: the catalog's
-   `applicable` block (surface predicates against `$SOURCE` — annotations / type markers). Fallback signal: `id` +
-   `title` + `description`. If ambiguous → ask user via `AskUserQuestion` to pick (show `title` to the user; dispatch by
-   `id`). If no `applicable` block matches and description is also unclear → STOP and report.
-2. **Execute** — `Read` the chosen recipe file under [`references/recipes/`](references/recipes/) (`<name>/RECIPE.md`)
-   and execute it per the **Recipe sub-flow** ([`FLOW.md`](references/recipes/FLOW.md), already loaded). Recipe-local
-   auxiliary files (examples, fixtures, supporting docs) live alongside it in the same `<name>/` directory.
-3. **Verify** — behavior is preserved (no DCB, keep `AggregateBasedEventStorageEngine`, etc.).
-4. **Report** — render the report (see Queue flow § Render report).
-
-MUST NOT:
-
-- Run without all required parameters resolved to a supported value.
-- Run multiple recipes in one invocation.
-- Migrate more than the single source named by the user.
-- Migrate anything outside the supported `(framework, configuration)` matrix — the rest of the codebase stays untouched.
-- Introduce DCB or swap event storage engine.
-
-### `project`
-
-Migrate **everything in the working directory** that any recipe in the catalog declares applicable. `source` is ignored.
-
-Steps (after the common pre-steps):
-
-**Triage** — before the recipe loop, classify what needs migrating:
-1. Run `mvn compile` / `gradle classes` (or use the post-OpenRewrite build state if already available).
-2. Cluster compile errors by source class. For each class with errors, apply the recipe `# Applicable` predicates
-   to classify it as one of: `aggregate`, `event-processor`, `command-gateway`, `query-gateway`,
-   `query-handler`, `interceptors`, `saga`, `event-store`, or `cross-cutting` (errors not matching any component
-   — e.g. remaining `UnitOfWork` references, raw `Message` accessor calls in utility classes).
-3. Component classes → enqueue against their recipe using the standard discovery order below.
-4. Cross-cutting classes → enqueue against relevant atoms directly (see `references/atoms/INDEX.md`) after all
-   component recipes have drained. Atoms can be applied inline without a full recipe sub-flow — Read the atom,
-   apply the transform, verify compile-clean.
-
-**Recipe loop** — iterate recipes in discovery order. For each recipe:
-
-1. **Discover** — evaluate the recipe's `applicable` predicates across the codebase to produce candidate sources.
-    - `execution=inline` → orchestrator scans inline using `Grep` / `Glob` / `Read`.
-    - `execution=subagent` → dispatch one `Explore` subagent for this recipe. Read-only — no edits.
-2. **Enqueue** — add `(recipe, source)` candidates. Deduplication is recipe's concern.
-3. **Drain** — exhaust all pending items for **this recipe** before advancing to the next:
-    - `max-subagents=0` (default) → inline, main session, sequentially.
-    - `max-subagents=N` → main session acts as **coordinator**. Dispatches up to N pending items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Each subagent executes ONE recipe sub-flow and returns a result block (`RESULT:` line + NOTES).
-      - ✅ Success / ⏭ Rejected / ❌ Failure → main records result, immediately dispatches next pending item. **No pause.**
-      - 🚧 Blocker → **BLOCKER_RESOLUTION in main session**: `AskUserQuestion` if `auto=false`; auto-skip if `auto=true`. Resolved → re-dispatch same item to a new subagent. Not resolved → mark blocked, dispatch next pending item.
-      - Main session never pauses unless waiting for user input on a blocker (`auto=false`).
-      - **Fallback** — if a subagent cannot be spawned, process inline and continue.
-4. **Mark recipe done** — `on:recipe-done` hook records status in `progress.md` Recipe status table.
-
-After all recipes drained → **Debugging loop** → **Finalize** → **Report**.
-
-**Context hygiene** — after every 5 items drained, emit this tip once (then reset counter):
-
-> 💡 Context is growing. Run `/clear` and re-invoke the skill — it resumes automatically from `.axon4to5-migration/progress.md`, no work is lost.
-
-MUST NOT:
-
-- Spawn a subagent under `execution=inline`.
-- Pass anything beyond `(recipe path, source, framework, configuration)` to a recipe subagent — context bloat defeats
-  the parallelism win.
-- Cross repository boundaries during discovery.
-- Halt the queue on a single Failure — record and drain the rest.
-- Introduce DCB or swap event storage engine.
-
-## Queue flow
-
-`$SOURCE` is referenced throughout the recipe sub-flow as the argument passed to the skill from `source`.
-
-> `[[Execute recipe sub-flow]]` = [`references/recipes/FLOW.md`](references/recipes/FLOW.md), loaded at skill start. `[[Resolve blocker]]` = [`references/recipes/BLOCKER_RESOLUTION.md`](references/recipes/BLOCKER_RESOLUTION.md), budget = 1 attempt per item; on exhaustion item is marked blocked and drain continues.
-
-### Single mode flow
-
-```mermaid
-flowchart TD
-    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration, source"]
-    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
-    ORW -- fail --> XORW[STOP: bulk-rewrite failed]
-    ORW -- ok --> B["list-recipes (catalog)"]
-    B --> MATCH{"<b>Match</b><br/>request + source → recipe"}
-    MATCH -- ambiguous --> ASK["AskUserQuestion<br/>(show titles, dispatch by id)"]
-    ASK --> EXEC
-    MATCH -- "no match" --> XNOMATCH[STOP: no applicable recipe]
-    MATCH -- matched --> EXEC[["<b>Execute</b> recipe sub-flow<br/>(FLOW.md)"]]
-    EXEC --> R{<b>RESULT?</b>}
-    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>(BLOCKER_RESOLUTION.md)"]]
-    BR --> BRQ{"Resolved?<br/>budget = 1"}
-    BRQ -- yes --> EXEC
-    BRQ -- "no / exhausted" --> BLK["mark blocked<br/>(🚧 caller must resolve)"]
-    R -- "Blocker (already retried)" --> BLK
-    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>same architecture as AF4"]
-    VER --> RPT["<b>Report</b> &amp; END"]
-    BLK --> RPT
-```
-
-### Project mode flow
-
-```mermaid
-flowchart TD
-    A[Skill invoked] --> PARSE["<b>Parse</b><br/>framework, configuration, execution"]
-    PARSE --> ORW[["<b>OpenRewrite</b><br/>(internal Skill, idempotent)"]]
-    ORW -- fail --> XORW[STOP: bulk-rewrite failed]
-    ORW -- ok --> TRIAGE["<b>Triage</b><br/>compile → cluster errors by class<br/>classify: component | cross-cutting<br/>component classes → recipe queue<br/>cross-cutting → atom pass (post-drain)"]
-    TRIAGE --> B["list-recipes (catalog)"]
-    B --> RL{"<b>Next recipe</b><br/>in order?"}
-    RL -- "yes: &lt;recipe&gt;" --> DISC["<b>Discover</b><br/>execution=inline: Grep/Glob<br/>execution=subagent: 1 Explore<br/>→ <b>Enqueue</b> items"]
-    DISC --> Q[(Recipe queue)]
-    Q --> L{"<b>Drain</b><br/>pending?"}
-    L -- yes --> INP["pick next → in-progress"]
-    INP --> W[["<b>Execute</b> recipe sub-flow<br/>execution=inline: main session<br/>execution=subagent: general-purpose (parallel batch)"]]
-    W --> R{<b>RESULT?</b>}
-    R -- "Blocker (first attempt)" --> BR[["<b>Resolve blocker</b><br/>(BLOCKER_RESOLUTION.md)"]]
-    BR --> BRQ{"Resolved?<br/>budget = 1"}
-    BRQ -- yes --> W
-    BRQ -- "no / exhausted" --> BLK["mark blocked<br/>(🚧 caller must resolve)"]
-    R -- "Blocker (already retried)" --> BLK
-    R -- "Success / Rejected / Failure" --> VER["<b>Verify</b><br/>behavior preserved<br/>same architecture as AF4"]
-    VER --> DONE["mark done in queue"]
-    DONE --> Q
-    BLK --> Q
-    L -- "no (recipe drained)" --> RDONE["<b>on:recipe-done</b><br/>update Recipe status table"]
-    RDONE --> RL
-    RL -- "no more recipes" --> DBG_COMP
-
-    subgraph DEBUG ["🔍 Debugging — all recipes applied, build still red"]
-        direction TB
-        DBG_COMP["<b>Full compile</b><br/>mvn compile / gradle classes"]
-        DBG_REDISC["<b>Re-discover</b><br/>re-scan applicable predicates<br/>any recipe match remaining errors?"]
-        DBG_ATOMS["<b>Cross-cutting atom pass</b><br/>consult atoms/INDEX.md<br/>apply matching atoms inline<br/>(ProcessingContext, message-accessors, …)"]
-        DBG_COMP -- "⚠️ errors" --> DBG_REDISC
-        DBG_REDISC -- "nothing new" --> DBG_ATOMS
-    end
-
-    DBG_COMP -- "✅ green" --> FIN["<b>Finalize</b><br/>remove isolated-* scaffolding<br/>final compile · count by recipe"]
-    DBG_REDISC -- "new candidates" --> REENQ["re-enqueue as pending"]
-    REENQ --> Q
-    DBG_ATOMS -- "atoms applied" --> DBG_COMP
-    DBG_ATOMS -- "no atom matches<br/>exhausted" --> FIN
-    FIN --> RPT["<b>Report</b> &amp; END"]
-```
-
-**Discovery order** — Discover scans recipes in this fixed sequence. Aggregates first: they define the events and commands consumed by downstream types.
-
-| # | Recipe (`id` per frontmatter `order:`) |
-|---|----------------------------------------|
-| 1 | `aggregate` |
-| 2 | `event-processor` |
-| 3 | `command-gateway` |
-| 4 | `query-gateway` |
-| 5 | `query-handler` |
-| 6 | `interceptors` |
-| 7 | `saga` |
-| 8 | `event-store` |
-
-## Debugging loop (project mode only)
-
-Entered when drain empties but build is still red. All known recipes have been applied — this phase asks:
-"is there still something a recipe or atom can fix?"
-
-**Before the first full compile:** Scan for application classes in subdirectories that OpenRewrite does NOT
-process by default — e.g., a `microservices/` tree or separately deployable modules at the same repo root.
-These classes often use the same AF4 patterns (AF4 `ConfigurationEnhancer`, `SagaEntry`, `DeadlineManager`)
-as the main modules but are missed by the recipe drain because discovery only scanned the main source sets.
-Add any found classes to the queue and drain them before running the full compile.
-
-1. **Full compile** — `mvn compile` / `gradle classes` (Java + Kotlin). Green → exit loop → Finalize.
-2. Errors remain:
-   - **Re-discover** — re-scan every recipe's `applicable` predicates against current codebase. Sources mutated
-     during drain may now match recipes that rejected earlier.
-   - New `(recipe, source)` pairs not already terminal → re-enqueue as `pending`, resume drain (loop repeats).
-   - **Cross-cutting atom pass** — if no recipe candidates emerge but errors remain, consult
-     `references/atoms/INDEX.md`. Identify which atoms address the remaining compile error patterns (e.g.,
-     surviving `UnitOfWork` references → [[processing-context]] atom; `getPayload()` calls in utility classes →
-     [[message-accessors]] atom). Apply the relevant atoms inline to the offending files — Read the atom, apply
-     the transform, verify compile-clean. Repeat until no new atom candidates or build is green.
-   - Nothing new from recipes OR atoms → all applicable recipes and atoms exhausted → Finalize.
-
-## Finalize (project mode only)
-
-1. **Cleanup scaffolding** — `Grep` all `pom.xml` / `build.gradle(.kts)` for `isolated-*` Maven profiles and `isolated*` Gradle source-sets added by `axon4to5-isolatedtest`. `Edit` each build file to remove found blocks. Commit: `chore(af5): remove isolated-test scaffolding`. Skip if none found.
-2. **Final compile** — full compile; record pass/fail + error count in `progress.md`. Commit: `chore(af5): record final compile status`.
-3. **Count results** — group queue rows by recipe type × status (Success / Rejected / Failure / Blocked).
-4. → Render report.
-
-## Report format (project mode)
-
-Emit this block to the user on `on:session-end`:
+**BEFORE reading any code**, load the pattern catalog:
 
 ```
-🏁 Migration complete — all applicable recipes exhausted.
-
-| Recipe type     | ✅ Success | ⏭ Rejected | ❌ Failure | 🚧 Blocked |
-|-----------------|-----------|------------|-----------|-----------|
-| aggregate       |     N     |     N      |     N     |     N     |
-| event-processor |     N     |     N      |     N     |     N     |
-| …               |           |            |           |           |
-
-Compilation: ✅ green
-     — or —
-Compilation: ⚠️ N error(s) remain — manual intervention required.
-
-Blocked items (caller must resolve):
-- <recipe>/<source>: <blocker notes>
-
-See .axon4to5-migration/progress.md for full details.
+Read: patterns/ALL_IN_ONE.md
 ```
 
-## Recipe sub-flow
+Then scan the project to classify what needs migrating. For each category below, grep the source tree and
+report findings in a table:
 
-**Load order at skill start (before any pre-steps or mode logic):**
-1. `Read` [`references/recipes/FLOW.md`](references/recipes/FLOW.md) — recipe control-flow spec. Non-optional. Recipes fill in named sections; they never re-implement it.
-2. `Read` [`references/DURABILITY.md`](references/DURABILITY.md) — state + resume protocol (`mode=project`; skim for `mode=single`).
-3. `Read` [`references/atoms/INDEX.md`](references/atoms/INDEX.md) — atom catalog. Provides the full cross-reference of which atoms exist and which component recipes use them. Recipes load individual atom files on-demand during FLOW.md S3 (Read References) — the INDEX is loaded once at skill start for triage and discovery decisions.
+```bash
+# Aggregates
+grep -rln '@Aggregate\|@AggregateRoot' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-### Recipe defaults ([`DEFAULT.md`](references/recipes/DEFAULT.md))
+# Event handlers / processors
+grep -rln '@ProcessingGroup\|@EventHandler' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-**ALWAYS `Read` [`references/recipes/DEFAULT.md`](references/recipes/DEFAULT.md) BEFORE any per-recipe `RECIPE.md` under
-[`references/recipes/`](references/recipes/).** It holds shared defaults for every named recipe section (`# Applicable`,
-`# Scope`, `# References`, `# Success Criteria`, `# Blocker`, `# Toolbox`, `# Out of Scope`, `# Gotchas`).
+# Query handlers
+grep -rln '@QueryHandler' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-Merge rule when executing a recipe:
+# Interceptors
+grep -rln 'implements MessageHandlerInterceptor' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-- For each section the FLOW consults, start from [`DEFAULT.md`](references/recipes/DEFAULT.md)'s content for that
-  section.
-- If `RECIPE.md` defines the same section → **`RECIPE.md` overrides** (full section replacement, not append).
-    - Exception: if `RECIPE.md`'s section body references [`DEFAULT.md`](references/recipes/DEFAULT.md) (e.g. literal
-      token `@DEFAULT.md` or prose like "inherits from DEFAULT.md" / "extends DEFAULT.md") → **append** the recipe's
-      content to the default's content for that section instead of replacing.
-- If `RECIPE.md` omits the section → the [`DEFAULT.md`](references/recipes/DEFAULT.md) content stands.
-- Recipe authors only write sections that differ from the default. No need to re-state defaults.
+# Sagas
+grep -rln '@Saga\|@SagaEventHandler' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-## References/Docs: Migration paths catalog
+# Tests
+grep -rln 'AggregateTestFixture' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
 
-Shared cross-recipe knowledge base at [`references/docs/paths/`](references/docs/paths/). Recipes pick relevant entries
-in their `### Migration Paths` subsection, each with an **apply-condition** (a fact about current scope that triggers
-loading the file). The orchestrator never reads these directly — only recipes do, gated by their declared
-apply-condition.
+# Dependencies
+grep -rn 'org.axonframework' --include='pom.xml' --include='build.gradle' --include='build.gradle.kts' <root>/
 
-Catalog (one file per topic; `.adoc`):
+# YAML config
+grep -rn 'axon.serializer\|sequencing-policy' --include='*.yaml' --include='*.properties' <root>/
+```
 
-| Path                                                                                                       | Topic                                               |
-|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
-| [`aggregates/index.adoc`](references/docs/paths/aggregates/index.adoc)                                     | Aggregate migration entry point                     |
-| [`aggregates/configuration-migration.adoc`](references/docs/paths/aggregates/configuration-migration.adoc) | Aggregate Spring/Configurer wiring                  |
-| [`aggregates/multi-entity-migration.adoc`](references/docs/paths/aggregates/multi-entity-migration.adoc)   | Aggregates with child entities (`@AggregateMember`) |
-| [`aggregates/polymorphism-migration.adoc`](references/docs/paths/aggregates/polymorphism-migration.adoc)   | Polymorphic aggregates                              |
-| [`configuration.adoc`](references/docs/paths/configuration.adoc)                                           | Global Axon configuration / Configurer              |
-| [`messages.adoc`](references/docs/paths/messages.adoc)                                                     | Command / Event / Query message changes             |
-| [`event-store.adoc`](references/docs/paths/event-store.adoc)                                               | Event Store engine + APIs                           |
-| [`snapshotting.adoc`](references/docs/paths/snapshotting.adoc)                                             | Snapshot trigger + storage                          |
-| [`serializers.adoc`](references/docs/paths/serializers.adoc)                                               | Serializer registration + payload formats           |
-| [`interceptors.adoc`](references/docs/paths/interceptors.adoc)                                             | Command / Event / Query handler interceptors        |
-| [`projectors-event-processors.adoc`](references/docs/paths/projectors-event-processors.adoc)               | Projection / Event Processor wiring                 |
-| [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                               | Event sequencing policies                           |
-| [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                               | Dead-Letter Queue                                   |
-| [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                           | Test fixtures migration                             |
+Output a classification table:
+
+```
+| Category        | Files found | Complexity | Notes                    |
+|-----------------|-------------|------------|--------------------------|
+| Aggregates      | N           | Low/Med    | e.g. N with CommandHandler|
+| Event handlers  | N           | Med        |                          |
+| Query handlers  | N           | Low        |                          |
+| Interceptors    | N           | High       | e.g. uses UnitOfWork     |
+| Sagas           | N           | High       | e.g. uses SagaLifecycle  |
+| Event store     | ✓/✗         | Low        | explicit config needed?  |
+| Tests           | N           | Med        |                          |
+| Dependencies    | pom.xml     | Low        |                          |
+```
+
+Ask: **"Proceed with migration (Approach A/B/C)?"** — or stop here if approach=C.
+
+---
+
+## Step 3: Execute migration
+
+**Approach A — OpenRewrite + AI**
+
+1. Invoke `axon4to5-openrewrite` skill to run the bulk recipe.
+2. After OpenRewrite completes, proceed to the AI migration phases below.
+
+**Approach B — AI only**
+
+Skip to the AI migration phases below.
+
+---
+
+### AI Migration Phases
+
+Execute the phases in this order. For each phase:
+1. Find applicable files using grep (already identified in assessment).
+2. Read each file.
+3. Apply the relevant patterns from `patterns/ALL_IN_ONE.md`.
+4. Verify the change compiles (or note why it cannot be verified yet).
+
+---
+
+#### Phase 1: Dependencies (pom.xml / build.gradle)
+
+Patterns: **10. Dependencies → Maven/Gradle Migration**
+
+For each `pom.xml` or `build.gradle`:
+1. Update group ID and artifact IDs per the import mappings.
+2. Rename `axon.serializer.*` → `axon.converter.*` in `application.yaml` / `application.properties`.
+3. Remove `console-framework-client-spring-boot-starter` if present.
+
+---
+
+#### Phase 2: Event Classes
+
+Patterns: **20. Aggregates → Event Class Annotations**
+
+For each event record/class:
+1. Add `@Event` annotation.
+2. Add `@EventTag(key = "<AggregateTagKey>")` to the routing field — the key must match the aggregate's `tagKey`.
+3. Replace `@Revision("N")` with `@Event(version = N)`.
+
+---
+
+#### Phase 3: Aggregates
+
+Patterns: **20. Aggregates → all patterns**
+
+For each aggregate class:
+1. Replace `@Aggregate`/`@AggregateRoot` → `@EventSourced(tagKey = "…", idType = …)`.
+2. Remove `@AggregateIdentifier` from the field.
+3. Add `@EntityCreator` to the no-arg constructor.
+4. Add `EventAppender eventAppender` as last parameter to every `@CommandHandler`.
+5. Replace `AggregateLifecycle.apply(…)` → `eventAppender.append(…)`.
+6. Update `@CommandHandler` import: `commandhandling.CommandHandler` → `messaging.commandhandling.annotation.CommandHandler`.
+7. Update `@EventSourcingHandler` import: `eventsourcing.EventSourcingHandler` → `eventsourcing.annotation.EventSourcingHandler`.
+
+**Verification checklist per aggregate:**
+- `grep '@EventSourced' file` — has `tagKey` and `idType` attributes
+- `grep 'AggregateLifecycle' file` — no matches
+- `grep 'EventAppender' file` — one occurrence per `@CommandHandler`
+- `grep '@EntityCreator' file` — present on no-arg constructor
+
+---
+
+#### Phase 4: Event Handlers / Processors
+
+Patterns: **30. Event Handlers → all patterns**
+
+For each event-handling class (projectors, automation processors):
+1. Replace `@ProcessingGroup("name")` → `@Namespace("name")`.
+2. Update `@EventHandler` import.
+3. Update `@DisallowReplay` import.
+4. Replace `@MetaDataValue` → `@MetadataValue` (both annotation name and import).
+5. If class has `CommandGateway` field:
+   - Remove the field and constructor injection.
+   - Add `CommandDispatcher commandDispatcher` as method parameter to each `@EventHandler` that dispatches.
+   - Change handler return type to `CompletableFuture<?>`.
+   - Replace `commandGateway.sendAndWait(cmd, meta)` → `commandDispatcher.send(cmd, meta).getResultMessage()`.
+6. If class has `sequencing-policy` in YAML or `@Bean SequencingPolicy`:
+   - Add `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = "metadataKey")` to the class.
+   - Remove the YAML `sequencing-policy` key for this processor.
+
+**Verify external namespace references:**
+```bash
+grep -rn '"<namespace-name>"' --include='*.yaml' --include='*.java' --include='*.kt' .
+```
+
+---
+
+#### Phase 5: Query Handlers
+
+Patterns: **40. Query Handlers**
+
+For each query-handler class:
+1. Update `@QueryHandler` import: `queryhandling.QueryHandler` → `messaging.queryhandling.annotation.QueryHandler`.
+2. If class has `@ProcessingGroup`, apply namespace-routing pattern.
+3. If class has `@MetaDataValue`, apply metadata-value pattern.
+
+---
+
+#### Phase 6: Interceptors
+
+Patterns: **50. Interceptors**
+
+For each `MessageHandlerInterceptor` implementation:
+1. Update the interface generic: `CommandMessage<?>` → `CommandMessage`.
+2. Rename method `handle(…)` → `interceptOnHandle(…)`.
+3. Change parameters: `UnitOfWork<…> uow, InterceptorChain chain` → `CommandMessage message, ProcessingContext context, MessageHandlerInterceptorChain<CommandMessage> chain`.
+4. Change return type: `Object` → `MessageStream<?>`.
+5. Change chain call: `chain.proceed()` → `chain.proceed(message, context)`.
+6. Change message access: `uow.getMessage()` → `message` (direct).
+7. Update `getMetaData()` → `metaData()`, `getPayload()` → `payload()`.
+8. Remove `throws Exception`.
+9. Update imports — add `MessageHandlerInterceptorChain`, `MessageStream`, `ProcessingContext`; remove `UnitOfWork`, `InterceptorChain`.
+10. If body uses `Repository.loadOrCreate(…).execute(…)`:
+    - Replace with `CommandDispatcher.forContext(context).send(cmd).resultAs(Void.class).join()`.
+
+---
+
+#### Phase 7: Sagas
+
+Patterns: **60. Sagas**
+
+For each saga class:
+1. Remove `@Saga` annotation (both Spring and SPI variants).
+2. Add `@Component`, `@DisallowReplay`, `@Entity`, `@Table` annotations.
+3. Add `@Id` field for the correlation key.
+4. Add `protected` no-arg constructor for JPA.
+5. Replace `@SagaEventHandler(associationProperty = …)` → `@EventHandler`.
+6. Remove `@StartSaga`, `@EndSaga` annotations.
+7. Remove all `SagaLifecycle.*` calls.
+8. If saga dispatches commands via `CommandGateway` field → apply command-dispatcher pattern.
+9. Add persistence logic: load/save via a Spring Data repository.
+
+**If `@DeadlineHandler` is used** — this is a blocker; no AF5 equivalent exists. Comment out and note.
+
+---
+
+#### Phase 8: Event Store Configuration
+
+Patterns: **70. Event Store**
+
+If the project uses JPA (no Axon Server):
+1. Create `EventStoreConfiguration.java` with `AggregateBasedJpaEventStorageEngine` bean.
+2. Add `@EntityScan` with `org.axonframework` and `io.axoniq.framework` packages.
+3. Add `@ConditionalOnProperty(name = "axon.axonserver.enabled", havingValue = "false")`.
+4. Set `axon.axonserver.enabled: false` in `application.yaml`.
+
+---
+
+#### Phase 9: Tests
+
+Patterns: **80. Tests**
+
+For each test class using `AggregateTestFixture`:
+1. Replace `AggregateTestFixture<T> fixture` → `AxonTestFixture fixture` (no type param).
+2. Replace `new AggregateTestFixture<>(Aggregate.class)` →
+   ```java
+   AxonTestFixture.with(
+       EventSourcingConfigurer.create()
+           .registerEntity(EventSourcedEntityModule.autodetected(AggId.class, Aggregate.class))
+   )
+   ```
+3. Add `@AfterEach void tearDown() { fixture.stop(); }`.
+4. Update DSL: `given(events)` → `given().events(events)`, `when(cmd)` → `when().command(cmd)`, `expectEvents(…)` → `then().events(…)`.
+5. Update exception assertions: `AggregateNotFoundException.class` → the domain exception.
+
+---
+
+## Step 4: Validate
+
+After all phases complete, run validation:
+
+**1. Compile check**
+
+```bash
+# Maven
+mvn compile -q 2>&1 | head -100
+
+# Gradle
+./gradlew classes 2>&1 | head -100
+```
+
+If errors remain:
+- Search errors for AF4 class names — apply remaining patterns from `ALL_IN_ONE.md`.
+- Common missed patterns:
+  - `getPayload()` / `getMetaData()` → `payload()` / `metaData()` (message-accessors)
+  - Remaining `org.axonframework.config.ProcessingGroup` imports
+  - `org.axonframework.commandhandling.CommandHandler` (non-aggregate classes)
+
+**2. Scan for remaining AF4 symbols**
+
+```bash
+grep -rn 'org.axonframework.spring.stereotype.Aggregate\|AggregateLifecycle\|@ProcessingGroup\|CommandGateway\|AggregateTestFixture\|SagaEventHandler\|@Saga\b\|axon.serializer' \
+  --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' <root>/src/
+```
+
+Any match is an incomplete migration — apply the relevant pattern.
+
+**3. Test check** (optional, after compile is green)
+
+```bash
+mvn test -pl <module>   # or ./gradlew test
+```
+
+**4. Report results**
+
+```
+✅ Migration complete
+
+| Phase              | Status      | Notes                        |
+|--------------------|-------------|------------------------------|
+| Dependencies       | ✅          |                              |
+| Event classes      | ✅          |                              |
+| Aggregates         | ✅ (N files)|                              |
+| Event handlers     | ✅ (N files)|                              |
+| Query handlers     | ✅ (N files)|                              |
+| Interceptors       | ✅ (N files)|                              |
+| Sagas              | ⏭ skipped  | No sagas found               |
+| Event store        | ✅          |                              |
+| Tests              | ✅ (N files)|                              |
+
+Compilation: ✅ green / ⚠️ N error(s) remain — see notes
+```
+
+---
+
+## Behavior rules
+
+- **Always load `patterns/ALL_IN_ONE.md` before touching any code** — it contains all import mappings and
+  before/after examples for every migration pattern.
+- Work through phases **in order** — aggregates define the events and commands consumed by downstream handlers.
+- Apply patterns **one file at a time** and verify imports are correct after each edit.
+- **Preserve architecture** — no DCB, no event storage engine swap, no new patterns.
+- When uncertain about a package path, grep the local AF5 jars or consult `references/atoms/` for the definitive
+  import path.
+- For deep per-component details (use-cases, blockers, edge cases), consult the relevant
+  `references/recipes/<component>/RECIPE.md` and `references/atoms/` files.
+
+---
+
+## Advanced usage — single component
+
+To migrate a single component instead of the whole project:
+
+```
+axon4to5-migrate configuration=spring mode=single source=com.example.Army
+```
+
+The skill matches the source class to a recipe in `references/recipes/`, then executes the recipe sub-flow
+per `references/recipes/FLOW.md`. Load `FLOW.md` and the recipe's `RECIPE.md` for detailed orchestration.
+
+---
+
+## Expanding the skill
+
+To add a new migration pattern:
+1. Create `patterns/<NN-category>/<pattern-name>.md` following the format in existing files.
+2. Add an entry to `patterns/ALL_IN_ONE.md` under the relevant section.
+3. Add a corresponding atom to `references/atoms/` if it is a single API change used by multiple recipes.
+4. Reference the atom in the relevant `references/recipes/<component>/RECIPE.md` under `# Atoms`.
