@@ -11,6 +11,10 @@ python3 scripts/generate_all_in_one.py
     - [AF5](#af5)
 - [aggregates](#aggregates)
   - [Aggregate Class Stereotype](#aggregate-class-stereotype)
+  - [AggregateLifecycle.apply() → EventAppender.append()](#aggregatelifecycleapply--eventappenderappend)
+  - [@AggregateMember → @EntityMember (Child Entities)](#aggregatemember--entitymember-child-entities)
+  - [@CommandHandler — Import Move + EventAppender Parameter](#commandhandler--import-move--eventappender-parameter)
+  - [@CreationPolicy Removal](#creationpolicy-removal)
   - [@EntityCreator — No-Arg Constructor Annotation](#entitycreator--no-arg-constructor-annotation)
     - [Find aggregate classes and check their no-arg constructors](#find-aggregate-classes-and-check-their-no-arg-constructors)
   - [Event Class Annotations](#event-class-annotations)
@@ -33,7 +37,10 @@ python3 scripts/generate_all_in_one.py
     - [application.yaml — remove sequencing-policy key; mode stays](#applicationyaml--remove-sequencing-policy-key-mode-stays)
 - [query handlers](#query-handlers)
   - [@QueryHandler — Import Package Move](#queryhandler--import-package-move)
+  - [Named Query — @QueryHandler(queryName) → @Query Payload Record](#named-query--queryhandlerqueryname--query-payload-record)
+  - [QueryUpdateEmitter — Constructor Field → Method Parameter](#queryupdateemitter--constructor-field--method-parameter)
 - [interceptors](#interceptors)
+  - [MessageDispatchInterceptor — handle(List) → interceptOnDispatch](#messagedispatchinterceptor--handlelist--interceptondispatch)
   - [MessageHandlerInterceptor — Handle Method Signature Migration](#messagehandlerinterceptor--handle-method-signature-migration)
 - [sagas](#sagas)
   - [Saga Migration — @Saga → @Component @DisallowReplay](#saga-migration--saga--component-disallowreplay)
@@ -222,6 +229,271 @@ public class Order {
   a blocker that requires manual resolution.
 - **OpenRewrite Phase 1** sometimes rewrites `@Aggregate` → `@EventSourced` without adding `tagKey`/`idType`.
   Always grep for `@EventSourced` without attributes after Phase 1 and add them.
+
+---
+
+### AggregateLifecycle.apply() → EventAppender.append()
+
+AF4 used a `ThreadLocal`-backed static method `AggregateLifecycle.apply(event)` to publish events from inside
+`@CommandHandler` methods. AF5 removes `ThreadLocal` entirely — an `EventAppender` is injected as a method
+parameter into every `@CommandHandler`.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.modelling.command.AggregateLifecycle` | *(remove)* |
+| `static org.axonframework.modelling.command.AggregateLifecycle.apply` | *(remove)* |
+| — | `org.axonframework.messaging.eventhandling.gateway.EventAppender` |
+
+##### Detection
+
+```bash
+grep -rn 'AggregateLifecycle\.apply\|import.*AggregateLifecycle' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import static org.axonframework.modelling.command.AggregateLifecycle.apply;
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd) {
+    apply(new OrderShippedEvent(orderId, cmd.getAddress()));
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
+    eventAppender.append(new OrderShippedEvent(orderId, cmd.getAddress()));
+}
+```
+
+##### Rules
+
+1. Every `@CommandHandler` on the aggregate (and child entities) gets `EventAppender eventAppender` as its **last** parameter.
+2. Every `AggregateLifecycle.apply(event)` becomes `eventAppender.append(event)`.
+3. Remove both the static import and the regular import for `AggregateLifecycle`.
+4. Static `@CommandHandler` factory methods also receive `EventAppender` as a parameter — static methods can receive injected parameters.
+
+##### Notes
+
+- **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
+- **Do not call `AggregateLifecycle.markDeleted()`** — there is no AF5 equivalent; remove the call entirely.
+
+---
+
+### @AggregateMember → @EntityMember (Child Entities)
+
+AF4 used `@AggregateMember` to declare child entity collections within an aggregate. AF5 renames this to
+`@EntityMember`. Child entities do NOT carry a class-level `@EventSourced`/`@EventSourcedEntity` — they are
+discovered through the parent.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.modelling.command.AggregateMember` | `org.axonframework.modelling.entity.annotation.EntityMember` |
+
+##### Detection
+
+```bash
+grep -rn '@AggregateMember' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import org.axonframework.modelling.command.AggregateMember;
+
+@Aggregate
+public class Order {
+
+    @AggregateMember
+    private List<OrderLine> lines;
+
+    @AggregateMember(routingKey = "lineId")
+    private List<OrderLine> detailedLines;
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.modelling.entity.annotation.EntityMember;
+
+@EventSourced(tagKey = "Order", idType = OrderId.class)
+public class Order {
+
+    @EntityMember
+    private List<OrderLine> lines;
+
+    @EntityMember(routingKey = "lineId")
+    private List<OrderLine> detailedLines;
+}
+```
+
+##### Child entity requirements
+
+Each child entity class must:
+1. **NOT** carry `@EventSourced`/`@EventSourcedEntity` — discovered through the parent.
+2. Have `@EntityCreator` on one constructor.
+3. Use `EventAppender eventAppender` in its own `@CommandHandler` methods.
+
+```java
+// AF5 child entity
+public class OrderLine {
+
+    @EntityCreator
+    public OrderLine() {}
+
+    @CommandHandler
+    public void handle(UpdateLineCommand cmd, EventAppender eventAppender) {
+        eventAppender.append(new LineUpdatedEvent(cmd.lineId(), cmd.quantity()));
+    }
+}
+```
+
+##### Notes
+
+- **`Map<K, V>` is a blocker** — `@EntityMember` supports `List<V>` only. Rewrite as `List<V>` with
+  internal id management before applying this pattern.
+- **`routingKey`** attribute carries over unchanged from `@AggregateMember`.
+
+---
+
+### @CommandHandler — Import Move + EventAppender Parameter
+
+The `@CommandHandler` annotation moved to the `messaging.commandhandling.annotation` package. Every `@CommandHandler`
+on an aggregate or child entity must also receive an `EventAppender` as its last parameter (see
+[aggregate-lifecycle.md](aggregate-lifecycle.md)).
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.commandhandling.CommandHandler` | `org.axonframework.messaging.commandhandling.annotation.CommandHandler` |
+
+##### Detection
+
+```bash
+grep -rn 'import org\.axonframework\.commandhandling\.CommandHandler' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import org.axonframework.commandhandling.CommandHandler;
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd) {
+    AggregateLifecycle.apply(new OrderShippedEvent(orderId));
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
+import org.axonframework.messaging.eventhandling.gateway.EventAppender;
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
+    eventAppender.append(new OrderShippedEvent(orderId));
+}
+```
+
+##### Notes
+
+- **`.messaging.` infix is mandatory** — `org.axonframework.messaging.commandhandling.annotation.CommandHandler`.
+  The path `org.axonframework.commandhandling.annotation.CommandHandler` does not exist.
+- **`EventAppender` is required on aggregate and child entity handlers** — see [aggregate-lifecycle.md](aggregate-lifecycle.md).
+  On non-aggregate components (event handlers, services) `@CommandHandler` is typically not used — apply this
+  pattern only when the handler is inside an `@EventSourced`/`@EventSourcedEntity` class.
+
+---
+
+### @CreationPolicy Removal
+
+AF4's `@CreationPolicy(AggregateCreationPolicy.*)` annotation is removed in AF5. The creation semantics are
+replaced by the `@EntityCreator` constructor and the presence/absence of static vs instance `@CommandHandler`.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.modelling.command.CreationPolicy` | *(remove)* |
+| `org.axonframework.modelling.command.AggregateCreationPolicy` | *(remove)* |
+
+##### Detection
+
+```bash
+grep -rn '@CreationPolicy\|AggregateCreationPolicy\|import.*CreationPolicy' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Migration by policy value
+
+###### ALWAYS — creation handler
+
+```java
+// AF4
+@CommandHandler
+@CreationPolicy(AggregateCreationPolicy.ALWAYS)
+public static MyAggregate create(CreateCommand cmd) { ... }
+
+// AF5 — make the handler static (ALWAYS = factory pattern)
+@CommandHandler
+public static MyAggregate create(CreateCommand cmd, EventAppender eventAppender) {
+    eventAppender.append(new CreatedEvent(cmd.id()));
+    return new MyAggregate();
+}
+```
+
+###### CREATE_IF_MISSING — upsert handler
+
+```java
+// AF4
+@CommandHandler
+@CreationPolicy(AggregateCreationPolicy.CREATE_IF_MISSING)
+public void handle(UpsertCommand cmd) { ... }
+
+// AF5 — instance handler; @EntityCreator on no-arg constructor handles the "create" case
+// No @CreationPolicy annotation needed
+@CommandHandler
+public void handle(UpsertCommand cmd, EventAppender eventAppender) {
+    eventAppender.append(new UpsertedEvent(cmd.id()));
+}
+```
+
+###### NEVER (default) — normal instance handler
+
+```java
+// AF4 (explicit or absent)
+@CommandHandler
+@CreationPolicy(AggregateCreationPolicy.NEVER)
+public void handle(UpdateCommand cmd) { ... }
+
+// AF5 — just remove the annotation; instance @CommandHandler is the default
+@CommandHandler
+public void handle(UpdateCommand cmd, EventAppender eventAppender) {
+    eventAppender.append(new UpdatedEvent(cmd.id()));
+}
+```
+
+##### Notes
+
+- **Remove the annotation and both imports** — no replacement annotation is needed.
+- **ALWAYS → static factory** is the most common case where OpenRewrite does NOT flip to `static` — always
+  verify the handler is static after removing `@CreationPolicy(ALWAYS)`.
+- **`@EntityCreator` on the no-arg constructor** is required in all cases — see [entity-creator.md](entity-creator.md).
 
 ---
 
@@ -1195,7 +1467,220 @@ public class OrderQueryHandler {
 
 ---
 
+### Named Query — @QueryHandler(queryName) → @Query Payload Record
+
+AF4 allowed routing queries by a `queryName` string. AF5 routes entirely by the first method parameter type —
+the `queryName` attribute is removed. When AF4 used a named query, introduce a top-level payload record.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `@QueryHandler(queryName = "…")` attribute | *(remove attribute)* |
+| — | `org.axonframework.messaging.queryhandling.annotation.Query` (only when class name ≠ queryName) |
+
+##### Detection
+
+```bash
+grep -rn '@QueryHandler.*queryName' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+@QueryHandler(queryName = "findAvailable")
+public Iterable<BikeStatus> findAvailable(String bikeType) {
+    return repository.findAllByStatus(BikeStatus.available(bikeType));
+}
+```
+
+##### Axon Framework 5 Code
+
+Introduce a payload record in the query API package:
+
+```java
+// queries/FindAvailableQuery.java
+import org.axonframework.messaging.queryhandling.annotation.Query;
+
+// Add @Query ONLY when simple class name ≠ queryName string (case-sensitive)
+// "FindAvailableQuery" ≠ "findAvailable" → annotation required
+@Query(name = "findAvailable")
+public record FindAvailableQuery(String bikeType) {}
+```
+
+Update the handler:
+
+```java
+@QueryHandler
+public Iterable<BikeStatus> findAvailable(FindAvailableQuery query) {
+    return repository.findAllByStatus(BikeStatus.available(query.bikeType()));
+}
+```
+
+##### Notes
+
+- **Do NOT nest the record inside the handler class** — query records are shared API; place them in the
+  project's query API package.
+- **`@Query` is only needed when the record's simple class name does not equal the `queryName` string
+  (case-sensitive).** If they match, the annotation is optional.
+- No-param queries: `public record FindAvailableQuery() {}` — the record still needs to exist even with
+  no fields.
+
+---
+
+### QueryUpdateEmitter — Constructor Field → Method Parameter
+
+AF4 injected `QueryUpdateEmitter` as a constructor field. AF5 enforces method-level injection — the emitter
+becomes a parameter on each `@EventHandler` that calls it. The `emit()` signature gains a `Class<Q>` first
+argument.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.queryhandling.QueryUpdateEmitter` | `org.axonframework.messaging.queryhandling.QueryUpdateEmitter` |
+
+##### Detection
+
+```bash
+grep -rn 'QueryUpdateEmitter' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import org.axonframework.queryhandling.QueryUpdateEmitter;
+
+@ProcessingGroup("queries")
+@Component
+public class OrderProjection {
+
+    private final QueryUpdateEmitter updateEmitter;
+
+    public OrderProjection(QueryUpdateEmitter updateEmitter) {
+        this.updateEmitter = updateEmitter;
+    }
+
+    @EventHandler
+    public void on(OrderPlacedEvent event) {
+        updateEmitter.emit(q -> true, new OrderDto(event));
+    }
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.queryhandling.QueryUpdateEmitter;
+
+@Namespace("queries")
+@Component
+public class OrderProjection {
+
+    // No QueryUpdateEmitter field or constructor parameter
+
+    @EventHandler
+    public void on(OrderPlacedEvent event, QueryUpdateEmitter updateEmitter) {
+        updateEmitter.emit(GetOrderQuery.class, q -> true, new OrderDto(event));
+    }
+}
+```
+
+##### emit() signature change
+
+| AF4 | AF5 |
+|-----|-----|
+| `emit(predicate, update)` | `emit(QueryClass.class, predicate, update)` |
+
+The query class is the first argument — it matches the `@QueryHandler` first parameter type.
+
+##### Notes
+
+- **Remove the constructor field and injection entirely** — do not keep both.
+- **Add `QueryUpdateEmitter` as a parameter** to every `@EventHandler` that calls `emit(…)`.
+- **The query class argument is required** — `emit(q -> true, dto)` does not compile in AF5.
+
+---
+
 ## interceptors
+
+### MessageDispatchInterceptor — handle(List) → interceptOnDispatch
+
+AF4 dispatch interceptors processed messages in a batch: `handle(List<? extends M>)` returned a
+`BiFunction<Integer, M, M>` applied per message. AF5 changes to single-message: `interceptOnDispatch`
+receives one message, modifies it inline, and delegates to the chain.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.messaging.MessageDispatchInterceptor` | `org.axonframework.messaging.core.MessageDispatchInterceptor` |
+| `java.util.List` | *(remove)* |
+| `java.util.function.BiFunction` | *(remove)* |
+| — | `org.axonframework.messaging.core.MessageDispatchInterceptorChain` |
+| — | `org.axonframework.messaging.core.MessageStream` |
+| — | `org.axonframework.messaging.core.unitofwork.ProcessingContext` |
+
+##### Detection
+
+```bash
+grep -rn 'implements MessageDispatchInterceptor\|BiFunction.*handle.*List' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import java.util.List;
+import java.util.function.BiFunction;
+import org.axonframework.messaging.MessageDispatchInterceptor;
+
+public class MyDispatchInterceptor implements MessageDispatchInterceptor<CommandMessage<?>> {
+
+    @Override
+    public BiFunction<Integer, CommandMessage<?>, CommandMessage<?>> handle(
+            List<? extends CommandMessage<?>> messages) {
+        return (index, message) -> {
+            // modify message
+            return GenericCommandMessage.asCommandMessage(message.getPayload())
+                .withMetaData(message.getMetaData().and("extra", "value"));
+        };
+    }
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.core.MessageDispatchInterceptor;
+import org.axonframework.messaging.core.MessageDispatchInterceptorChain;
+import org.axonframework.messaging.core.MessageStream;
+import org.axonframework.messaging.core.unitofwork.ProcessingContext;
+import org.jspecify.annotations.Nullable;
+
+public class MyDispatchInterceptor implements MessageDispatchInterceptor<CommandMessage> {
+
+    @Override
+    public MessageStream<?> interceptOnDispatch(
+            CommandMessage message,
+            @Nullable ProcessingContext context,
+            MessageDispatchInterceptorChain<CommandMessage> chain) {
+        CommandMessage modified = message.withMetadata(
+            message.metadata().andWith("extra", "value")
+        );
+        return chain.proceed(modified, context);
+    }
+}
+```
+
+##### Notes
+
+- **Generic type loses wildcard** — `CommandMessage<?>` → `CommandMessage` (no wildcard).
+- **Method name change** — `handle` → `interceptOnDispatch`.
+- **Return type change** — `BiFunction<Integer, M, M>` → `MessageStream<?>`.
+- **Always call `chain.proceed(modified, context)`** at the end — returning without calling it drops the message.
+
+---
 
 ### MessageHandlerInterceptor — Handle Method Signature Migration
 

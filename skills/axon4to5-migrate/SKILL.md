@@ -286,6 +286,7 @@ Blockers:    none / ⚠️ list here
 ## Behavior rules
 
 - **Always load `patterns/ALL_IN_ONE.md` before touching any code** — it contains all import mappings and before/after examples.
+- **For complex scenarios** (multi-entity aggregates, polymorphic hierarchies, saga persistence, named queries, dispatch interceptors), load `examples/ALL_EXAMPLES.md` for complete before/after file walkthroughs.
 - **Work through phases in order** — aggregates define events consumed by downstream handlers.
 - **Apply patterns one file at a time** and verify imports after each edit.
 - **Flag blockers — never silently skip.** If a pattern has no AF5 equivalent (DeadlineHandler, SagaTestFixture, snapshotTriggerDefinition), comment out the code, add a `// TODO` note, and report it in the summary.

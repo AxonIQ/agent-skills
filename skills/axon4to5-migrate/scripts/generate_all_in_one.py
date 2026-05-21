@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Generate ALL_IN_ONE.md by concatenating all pattern files in numbered order."""
+"""Generate ALL_IN_ONE.md (patterns) and ALL_EXAMPLES.md (examples)."""
 
 import os
 import re
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PATTERNS_DIR = os.path.join(SCRIPT_DIR, "..", "patterns")
+SKILL_DIR = os.path.join(SCRIPT_DIR, "..")
+PATTERNS_DIR = os.path.join(SKILL_DIR, "patterns")
+EXAMPLES_DIR = os.path.join(SKILL_DIR, "examples")
 OUTPUT_FILE = os.path.join(PATTERNS_DIR, "ALL_IN_ONE.md")
-IGNORED = {"ALL_IN_ONE.md", "README.md"}
+EXAMPLES_OUTPUT = os.path.join(EXAMPLES_DIR, "ALL_EXAMPLES.md")
+IGNORED = {"ALL_IN_ONE.md", "ALL_EXAMPLES.md", "README.md"}
 
 
 def strip_prefix(name):
@@ -23,7 +26,9 @@ def normalize_headings(content, level_offset):
     return re.sub(r"^(#{1,6}) ", replace, content, flags=re.MULTILINE)
 
 
-def collect(directory, depth=1):
+def collect(directory, depth=1, top_dir=None):
+    if top_dir is None:
+        top_dir = directory
     parts = []
     entries = sorted(os.listdir(directory))
 
@@ -39,7 +44,7 @@ def collect(directory, depth=1):
         if os.path.isdir(os.path.join(directory, e))
     ]
 
-    is_top = os.path.realpath(directory) == os.path.realpath(PATTERNS_DIR)
+    is_top = os.path.realpath(directory) == os.path.realpath(top_dir)
 
     readme_title = None
     readme_body = None
@@ -66,7 +71,7 @@ def collect(directory, depth=1):
         parts.append(normalize_headings(body, depth + 1).strip() + "\n\n---\n")
 
     for subdir in subdirs:
-        parts.append(collect(os.path.join(directory, subdir), depth + 1))
+        parts.append(collect(os.path.join(directory, subdir), depth + 1, top_dir))
 
     return "".join(parts)
 
@@ -84,9 +89,9 @@ def make_toc(content):
 
 
 def main():
-    body = collect(PATTERNS_DIR).strip()
+    # Generate patterns/ALL_IN_ONE.md
+    body = collect(PATTERNS_DIR, top_dir=PATTERNS_DIR).strip()
     toc = make_toc(body)
-
     output = f"""# Axon Framework 4 → 5 Migration Patterns
 
 Automatically generated — do not edit manually. Regenerate with:
@@ -101,6 +106,27 @@ python3 scripts/generate_all_in_one.py
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(output)
     print(f"✅ {OUTPUT_FILE} generated.")
+
+    # Generate examples/ALL_EXAMPLES.md if examples/ directory exists
+    if os.path.isdir(EXAMPLES_DIR):
+        ex_body = collect(EXAMPLES_DIR, top_dir=EXAMPLES_DIR).strip()
+        ex_toc = make_toc(ex_body)
+        ex_output = f"""# Axon Framework 4 → 5 Migration Examples
+
+Automatically generated — do not edit manually. Regenerate with:
+```
+python3 scripts/generate_all_in_one.py
+```
+
+Concrete before/after examples showing full file migrations. Consult when a pattern alone is insufficient.
+
+{ex_toc}
+
+{ex_body}
+"""
+        with open(EXAMPLES_OUTPUT, "w", encoding="utf-8") as f:
+            f.write(ex_output)
+        print(f"✅ {EXAMPLES_OUTPUT} generated.")
 
 
 if __name__ == "__main__":
