@@ -76,6 +76,10 @@ CompletableFuture<List<Dwelling>> all = queryGateway.queryMany(
   `.thenApply(...)` chains work without casting.
 - **`ResponseType` field declarations** (e.g. cached `ResponseType<List<X>>` constants used across multiple
   query sites) become `Class<X>` references — drop the wrapper entirely.
+- **OpenRewrite status:** Partial — `Axon4ToAxon5QueryResponseTypes` (in `axon4-to-axon5-messaging.yml`)
+  rewrites the 2-argument `query(payload, ResponseTypes.instanceOf(...))` form; AI rewrites the 3-argument named
+  query form, converts `multipleInstancesOf` call sites to `queryMany`, and finishes any
+  `ResponseType<R>`-typed local/field declarations.
 
 ## Partial migration state (post-OpenRewrite)
 
@@ -92,10 +96,3 @@ grep -rn 'queryGateway\.query("' --include='*.java' --include='*.kt' --include='
 # multipleInstancesOf sites — convert to queryMany
 grep -rn 'multipleInstancesOf' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
-
-## Notes (continued)
-
-- **OpenRewrite status:** Partial — `Axon4ToAxon5QueryResponseTypes` (in `axon4-to-axon5-messaging.yml`)
-  rewrites the 2-argument `query(payload, ResponseTypes.instanceOf(...))` form; AI rewrites the 3-argument named
-  query form, converts `multipleInstancesOf` call sites to `queryMany`, and finishes any
-  `ResponseType<R>`-typed local/field declarations.

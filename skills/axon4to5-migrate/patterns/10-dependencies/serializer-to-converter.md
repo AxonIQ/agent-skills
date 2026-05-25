@@ -90,6 +90,10 @@ axon:
   `jackson` (or remove if the default suffices).
 - **Bean name change is conventional, not mandatory.** Renaming the `@Bean` method `serializer` → `converter`
   matches the new SPI but the framework binds by type, not name.
+- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-conversion.yml` rewrites the package
+  prefix, and `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml` rewrites the YAML key prefix; AI
+  rewrites the concrete class names (`JacksonSerializer` → `JacksonConverter`, drop `XStreamSerializer`) and the
+  `SerializerType` enum values inside YAML.
 
 ## Partial migration state (post-OpenRewrite)
 
@@ -109,10 +113,3 @@ OpenRewrite's `axon4-to-axon5-conversion.yml` runs a single `ChangePackage` rule
 grep -rn 'JacksonSerializer\|XStreamSerializer\|\bSerializer\b' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
-
-## Notes (continued)
-
-- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-conversion.yml` rewrites the package
-  prefix, and `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml` rewrites the YAML key prefix; AI
-  rewrites the concrete class names (`JacksonSerializer` → `JacksonConverter`, drop `XStreamSerializer`) and the
-  `SerializerType` enum values inside YAML.

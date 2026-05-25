@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-015 — Move OR coverage table out of SKILL.md
-**Next action:** Start IMP-017: Pattern Notes formatting consistency
-**Current session commit:** IMP-001..014, 018 committed; IMP-015 pending
+**Last completed:** IMP-017 — Pattern Notes formatting consistency
+**Next action:** Start IMP-016: Eval coverage for new patterns
+**Current session commit:** IMP-001..015, 018 committed; IMP-017 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -37,7 +37,7 @@ session-count: 1
 | IMP-014 | Cross-link patterns ↔ examples/java/ | done | 11 patterns gained a "Reference source:" line pointing at the matching `examples/java/af5/.../*.java` file. |
 | IMP-015 | Move OR coverage table out of SKILL.md | done | 32-row table moved to `references/openrewrite-coverage.md`; SKILL.md slimmed to 265 lines (was 297). |
 | IMP-016 | Eval coverage for new patterns | pending | IMP-006 added 4 patterns + IMP-011 added 1. None have evals. Add eval entries under `evals/axon4to5-migrate/recipes/` for `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`, `command-gateway-top-level`. |
-| IMP-017 | Pattern Notes formatting consistency | pending | Different patterns mix bullet style, plain prose, and bold-prefix conventions in Notes. OpenRewrite status line placement also varies (last bullet vs separate trailing bullet). Pick one convention and apply across all 32 patterns. |
+| IMP-017 | Pattern Notes formatting consistency | done | 3/32 patterns normalised (29 already compliant); stray "## Notes (continued)" headers folded into single Notes section; OR-status + Reference-source bullets land at tail. |
 | IMP-018 | `make check-attribution` target | done | New `make check-attribution` target uses `scripts/forbidden-names.txt` as a regex list; wired into `make check` so CI catches regressions. |
 
 ## Session Log
@@ -60,3 +60,4 @@ session-count: 1
 - IMP-014 done: 11 patterns now carry a `**Reference source:**` line pointing to the matching real-world `examples/java/af5/.../*.java` file.
 - IMP-018 done (out of sequence — small CI gate): `make check-attribution` target + `scripts/forbidden-names.txt` regex list; `make check` chains generate + attribution gate + staleness diff.
 - IMP-015 done: 32-row OR coverage table moved to `references/openrewrite-coverage.md`; SKILL.md now 265 lines and points at the per-pattern `OpenRewrite status:` line.
+- IMP-017 done: Notes sections normalised (29/32 already compliant); 3 patterns lost stray "## Notes (continued)" headers and ended up with OpenRewrite status + Reference source bullets at the tail.

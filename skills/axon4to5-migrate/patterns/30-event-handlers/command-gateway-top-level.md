@@ -138,10 +138,10 @@ rewriting `.sendAndWait(cmd)` to `.send(cmd).resultAs(<Type>.class).orTimeout(..
 
 ## Notes
 
-- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-messaging.yml` moves the `CommandGateway`
-  import to the `.messaging.` path; AI rewrites the `.send()`/`.sendAndWait()` call chains (insert `.resultAs(...)`,
-  replace `.sendAndWait` with `.send().resultAs().orTimeout().join()`).
 - For in-handler dispatch (a class with `@EventHandler` that dispatches commands), see
   [command-dispatcher.md](command-dispatcher.md) — that pattern switches to `CommandDispatcher`; this one keeps
   `CommandGateway`.
+- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-messaging.yml` moves the `CommandGateway`
+  import to the `.messaging.` path; AI rewrites the `.send()`/`.sendAndWait()` call chains (insert `.resultAs(...)`,
+  replace `.sendAndWait` with `.send().resultAs().orTimeout().join()`).
 - **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java`.

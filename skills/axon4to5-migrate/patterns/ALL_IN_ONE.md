@@ -284,6 +284,10 @@ axon:
   `jackson` (or remove if the default suffices).
 - **Bean name change is conventional, not mandatory.** Renaming the `@Bean` method `serializer` → `converter`
   matches the new SPI but the framework binds by type, not name.
+- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-conversion.yml` rewrites the package
+  prefix, and `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml` rewrites the YAML key prefix; AI
+  rewrites the concrete class names (`JacksonSerializer` → `JacksonConverter`, drop `XStreamSerializer`) and the
+  `SerializerType` enum values inside YAML.
 
 ##### Partial migration state (post-OpenRewrite)
 
@@ -303,13 +307,6 @@ OpenRewrite's `axon4-to-axon5-conversion.yml` runs a single `ChangePackage` rule
 grep -rn 'JacksonSerializer\|XStreamSerializer\|\bSerializer\b' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
-
-##### Notes (continued)
-
-- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-conversion.yml` rewrites the package
-  prefix, and `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml` rewrites the YAML key prefix; AI
-  rewrites the concrete class names (`JacksonSerializer` → `JacksonConverter`, drop `XStreamSerializer`) and the
-  `SerializerType` enum values inside YAML.
 
 ---
 
@@ -1455,12 +1452,12 @@ rewriting `.sendAndWait(cmd)` to `.send(cmd).resultAs(<Type>.class).orTimeout(..
 
 ##### Notes
 
-- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-messaging.yml` moves the `CommandGateway`
-  import to the `.messaging.` path; AI rewrites the `.send()`/`.sendAndWait()` call chains (insert `.resultAs(...)`,
-  replace `.sendAndWait` with `.send().resultAs().orTimeout().join()`).
 - For in-handler dispatch (a class with `@EventHandler` that dispatches commands), see
   [command-dispatcher.md](command-dispatcher.md) — that pattern switches to `CommandDispatcher`; this one keeps
   `CommandGateway`.
+- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-messaging.yml` moves the `CommandGateway`
+  import to the `.messaging.` path; AI rewrites the `.send()`/`.sendAndWait()` call chains (insert `.resultAs(...)`,
+  replace `.sendAndWait` with `.send().resultAs().orTimeout().join()`).
 - **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java`.
 
 ---
@@ -2239,6 +2236,10 @@ CompletableFuture<List<Dwelling>> all = queryGateway.queryMany(
   `.thenApply(...)` chains work without casting.
 - **`ResponseType` field declarations** (e.g. cached `ResponseType<List<X>>` constants used across multiple
   query sites) become `Class<X>` references — drop the wrapper entirely.
+- **OpenRewrite status:** Partial — `Axon4ToAxon5QueryResponseTypes` (in `axon4-to-axon5-messaging.yml`)
+  rewrites the 2-argument `query(payload, ResponseTypes.instanceOf(...))` form; AI rewrites the 3-argument named
+  query form, converts `multipleInstancesOf` call sites to `queryMany`, and finishes any
+  `ResponseType<R>`-typed local/field declarations.
 
 ##### Partial migration state (post-OpenRewrite)
 
@@ -2255,13 +2256,6 @@ grep -rn 'queryGateway\.query("' --include='*.java' --include='*.kt' --include='
 #### multipleInstancesOf sites — convert to queryMany
 grep -rn 'multipleInstancesOf' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
-
-##### Notes (continued)
-
-- **OpenRewrite status:** Partial — `Axon4ToAxon5QueryResponseTypes` (in `axon4-to-axon5-messaging.yml`)
-  rewrites the 2-argument `query(payload, ResponseTypes.instanceOf(...))` form; AI rewrites the 3-argument named
-  query form, converts `multipleInstancesOf` call sites to `queryMany`, and finishes any
-  `ResponseType<R>`-typed local/field declarations.
 
 ---
 
