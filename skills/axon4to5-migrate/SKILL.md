@@ -1,7 +1,7 @@
 ---
 name: axon4to5-migrate
 description: >-
-  Migrate Axon Framework 4 project to Axon(iq) Framework 5. Handles Spring Boot and native configurations.
+  Migrate Axon Framework 4 project to Axon(iq) Framework 5. Spring Boot and native configs.
   Covers aggregates, event handlers, sagas, query handlers, interceptors, event store, and tests.
 argument-hint: "[project-path] [configuration=spring|native] [skip-openrewrite=true|false]"
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
@@ -32,15 +32,7 @@ How does the application wire Axon?
 
 Scan the codebase and classify what needs migrating.
 
-**Detection hints:**
-- `@Aggregate` / `@AggregateRoot` → aggregate class
-- `@ProcessingGroup` / `@EventHandler` → event handler / projector
-- `@QueryHandler` → query handler
-- `implements MessageHandlerInterceptor` → interceptor
-- `@Saga` / `@SagaEventHandler` → saga
-- `AggregateTestFixture` → test code
-- `org.axonframework` in `pom.xml` / `build.gradle` → dependency block
-- `axon.serializer` in YAML → config key to rename
+**Detection greps** (always include `--include='*.java' --include='*.kt' --include='*.scala'`):
 
 ```bash
 grep -rln '@Aggregate\|@AggregateRoot' --include='*.java' --include='*.kt' --include='*.scala' <root>/src/
@@ -53,25 +45,12 @@ grep -rn 'org.axonframework' --include='pom.xml' --include='build.gradle' --incl
 grep -rn 'axon.serializer\|@DeadlineHandler\|SagaTestFixture' --include='*.yaml' --include='*.properties' --include='*.java' --include='*.kt' <root>/src/
 ```
 
-Output a classification table:
+Output a classification table (Category | Files found | Complexity | Notes) covering: Aggregates, Event handlers, Query handlers, Interceptors, Sagas, Event store, Tests, Dependencies.
 
-```
-| Category        | Files found | Complexity | Notes                    |
-|-----------------|-------------|------------|--------------------------|
-| Aggregates      | N           | Low/Med    |                          |
-| Event handlers  | N           | Med        |                          |
-| Query handlers  | N           | Low        |                          |
-| Interceptors    | N           | High       |                          |
-| Sagas           | N           | High       |                          |
-| Event store     | ✓/✗         | Low        |                          |
-| Tests           | N           | Med        |                          |
-| Dependencies    | pom.xml     | Low        |                          |
-```
-
-**Blockers to flag before starting:**
-- `@DeadlineHandler` found → no AF5 equivalent; those handlers must be commented out
-- `SagaTestFixture` found → no AF5 replacement; those tests cannot be automatically migrated
-- `snapshotTriggerDefinition` on `@Aggregate` → no AF5 equivalent; requires manual redesign
+**Blockers to flag before starting** (no AF5 equivalent — must be commented out + reported):
+- `@DeadlineHandler`
+- `SagaTestFixture`
+- `snapshotTriggerDefinition` on `@Aggregate`
 
 Use `AskUserQuestion` to confirm before proceeding (or stop here if approach C).
 
@@ -200,147 +179,36 @@ OR coverage values: **Full** = no AI work after OR; **Partial** = OR does part, 
 Read: patterns/ALL_IN_ONE.md
 ```
 
-Then execute the phases in order.
+Then execute the phases in order. Each phase below names the pattern files to apply — those files hold the verbatim AF4 → AF5 imports, annotation names, before/after code, and per-pattern rules. SKILL.md does not duplicate them.
 
 **Idempotency — handle partially-migrated code.** Before applying a pattern, check whether the AF5 shape is already partially present from a prior pass (commonly: OpenRewrite). If so, complete the gaps (e.g. fix the placeholder `idType = Object.class`, add the missing `EventAppender` parameter, drop the lingering AF4 import) instead of re-applying the full pattern from the AF4 shape — re-application creates duplicates or reverses already-correct edits. See each pattern's **"Partial migration state (post-OpenRewrite)"** section for the concrete half-state and the minimal completion step.
 
 ---
 
-### Phase 1: Dependencies
+### Phase order and pattern map
 
-Pattern: **10. Dependencies → Maven/Gradle Migration**
+Apply phases strictly in this order — Phase 2 events are consumed by Phases 3, 4, 7; aggregate tagKey choice in Phase 3 must match `@EventTag` in Phase 2.
 
-1. Update group ID: `org.axonframework` → `io.axoniq.framework`.
-2. Update artifact IDs per the import mappings in the pattern.
-3. Rename YAML keys: `axon.serializer.*` → `axon.converter.*`.
-4. Remove `console-framework-client-spring-boot-starter` if present.
+| # | Phase                       | Patterns (in `patterns/`)                                              |
+|---|-----------------------------|------------------------------------------------------------------------|
+| 1 | Dependencies                | `10-dependencies/*`                                                    |
+| 2 | Event classes               | `20-aggregates/event-annotation.md`                                    |
+| 3 | Aggregates                  | `20-aggregates/*` (all)                                                |
+| 4 | Event handlers / processors | `30-event-handlers/*`                                                  |
+| 5 | Query handlers              | `40-query-handlers/*`                                                  |
+| 6 | Interceptors                | `50-interceptors/*`                                                    |
+| 7 | Sagas                       | `60-sagas/saga-component.md` + Phase 4 patterns if saga dispatches cmds|
+| 8 | Event store config (JPA)    | `70-event-store/event-store-jpa.md`                                    |
+| 9 | Tests                       | `80-tests/test-fixture.md`                                             |
 
----
+Cross-phase couplings the LLM must remember:
 
-### Phase 2: Event Classes
+- **tagKey alignment** — the `tagKey` chosen in Phase 3 (`@EventSourced(tagKey=…)`) MUST equal the `@EventTag(key=…)` value applied in Phase 2 on the routing field of every event the aggregate emits.
+- **EventAppender parameter** — Phase 3 changes every `@CommandHandler` method on an aggregate to take `EventAppender eventAppender` as the **last** parameter. Without it, `eventAppender.append(...)` in the body won't compile.
+- **CommandGateway → CommandDispatcher** — if a saga (Phase 7) or query class (Phase 5) injects `CommandGateway`, apply the Phase 4 `command-dispatcher.md` pattern to those classes too.
+- **Blockers — comment out, do NOT delete.** `snapshotTriggerDefinition` (Phase 3), `@DeadlineHandler` (Phase 7), `SagaTestFixture` (Phase 9) have no AF5 equivalent — add a `// TODO: no AF5 equivalent` note and surface in the summary.
 
-Pattern: **20. Aggregates → Event Class Annotations**
-
-For each event record/class used as an AF5 event:
-1. Add `@Event` annotation (`org.axonframework.messaging.eventhandling.annotation.Event`).
-2. Add `@EventTag(key = "<tagKey>")` to the routing field — key must match the aggregate's `tagKey`.
-3. Replace `@Revision("N")` with `@Event(version = N)`.
-
----
-
-### Phase 3: Aggregates
-
-Patterns: **20. Aggregates → all**
-
-For each aggregate class:
-1. Replace `@Aggregate`/`@AggregateRoot` → `@EventSourced(tagKey = "…", idType = …)` (Spring) or `@EventSourcedEntity(…)` (native).
-2. Remove `@AggregateIdentifier` from the identity field.
-3. Add `@EntityCreator` to the no-arg constructor.
-4. Remove `@TargetAggregateIdentifier` from all command classes that target this aggregate.
-5. Add `EventAppender eventAppender` as the **last** parameter to every `@CommandHandler` method.
-6. Replace every `AggregateLifecycle.apply(event)` → `eventAppender.append(event)`.
-7. Update `@CommandHandler` import: `commandhandling.CommandHandler` → `messaging.commandhandling.annotation.CommandHandler`.
-8. Update `@EventSourcingHandler` import: `eventsourcing.EventSourcingHandler` → `eventsourcing.annotation.EventSourcingHandler`.
-
-**Blocker:** if `@Aggregate` carried `snapshotTriggerDefinition`, there is no AF5 equivalent — comment it out and note it for the user.
-
----
-
-### Phase 4: Event Handlers / Processors
-
-Patterns: **30. Event Handlers → all**
-
-For each event-handling class:
-1. Replace `@ProcessingGroup("name")` → `@Namespace("name")`.
-2. Update `@EventHandler`, `@DisallowReplay`, `@ResetHandler` imports.
-3. Replace `@MetaDataValue` → `@MetadataValue` (annotation name + import).
-4. Replace `MetaData` type references → `Metadata` (`org.axonframework.messaging.core.Metadata`).
-5. If class injects `CommandGateway` as a field:
-   - Remove the field and its constructor injection.
-   - Add `CommandDispatcher commandDispatcher` as a parameter to each `@EventHandler` that dispatches.
-   - Change handler return type to `CompletableFuture<?>`.
-   - Replace `commandGateway.sendAndWait(cmd)` → `commandDispatcher.send(cmd).getResultMessage()`.
-6. If `sequencing-policy` exists in YAML or as a `@Bean`:
-   - Add `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = "metadataKey")` to the class.
-   - Remove the YAML `sequencing-policy` key for this processor.
-
----
-
-### Phase 5: Query Handlers
-
-Pattern: **40. Query Handlers**
-
-For each query-handler class:
-1. Update `@QueryHandler` import: `queryhandling.QueryHandler` → `messaging.queryhandling.annotation.QueryHandler`.
-2. If class has `@ProcessingGroup`, replace with `@Namespace` (same as Phase 4 step 1).
-3. If class has `@MetaDataValue`, apply Phase 4 step 3.
-
----
-
-### Phase 6: Interceptors
-
-Pattern: **50. Interceptors**
-
-For each `MessageHandlerInterceptor` implementation:
-1. Update the interface generic: `CommandMessage<?>` → `CommandMessage`.
-2. Rename method `handle(…)` → `interceptOnHandle(…)`.
-3. New parameters: `CommandMessage message, ProcessingContext context, MessageHandlerInterceptorChain<CommandMessage> chain`.
-4. Change return type: `Object` → `MessageStream<?>`.
-5. Change chain call: `chain.proceed()` → `chain.proceed(message, context)`.
-6. Replace `uow.getMessage()` → `message` (direct access).
-7. Replace `getMetaData()` → `metaData()`, `getPayload()` → `payload()`.
-8. Remove `throws Exception`.
-9. Update imports: add `MessageHandlerInterceptorChain`, `MessageStream`, `ProcessingContext`; remove `UnitOfWork`, `InterceptorChain`.
-
----
-
-### Phase 7: Sagas
-
-Pattern: **60. Sagas**
-
-For each saga class:
-1. Remove `@Saga` annotation (both Spring and SPI variants).
-2. Add `@Component`, `@DisallowReplay`, `@Entity`, `@Table` annotations.
-3. Add `@Id` field for the correlation key.
-4. Add `protected` no-arg constructor for JPA.
-5. Replace `@SagaEventHandler(associationProperty = …)` → `@EventHandler`.
-6. Remove `@StartSaga`, `@EndSaga`, all `SagaLifecycle.*` calls.
-7. If the saga dispatches commands via `CommandGateway` field → apply Phase 4 step 5.
-8. Add persistence: load/save via a Spring Data repository in each `@EventHandler`.
-
-**Blocker:** if `@DeadlineHandler` is used — no AF5 equivalent exists. Comment out those methods and add a `// TODO: no AF5 DeadlineHandler — redesign required` note.
-
----
-
-### Phase 8: Event Store Configuration
-
-Pattern: **70. Event Store**
-
-If the project uses JPA (no Axon Server):
-1. Create `EventStoreConfiguration.java` with `AggregateBasedJpaEventStorageEngine` bean.
-2. Add `@EntityScan` with `org.axonframework` and `io.axoniq.framework` packages.
-3. Set `axon.axonserver.enabled: false` in `application.yaml`.
-
----
-
-### Phase 9: Tests
-
-Pattern: **80. Tests**
-
-For each test using `AggregateTestFixture`:
-1. Replace `AggregateTestFixture<T> fixture` → `AxonTestFixture fixture`.
-2. Replace constructor: `new AggregateTestFixture<>(Aggregate.class)` →
-   ```java
-   AxonTestFixture.with(
-       EventSourcingConfigurer.create()
-           .registerEntity(EventSourcedEntityModule.autodetected(AggId.class, Aggregate.class))
-   )
-   ```
-3. Add `@AfterEach void tearDown() { fixture.stop(); }`.
-4. Update DSL: `given(events)` → `given().events(events)`, `when(cmd)` → `when().command(cmd)`, `expectEvents(…)` → `then().events(…)`.
-5. Replace `AggregateNotFoundException.class` with the domain exception thrown from validation on empty state.
-
-**Blocker:** `SagaTestFixture` — no AF5 replacement exists. Comment out those tests and note them for the user.
+For complex scenarios (multi-entity aggregates, polymorphic hierarchies, saga persistence, named queries, dispatch interceptors), also load `examples/ALL_EXAMPLES.md` for full before/after file walkthroughs.
 
 ---
 
@@ -348,7 +216,7 @@ For each test using `AggregateTestFixture`:
 
 **Definition of done: `mvn compile` (or `./gradlew compileJava`) exits 0.** Grep emptiness is NOT the gate — OpenRewrite renames symbols, so AF4 strings can be gone while the code still won't compile (e.g. `@EventSourced` present but missing `tagKey`/`idType`; `@CommandHandler` import updated but signature still lacks `EventAppender`).
 
-**Intermediate non-compiling states are expected.** Phase 3 step 1 renames `@Aggregate` → `@EventSourced`, but the code only compiles again once steps 2–7 (remove `@AggregateIdentifier`, add `@EntityCreator`, add `EventAppender` params, rewrite `AggregateLifecycle.apply` → `eventAppender.append`, update imports) are also applied. Do NOT roll back on a red intermediate compile — keep applying the dependent patterns until the loop converges.
+**Intermediate non-compiling states are expected.** Phase 3 renames `@Aggregate` → `@EventSourced`, but the code only compiles again once the dependent edits (remove `@AggregateIdentifier`, add `@EntityCreator`, add `EventAppender` params, rewrite `AggregateLifecycle.apply` → `eventAppender.append`, update imports) are also applied. Do NOT roll back on a red intermediate compile — keep applying the dependent patterns until the loop converges.
 
 ### 4a. Compile loop (PRIMARY)
 
@@ -419,10 +287,9 @@ Blockers:    none / list here
 ## Behavior rules
 
 - **Always load `patterns/ALL_IN_ONE.md` before touching any code** — it contains all import mappings and before/after examples.
-- **For complex scenarios** (multi-entity aggregates, polymorphic hierarchies, saga persistence, named queries, dispatch interceptors), load `examples/ALL_EXAMPLES.md` for complete before/after file walkthroughs.
 - **Work through phases in order** — aggregates define events consumed by downstream handlers.
 - **Apply patterns one file at a time** and verify imports after each edit.
-- **Compilation green is the definition of done; grep emptiness is not.** OpenRewrite renames AF4 symbols out of the source, so a clean grep can hide an unfinished migration. Drive completion from `mvn compile` / `./gradlew compileJava` exit code and the `[ERROR]` list — see Step 4a. Intermediate red compiles between dependent patterns (e.g. Phase 3 steps 1 vs 5–7) are expected; keep applying patterns, do not revert.
+- **Compilation green is the definition of done; grep emptiness is not.** Drive completion from `mvn compile` / `./gradlew compileJava` exit code and the `[ERROR]` list — see Step 4a. Intermediate red compiles between dependent patterns are expected; keep applying patterns, do not revert.
 - **Flag blockers — never silently skip.** If a pattern has no AF5 equivalent (DeadlineHandler, SagaTestFixture, snapshotTriggerDefinition), comment out the code, add a `// TODO` note, and report it in the summary.
 - **Preserve architecture** — no DCB, no event storage engine swap, no new patterns.
 - **Do not auto-fix ambiguous cases.** When a compile error doesn't match a catalog pattern directly, ask the user before guessing.
