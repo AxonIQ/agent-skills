@@ -55,3 +55,4 @@ public void dispatch(CreateOrderCommand cmd, Metadata meta) { ... }
   just ensure the stored value is a `String`.
 - `MetaData.emptyInstance()` → `Metadata.emptyInstance()` (same method name, new type).
 - `MetaData.with(key, value)` → `Metadata.from(Map.of(key, value.toString()))`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites `org.axonframework.messaging.MetaData` → `org.axonframework.messaging.core.Metadata`.

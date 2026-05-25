@@ -56,3 +56,4 @@ public MessageStream<?> interceptOnHandle(
 - **Applies to all `Message` subtypes**: `CommandMessage`, `EventMessage`, `QueryMessage`.
 - **Inside `@EventSourcingHandler`**: payload is the event itself (method parameter) — no accessor needed.
 - **Inside test lambdas**: `events.get(0).getPayload()` → `(YourEventType) events.get(0).payload()`.
+- **OpenRewrite status:** Full — `ChangeMethodName` rules (in `axon4-to-axon5-messaging.yml`) rewrite `getPayload`/`getMetaData`/`getIdentifier`/`getTimestamp`/`getPayloadType` and the `withMetaData`/`andMetaData` siblings.

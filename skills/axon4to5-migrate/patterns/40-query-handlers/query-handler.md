@@ -64,3 +64,4 @@ public class OrderQueryHandler {
   specific query class, this must be migrated to a `@Query`-annotated payload record — see the `query-payload-record`
   atom in `references/atoms/`.
 - **`QueryUpdateEmitter`** import also changes — see the `query-update-emitter` atom in `references/atoms/`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites the `@QueryHandler` import to `messaging.queryhandling.annotation.QueryHandler`.

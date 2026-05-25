@@ -56,3 +56,4 @@ public Iterable<BikeStatus> findAvailable(FindAvailableQuery query) {
   (case-sensitive).** If they match, the annotation is optional.
 - No-param queries: `public record FindAvailableQuery() {}` — the record still needs to exist even with
   no fields.
+- **OpenRewrite status:** None — no OR rule rewrites `@QueryHandler(queryName = "…")` into a `@Query` payload record; AI introduces the record and updates the handler signature.

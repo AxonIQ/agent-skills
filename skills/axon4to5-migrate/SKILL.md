@@ -84,6 +84,40 @@ Use `AskUserQuestion` to confirm before proceeding (or stop here if approach C).
 1. Run the `axon4to5-openrewrite` skill to execute the bulk recipe.
 2. After OpenRewrite completes, proceed to the AI phases below.
 
+#### What OpenRewrite covers (and what it leaves for AI)
+
+OR coverage values: **Full** = no AI work after OR; **Partial** = OR does part, AI finishes the gap; **None** = AI does it from scratch (OR has no rule for this).
+
+| Pattern (file) | OR coverage | What AI still does |
+|---|---|---|
+| 10-dependencies/maven-gradle-migration.md | Partial | OR renames BOM, bumps versions, renames `axon.serializer` → `axon.converter`, swaps starter to commercial; AI removes `console-framework-client-spring-boot-starter`. |
+| 20-aggregates/aggregate-class.md | Partial | OR rewrites `@Aggregate` → `@EventSourced(tagKey, idType = Object.class)`; AI replaces the `Object.class` placeholder with the real id type. |
+| 20-aggregates/aggregate-lifecycle.md | Full | `ReplaceAggregateLifecycleApply` rewrites `apply(...)` → `eventAppender.append(...)` and injects `EventAppender`; AI verifies only. |
+| 20-aggregates/aggregate-member.md | Full | `ChangeType` `@AggregateMember` → `@EntityMember`; `routingKey` preserved. |
+| 20-aggregates/command-handler.md | Partial | `ChangeType` moves the import; `EventAppender` param added only on handlers that called `apply(...)` — AI adds it to remaining handlers. |
+| 20-aggregates/creation-policy.md | Partial | `RemoveAnnotation` strips `@CreationPolicy`; `ConvertCommandHandlerConstructorToStaticMethod` handles constructor handlers — AI converts remaining ALWAYS handlers to static factories and reviews CREATE_IF_MISSING semantics. |
+| 20-aggregates/entity-creator.md | Full | `AddEntityCreatorAnnotation` annotates no-arg constructors. |
+| 20-aggregates/event-annotation.md | Full | `AddEventAnnotation` adds `@Event` and migrates `@Revision`; `AddEventTagAnnotation` adds `@EventTag` to event fields. |
+| 20-aggregates/event-emission.md | Full | Same `ReplaceAggregateLifecycleApply` recipe as aggregate-lifecycle. |
+| 20-aggregates/event-sourcing-handler.md | Full | `ChangeType` for the `@EventSourcingHandler` package move. |
+| 20-aggregates/generic-domain-event-message.md | None | No OR rule; AI rewrites `GenericDomainEventMessage` → `GenericEventMessage`. |
+| 20-aggregates/target-aggregate-identifier.md | Partial | OR renames `@TargetAggregateIdentifier` → `@TargetEntityId` (keeps the annotation); AI removes it entirely per AF5 routing-by-`idType`. |
+| 30-event-handlers/command-dispatcher.md | Partial | `MigrateCommandGatewayInEventHandler` rewrites single-dispatch and try/catch handler bodies; AI handles compound shapes (loops, multiple sequential dispatches). |
+| 30-event-handlers/event-handler-annotation.md | Full | `ChangeType` for `@EventHandler`, `@DisallowReplay`, `@ResetHandler` package moves. |
+| 30-event-handlers/message-accessors.md | Full | `ChangeMethodName` rewrites `getPayload`/`getMetaData`/`getIdentifier`/`getTimestamp`/`getPayloadType`. |
+| 30-event-handlers/metadata-type.md | Full | `ChangeType` `MetaData` → `Metadata`. |
+| 30-event-handlers/metadata-value.md | Full | `ChangeType` `@MetaDataValue` → `@MetadataValue`. |
+| 30-event-handlers/namespace-routing.md | Full | `ChangeType` `@ProcessingGroup` → `@Namespace`. |
+| 30-event-handlers/sequencing-policy.md | Partial | OR moves package, `MigrateSequencingPolicyLambda` rewrites lambdas, `AnnotateObsoleteSequencingPolicyProperty` flags YAML; AI moves YAML wiring onto `@SequencingPolicy` class annotation. |
+| 40-query-handlers/query-handler.md | Full | `ChangeType` for `@QueryHandler` package move. |
+| 40-query-handlers/query-named.md | None | No OR rule; AI introduces the `@Query` payload record. |
+| 40-query-handlers/query-update-emitter.md | Partial | `ChangePackage` moves `QueryUpdateEmitter`; AI converts constructor field → method param and adds the `Class<Q>` arg to `emit(...)`. |
+| 50-interceptors/message-dispatch-interceptor.md | Partial | `MigrateMessageInterceptorSignatures` rewrites the signature; AI rewrites the body (UoW hooks, chain call with arguments). |
+| 50-interceptors/message-handler-interceptor.md | Partial | `MigrateMessageInterceptorSignatures` rewrites the signature; AI rewrites the body (UoW hooks → `ProcessingContext`, `chain.proceed()` → `chain.proceed(message, context)`). |
+| 60-sagas/saga-component.md | None | No OR rule; AI does the full `@Saga` → `@Component + @Entity` JPA rewrite. |
+| 70-event-store/event-store-jpa.md | None | No OR rule; AI writes the `EventStoreConfiguration` bean from scratch. |
+| 80-tests/test-fixture.md | Partial | OR renames type, rewrites the fluent DSL, regenerates setup, adds Java `@AfterEach`; AI handles Kotlin tear-down, fills setup the recipe could not infer (raw `new AxonTestFixture(...)`), and replaces `AggregateNotFoundException` with the domain exception. |
+
 ### Approach B — AI only
 
 **Before touching any code**, load the pattern catalog:

@@ -57,3 +57,4 @@ public class Order {
 - **Visibility** — the no-arg constructor may be `protected` or package-private; it does NOT need to be `public`.
 - **Omitting `@EntityCreator`** causes a runtime failure when the framework attempts to instantiate the entity —
   the failure message mentions missing creator constructor.
+- **OpenRewrite status:** Full — `AddEntityCreatorAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) annotates the no-arg constructor of every `@EventSourced` / `@EventSourcedEntity` class.

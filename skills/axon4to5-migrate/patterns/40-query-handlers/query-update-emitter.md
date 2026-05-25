@@ -69,3 +69,4 @@ The query class is the first argument — it matches the `@QueryHandler` first p
 - **Remove the constructor field and injection entirely** — do not keep both.
 - **Add `QueryUpdateEmitter` as a parameter** to every `@EventHandler` that calls `emit(…)`.
 - **The query class argument is required** — `emit(q -> true, dto)` does not compile in AF5.
+- **OpenRewrite status:** Partial — `ChangePackage` (in `axon4-to-axon5-messaging.yml`) moves `QueryUpdateEmitter` to `messaging.queryhandling`; AI converts the constructor field to a method parameter and adds the `Class<Q>` first argument to `emit(...)`.

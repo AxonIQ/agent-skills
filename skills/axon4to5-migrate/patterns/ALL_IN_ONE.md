@@ -141,6 +141,7 @@ axon:
 - For Gradle, replace `implementation("org.axonframework:axon-spring-boot-starter:…")` with
   `implementation("io.axoniq.framework:axoniq-spring-boot-starter:…")`.
 - The `axon-test` artifact is replaced by `axon-spring-boot-starter-test` from the Spring extensions group.
+- **OpenRewrite status:** Partial — OR renames BOM (`Axon4ToAxon5Bom`), bumps versions, swaps starter to commercial (`axon4-to-axoniq5-spring.yml`), and renames the `axon.serializer` Spring property prefix; AI removes `console-framework-client-spring-boot-starter`.
 
 ---
 
@@ -247,6 +248,7 @@ grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --includ
   a blocker that requires manual resolution.
 - **OpenRewrite Phase 1** sometimes rewrites `@Aggregate` → `@EventSourced` without adding `tagKey`/`idType`.
   Always grep for `@EventSourced` without attributes after Phase 1 and add them.
+- **OpenRewrite status:** Partial — `ChangeType` rewrites `@Aggregate` → `@EventSourced` and `ConfigureEventSourcedAnnotation` adds `tagKey = "<SimpleName>"` + `idType = Object.class` placeholder; AI replaces the `Object.class` placeholder with the real id class.
 
 ---
 
@@ -302,30 +304,21 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 
 ##### Partial migration state (post-OpenRewrite)
 
-OR does not rewrite `AggregateLifecycle.apply(...)` call sites — they remain after the bulk pass, sometimes mixed with hand-edited handlers that already use `eventAppender.append(...)`. Common half-state in one class:
+OR's `ReplaceAggregateLifecycleApply` rewrites the common case in full (call site + parameter injection + static import removal). The remaining AI follow-up cases are narrow:
 
-```java
-@CommandHandler
-public void handleA(CmdA cmd, EventAppender eventAppender) {
-    eventAppender.append(new EventA());          // already migrated
-}
-
-@CommandHandler
-public void handleB(CmdB cmd) {                  // EventAppender param missing
-    AggregateLifecycle.apply(new EventB());      // still AF4
-}
-```
-
-Minimal fix: for each handler still calling `AggregateLifecycle.apply(...)`, add the `EventAppender eventAppender` parameter (per [command-handler.md](command-handler.md)) and rewrite only the `apply(...)` lines that are still there. Do NOT re-rewrite handlers already using `eventAppender.append(...)`. Once every site is converted, drop the `AggregateLifecycle` import.
+- **`AggregateLifecycle.markDeleted()`** is not rewritten — no AF5 equivalent. Remove the call and audit downstream code that relied on the deletion semantics.
+- **`AggregateLifecycle.apply(...)` calls from non-aggregate utilities** (helper classes, base types) where OR's `onlyIfUsing` predicate didn't match. Rewrite manually per the Rules above.
 
 ```bash
-grep -rn 'AggregateLifecycle\.apply\|import .*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
+grep -rn 'AggregateLifecycle\.\(apply\|markDeleted\)\|import .*AggregateLifecycle' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ##### Notes
 
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
 - **Do not call `AggregateLifecycle.markDeleted()`** — there is no AF5 equivalent; remove the call entirely.
+- **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) rewrites `AggregateLifecycle.apply(...)` → `eventAppender.append(...)` and injects the `EventAppender eventAppender` parameter into the enclosing method.
 
 ---
 
@@ -405,6 +398,7 @@ public class OrderLine {
 - **`Map<K, V>` is a blocker** — `@EntityMember` supports `List<V>` only. Rewrite as `List<V>` with
   internal id management before applying this pattern.
 - **`routingKey`** attribute carries over unchanged from `@AggregateMember`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-modelling.yml`) rewrites `AggregateMember` → `EntityMember` with `routingKey` preserved.
 
 ---
 
@@ -452,23 +446,14 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 
 ##### Partial migration state (post-OpenRewrite)
 
-OR moves the import to the `messaging.commandhandling.annotation` package but does NOT add the `EventAppender` parameter to handler signatures — the handler body still calls `AggregateLifecycle.apply(...)` (or has been partially rewritten elsewhere). Common half-state:
+OR moves the import and (via `ReplaceAggregateLifecycleApply` in `axon4-to-axon5-eventsourcing.yml`) injects `EventAppender` into every handler that called `AggregateLifecycle.apply(...)`. Two AI follow-up cases remain:
 
-```java
-import org.axonframework.messaging.commandhandling.annotation.CommandHandler;  // import already AF5
-// EventAppender NOT imported
-
-@CommandHandler
-public void handle(ShipOrderCommand cmd) {                 // signature still AF4 — no EventAppender
-    AggregateLifecycle.apply(new OrderShippedEvent(orderId));
-}
-```
-
-Minimal fix: append `EventAppender eventAppender` as the **last** parameter, add the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, and rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import. Audit:
+- **Handlers that did not emit events in AF4** (validation-only, throw on bad state) are left without `EventAppender` — correct as-is unless you intend to start emitting events.
+- **Aggregate handlers whose event emission was indirect** (via a helper method, base class, or `applyEvents(...)` loop OR's predicate didn't catch) — add `EventAppender eventAppender` as the **last** parameter and the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, then rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import.
 
 ```bash
 grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
-  | grep -v 'EventAppender'
+  | grep -v 'EventAppender'   # candidates — review each: legitimately param-less, or missed by OR?
 ```
 
 ##### Notes
@@ -478,6 +463,7 @@ grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scal
 - **`EventAppender` is required on aggregate and child entity handlers** — see [aggregate-lifecycle.md](aggregate-lifecycle.md).
   On non-aggregate components (event handlers, services) `@CommandHandler` is typically not used — apply this
   pattern only when the handler is inside an `@EventSourced`/`@EventSourcedEntity` class.
+- **OpenRewrite status:** Partial — `ChangeType` (in `axon4-to-axon5-messaging.yml`) moves the import; `EventAppender` is added only on handlers that called `AggregateLifecycle.apply(...)` — AI adds the parameter on remaining aggregate handlers.
 
 ---
 
@@ -555,6 +541,7 @@ public void handle(UpdateCommand cmd, EventAppender eventAppender) {
 - **ALWAYS → static factory** is the most common case where OpenRewrite does NOT flip to `static` — always
   verify the handler is static after removing `@CreationPolicy(ALWAYS)`.
 - **`@EntityCreator` on the no-arg constructor** is required in all cases — see [entity-creator.md](entity-creator.md).
+- **OpenRewrite status:** Partial — `RemoveAnnotation` strips `@CreationPolicy` and `ConvertCommandHandlerConstructorToStaticMethod` converts AF4 command-handler constructors to AF5 static factory methods; AI still flips ALWAYS handlers that weren't constructors to `static` and reviews CREATE_IF_MISSING semantics manually.
 
 ---
 
@@ -617,6 +604,7 @@ public class Order {
 - **Visibility** — the no-arg constructor may be `protected` or package-private; it does NOT need to be `public`.
 - **Omitting `@EntityCreator`** causes a runtime failure when the framework attempts to instantiate the entity —
   the failure message mentions missing creator constructor.
+- **OpenRewrite status:** Full — `AddEntityCreatorAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) annotates the no-arg constructor of every `@EventSourced` / `@EventSourcedEntity` class.
 
 ---
 
@@ -689,6 +677,7 @@ public record OrderCreatedEvent(
   cannot match events to aggregate instances.
 - **`@Revision("N")` → `@Event(version = N)`** — the version is now an `int` attribute, not a string annotation.
 - **Pure value events** (not tied to any aggregate) still need `@Event`; they do not need `@EventTag`.
+- **OpenRewrite status:** Full — `AddEventAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) adds `@Event` to event payload types and migrates `@Revision("N")` → `@Event(version = "N")`; `AddEventTagAnnotation` (in `axon4-to-axon5-modelling.yml`) adds `@EventTag(key = "<EntitySimpleName>")` to the routing field.
 
 ---
 
@@ -769,6 +758,7 @@ public void handle(CreateOrderCommand cmd, EventAppender eventAppender) {
 - **`EventAppender.append(…)` is one-event-at-a-time** — for multiple events use separate calls:
   `eventAppender.append(e1); eventAppender.append(e2);`
 - **grep after migration**: `grep -rn 'AggregateLifecycle' …` — any surviving call is a compile error.
+- **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) handles both the `apply(...)` → `eventAppender.append(...)` rewrite and the `EventAppender` parameter injection; the `@CommandHandler` import move is handled by `ChangeType` in `axon4-to-axon5-messaging.yml`.
 
 ---
 
@@ -818,6 +808,7 @@ public void on(OrderCreatedEvent event) {
 - **`.annotation.` infix added** — `org.axonframework.eventsourcing.**annotation**.EventSourcingHandler`.
 - Methods inside `@EventSourcingHandler` that call `event.getPayload()` / `event.getMetaData()` should be updated
   to `event.payload()` / `event.metaData()` — see [message-accessors pattern](../30-event-handlers/message-accessors.md).
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-eventsourcing.yml`) rewrites the import to `eventsourcing.annotation.EventSourcingHandler`.
 
 ---
 
@@ -869,6 +860,7 @@ GenericEventMessage<OrderCreatedEvent> message =
 - In **infrastructure / replay** code that reads raw events, use `GenericEventMessage` if a wrapper is still required.
 - `GenericDomainEventMessage` carried `aggregateType` and `sequenceNumber`; `GenericEventMessage` does not.
   If your code reads those fields, revisit whether you still need them in AF5.
+- **OpenRewrite status:** None — no OR rule rewrites `GenericDomainEventMessage` → `GenericEventMessage`; AI does the rewrite and drops the `aggregateType` / `sequenceNumber` constructor arguments.
 
 ---
 
@@ -917,6 +909,7 @@ public record CreateOrderCommand(
 - AF5 routes commands by matching the command's field type against the aggregate's `idType = OrderId.class`
   declared on `@EventSourced`. The field name is irrelevant; the type match is the routing key.
 - If two fields share the same type as `idType`, routing is ambiguous — rename one or use a wrapper type.
+- **OpenRewrite status:** Partial — OR's `ChangeType` (in `axon4-to-axon5-modelling.yml`) renames the annotation to `@TargetEntityId` rather than removing it; AI removes both the annotation and its import since AF5 routes by `idType` instead.
 
 ---
 
@@ -1014,6 +1007,7 @@ commandDispatcher.send(cmd).resultAs(Void.class)   // returns CompletableFuture<
 - **Compensation logic**: AF4 try/catch around `sendAndWait` becomes `.exceptionallyCompose(…)` on the future.
   Forgetting this means compensation silently stops on failure.
 - **Simple cases** where you do not need the result: `return commandDispatcher.send(cmd).getResultMessage().thenApply(_ -> null);`
+- **OpenRewrite status:** Partial — `MigrateCommandGatewayInEventHandler` (in `axon4-to-axon5-messaging.yml`) rewrites single-dispatch and try/catch bodies; AI handles compound shapes (loops, multiple sequential dispatches, conditional branches).
 
 ---
 
@@ -1090,6 +1084,7 @@ public class OrderProjector {
 - **`@DisallowReplay` moves to `replay.annotation`** — the `replay.` infix is new; do not omit it.
 - **Event handler return type**: handlers that dispatch commands via `CommandDispatcher` must return
   `CompletableFuture<?>` — see [command-dispatcher.md](command-dispatcher.md).
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) handles all three annotation imports (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`).
 
 ---
 
@@ -1151,6 +1146,7 @@ public MessageStream<?> interceptOnHandle(
 - **Applies to all `Message` subtypes**: `CommandMessage`, `EventMessage`, `QueryMessage`.
 - **Inside `@EventSourcingHandler`**: payload is the event itself (method parameter) — no accessor needed.
 - **Inside test lambdas**: `events.get(0).getPayload()` → `(YourEventType) events.get(0).payload()`.
+- **OpenRewrite status:** Full — `ChangeMethodName` rules (in `axon4-to-axon5-messaging.yml`) rewrite `getPayload`/`getMetaData`/`getIdentifier`/`getTimestamp`/`getPayloadType` and the `withMetaData`/`andMetaData` siblings.
 
 ---
 
@@ -1211,6 +1207,7 @@ public void dispatch(CreateOrderCommand cmd, Metadata meta) { ... }
   just ensure the stored value is a `String`.
 - `MetaData.emptyInstance()` → `Metadata.emptyInstance()` (same method name, new type).
 - `MetaData.with(key, value)` → `Metadata.from(Map.of(key, value.toString()))`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites `org.axonframework.messaging.MetaData` → `org.axonframework.messaging.core.Metadata`.
 
 ---
 
@@ -1265,6 +1262,7 @@ public void on(OrderCreatedEvent event,
 - **String key is unchanged** — the metadata key string stays the same.
 - This annotation is used in `@EventHandler`, `@CommandHandler`, `@QueryHandler` methods, and interceptors —
   update it everywhere.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites the annotation type and import.
 
 ---
 
@@ -1349,6 +1347,7 @@ grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonfr
 - **String case-sensitivity** — `"Orders"` ≠ `"orders"`. YAML key, annotation value, and any processor-definition
   argument must all be identical.
 - A **namespace mismatch silently drops all events** at runtime — there is no compile-time signal.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-common.yml`) rewrites `@ProcessingGroup` → `@Namespace`; the string value is preserved.
 
 ---
 
@@ -1473,6 +1472,7 @@ public class MyPolicy implements SequencingPolicy {
 - **`parameters` is a `String`** representing the metadata key for `MetadataSequencingPolicy`.
 - **`@Bean SequencingPolicy` definition** — leave the bean in the configuration class (other processors may use it);
   only remove the YAML reference.
+- **OpenRewrite status:** Partial — `ChangePackage` moves the interface, `MigrateSequencingPolicyLambda` rewrites lambdas, and `AnnotateObsoleteSequencingPolicyProperty` injects a `# TODO` comment above the YAML key; AI replaces the YAML wiring with a class-level `@SequencingPolicy(type = …, parameters = …)` annotation.
 
 ---
 
@@ -1544,6 +1544,7 @@ public class OrderQueryHandler {
   specific query class, this must be migrated to a `@Query`-annotated payload record — see the `query-payload-record`
   atom in `references/atoms/`.
 - **`QueryUpdateEmitter`** import also changes — see the `query-update-emitter` atom in `references/atoms/`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites the `@QueryHandler` import to `messaging.queryhandling.annotation.QueryHandler`.
 
 ---
 
@@ -1605,6 +1606,7 @@ public Iterable<BikeStatus> findAvailable(FindAvailableQuery query) {
   (case-sensitive).** If they match, the annotation is optional.
 - No-param queries: `public record FindAvailableQuery() {}` — the record still needs to exist even with
   no fields.
+- **OpenRewrite status:** None — no OR rule rewrites `@QueryHandler(queryName = "…")` into a `@Query` payload record; AI introduces the record and updates the handler signature.
 
 ---
 
@@ -1679,6 +1681,7 @@ The query class is the first argument — it matches the `@QueryHandler` first p
 - **Remove the constructor field and injection entirely** — do not keep both.
 - **Add `QueryUpdateEmitter` as a parameter** to every `@EventHandler` that calls `emit(…)`.
 - **The query class argument is required** — `emit(q -> true, dto)` does not compile in AF5.
+- **OpenRewrite status:** Partial — `ChangePackage` (in `axon4-to-axon5-messaging.yml`) moves `QueryUpdateEmitter` to `messaging.queryhandling`; AI converts the constructor field to a method parameter and adds the `Class<Q>` first argument to `emit(...)`.
 
 ---
 
@@ -1759,6 +1762,7 @@ public class MyDispatchInterceptor implements MessageDispatchInterceptor<Command
 - **Method name change** — `handle` → `interceptOnDispatch`.
 - **Return type change** — `BiFunction<Integer, M, M>` → `MessageStream<?>`.
 - **Always call `chain.proceed(modified, context)`** at the end — returning without calling it drops the message.
+- **OpenRewrite status:** Partial — `ChangeType` moves the interface to `messaging.core.MessageDispatchInterceptor` and `MigrateMessageInterceptorSignatures` rewrites the method signature; AI rewrites the body (single-message processing, `chain.proceed(modified, context)`).
 
 ---
 
@@ -1873,6 +1877,7 @@ CommandDispatcher.forContext(context)
 - **Generic de-wildcard is mandatory** — `CommandMessage<?>` → `CommandMessage`. Wildcard causes a compile error.
 - **`throws Exception` removed** — the AF5 signature does not declare checked exceptions.
 - **`ProcessingContext` is not `@Nullable`** here — always present during handling.
+- **OpenRewrite status:** Partial — `ChangeType` moves the interface to `messaging.core.MessageHandlerInterceptor` and `MigrateMessageInterceptorSignatures` rewrites the method signature; AI rewrites the body (UoW hooks → `ProcessingContext`, `chain.proceed()` → `chain.proceed(message, context)`, `uow.getMessage()` → `message`).
 
 ---
 
@@ -1991,6 +1996,7 @@ AF5 sagas are **JPA entities** — the framework no longer manages saga state vi
 - **`@StartSaga` / `@EndSaga` removed** — lifecycle is now expressed through JPA entity existence.
 - **Deadline Manager (`@DeadlineHandler`)** — no AF5 equivalent yet; this is a blocker if used.
 - **`SagaTestFixture` removed** — no AF5 test fixture replacement; tests using it cannot be automatically migrated.
+- **OpenRewrite status:** None — no OR rule rewrites `@Saga` → `@Component + @Entity` or migrates `@SagaEventHandler` / `SagaLifecycle`; AI does the full JPA-saga rewrite.
 
 ---
 
@@ -2073,6 +2079,7 @@ the `@EntityScan` packages alongside your application's own packages, or the eve
 - When Axon Server is enabled (`axon.axonserver.enabled: true`), no explicit `EventStorageEngine` bean is needed.
 - `AggregateBasedJpaEventStorageEngine` is the AF5 equivalent of AF4's `JpaEventStorageEngine`.
 - `UnaryOperator.identity()` is the no-op event transformer (events stored as-is).
+- **OpenRewrite status:** None — no OR rule creates the `EventStoreConfiguration` bean or the `@EntityScan` / `axon.axonserver.enabled: false` settings; AI writes them from scratch.
 
 ---
 
@@ -2208,5 +2215,6 @@ grep -rLn 'fixture\.stop()' --include='*.java' --include='*.kt' --include='*.sca
 - **Child entities**: if the aggregate uses `@EntityMember` child entities, register each type in the configurer's
   `registerEntity(…)` calls.
 - **`SagaTestFixture` removed** — no AF5 replacement; tests using it cannot be automatically migrated (blocker).
+- **OpenRewrite status:** Partial — OR (in `axon4-to-axon5-test.yml`) renames the type via `ChangeType`, rewrites the fluent DSL (`MigrateAxonTestFixtureFluentApi`), regenerates setup (`MigrateAggregateTestFixtureSetup`), and adds a Java `@AfterEach tearDown()` (`AddAxonTestFixtureTearDown`); AI completes Kotlin tear-down, fills setup the recipe could not infer (`new AxonTestFixture(...)` left over), and replaces `AggregateNotFoundException` with the domain exception.
 
 ---

@@ -79,3 +79,4 @@ grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonfr
 - **String case-sensitivity** — `"Orders"` ≠ `"orders"`. YAML key, annotation value, and any processor-definition
   argument must all be identical.
 - A **namespace mismatch silently drops all events** at runtime — there is no compile-time signal.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-common.yml`) rewrites `@ProcessingGroup` → `@Namespace`; the string value is preserved.

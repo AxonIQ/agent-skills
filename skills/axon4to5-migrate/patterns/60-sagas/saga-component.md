@@ -111,3 +111,4 @@ AF5 sagas are **JPA entities** — the framework no longer manages saga state vi
 - **`@StartSaga` / `@EndSaga` removed** — lifecycle is now expressed through JPA entity existence.
 - **Deadline Manager (`@DeadlineHandler`)** — no AF5 equivalent yet; this is a blocker if used.
 - **`SagaTestFixture` removed** — no AF5 test fixture replacement; tests using it cannot be automatically migrated.
+- **OpenRewrite status:** None — no OR rule rewrites `@Saga` → `@Component + @Entity` or migrates `@SagaEventHandler` / `SagaLifecycle`; AI does the full JPA-saga rewrite.

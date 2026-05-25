@@ -74,3 +74,4 @@ public class OrderLine {
 - **`Map<K, V>` is a blocker** — `@EntityMember` supports `List<V>` only. Rewrite as `List<V>` with
   internal id management before applying this pattern.
 - **`routingKey`** attribute carries over unchanged from `@AggregateMember`.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-modelling.yml`) rewrites `AggregateMember` → `EntityMember` with `routingKey` preserved.

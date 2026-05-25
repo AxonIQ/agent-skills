@@ -119,3 +119,4 @@ public class MyPolicy implements SequencingPolicy {
 - **`parameters` is a `String`** representing the metadata key for `MetadataSequencingPolicy`.
 - **`@Bean SequencingPolicy` definition** — leave the bean in the configuration class (other processors may use it);
   only remove the YAML reference.
+- **OpenRewrite status:** Partial — `ChangePackage` moves the interface, `MigrateSequencingPolicyLambda` rewrites lambdas, and `AnnotateObsoleteSequencingPolicyProperty` injects a `# TODO` comment above the YAML key; AI replaces the YAML wiring with a class-level `@SequencingPolicy(type = …, parameters = …)` annotation.

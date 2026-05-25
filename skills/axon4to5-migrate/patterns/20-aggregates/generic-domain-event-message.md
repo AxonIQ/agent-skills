@@ -46,3 +46,4 @@ GenericEventMessage<OrderCreatedEvent> message =
 - In **infrastructure / replay** code that reads raw events, use `GenericEventMessage` if a wrapper is still required.
 - `GenericDomainEventMessage` carried `aggregateType` and `sequenceNumber`; `GenericEventMessage` does not.
   If your code reads those fields, revisit whether you still need them in AF5.
+- **OpenRewrite status:** None — no OR rule rewrites `GenericDomainEventMessage` → `GenericEventMessage`; AI does the rewrite and drops the `aggregateType` / `sequenceNumber` constructor arguments.

@@ -73,3 +73,4 @@ public class MyDispatchInterceptor implements MessageDispatchInterceptor<Command
 - **Method name change** — `handle` → `interceptOnDispatch`.
 - **Return type change** — `BiFunction<Integer, M, M>` → `MessageStream<?>`.
 - **Always call `chain.proceed(modified, context)`** at the end — returning without calling it drops the message.
+- **OpenRewrite status:** Partial — `ChangeType` moves the interface to `messaging.core.MessageDispatchInterceptor` and `MigrateMessageInterceptorSignatures` rewrites the method signature; AI rewrites the body (single-message processing, `chain.proceed(modified, context)`).

@@ -42,23 +42,14 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 
 ## Partial migration state (post-OpenRewrite)
 
-OR moves the import to the `messaging.commandhandling.annotation` package but does NOT add the `EventAppender` parameter to handler signatures — the handler body still calls `AggregateLifecycle.apply(...)` (or has been partially rewritten elsewhere). Common half-state:
+OR moves the import and (via `ReplaceAggregateLifecycleApply` in `axon4-to-axon5-eventsourcing.yml`) injects `EventAppender` into every handler that called `AggregateLifecycle.apply(...)`. Two AI follow-up cases remain:
 
-```java
-import org.axonframework.messaging.commandhandling.annotation.CommandHandler;  // import already AF5
-// EventAppender NOT imported
-
-@CommandHandler
-public void handle(ShipOrderCommand cmd) {                 // signature still AF4 — no EventAppender
-    AggregateLifecycle.apply(new OrderShippedEvent(orderId));
-}
-```
-
-Minimal fix: append `EventAppender eventAppender` as the **last** parameter, add the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, and rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import. Audit:
+- **Handlers that did not emit events in AF4** (validation-only, throw on bad state) are left without `EventAppender` — correct as-is unless you intend to start emitting events.
+- **Aggregate handlers whose event emission was indirect** (via a helper method, base class, or `applyEvents(...)` loop OR's predicate didn't catch) — add `EventAppender eventAppender` as the **last** parameter and the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, then rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import.
 
 ```bash
 grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
-  | grep -v 'EventAppender'
+  | grep -v 'EventAppender'   # candidates — review each: legitimately param-less, or missed by OR?
 ```
 
 ## Notes
@@ -68,3 +59,4 @@ grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scal
 - **`EventAppender` is required on aggregate and child entity handlers** — see [aggregate-lifecycle.md](aggregate-lifecycle.md).
   On non-aggregate components (event handlers, services) `@CommandHandler` is typically not used — apply this
   pattern only when the handler is inside an `@EventSourced`/`@EventSourcedEntity` class.
+- **OpenRewrite status:** Partial — `ChangeType` (in `axon4-to-axon5-messaging.yml`) moves the import; `EventAppender` is added only on handlers that called `AggregateLifecycle.apply(...)` — AI adds the parameter on remaining aggregate handlers.

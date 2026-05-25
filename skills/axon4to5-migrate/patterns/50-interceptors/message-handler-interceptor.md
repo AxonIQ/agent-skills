@@ -109,3 +109,4 @@ CommandDispatcher.forContext(context)
 - **Generic de-wildcard is mandatory** — `CommandMessage<?>` → `CommandMessage`. Wildcard causes a compile error.
 - **`throws Exception` removed** — the AF5 signature does not declare checked exceptions.
 - **`ProcessingContext` is not `@Nullable`** here — always present during handling.
+- **OpenRewrite status:** Partial — `ChangeType` moves the interface to `messaging.core.MessageHandlerInterceptor` and `MigrateMessageInterceptorSignatures` rewrites the method signature; AI rewrites the body (UoW hooks → `ProcessingContext`, `chain.proceed()` → `chain.proceed(message, context)`, `uow.getMessage()` → `message`).

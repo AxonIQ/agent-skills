@@ -88,3 +88,4 @@ axon:
 - For Gradle, replace `implementation("org.axonframework:axon-spring-boot-starter:…")` with
   `implementation("io.axoniq.framework:axoniq-spring-boot-starter:…")`.
 - The `axon-test` artifact is replaced by `axon-spring-boot-starter-test` from the Spring extensions group.
+- **OpenRewrite status:** Partial — OR renames BOM (`Axon4ToAxon5Bom`), bumps versions, swaps starter to commercial (`axon4-to-axoniq5-spring.yml`), and renames the `axon.serializer` Spring property prefix; AI removes `console-framework-client-spring-boot-starter`.

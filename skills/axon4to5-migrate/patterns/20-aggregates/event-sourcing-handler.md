@@ -44,3 +44,4 @@ public void on(OrderCreatedEvent event) {
 - **`.annotation.` infix added** — `org.axonframework.eventsourcing.**annotation**.EventSourcingHandler`.
 - Methods inside `@EventSourcingHandler` that call `event.getPayload()` / `event.getMetaData()` should be updated
   to `event.payload()` / `event.metaData()` — see [message-accessors pattern](../30-event-handlers/message-accessors.md).
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-eventsourcing.yml`) rewrites the import to `eventsourcing.annotation.EventSourcingHandler`.

@@ -71,3 +71,4 @@ public class OrderProjector {
 - **`@DisallowReplay` moves to `replay.annotation`** — the `replay.` infix is new; do not omit it.
 - **Event handler return type**: handlers that dispatch commands via `CommandDispatcher` must return
   `CompletableFuture<?>` — see [command-dispatcher.md](command-dispatcher.md).
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) handles all three annotation imports (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`).

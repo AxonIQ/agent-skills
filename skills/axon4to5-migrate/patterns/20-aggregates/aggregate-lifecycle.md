@@ -50,27 +50,18 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 
 ## Partial migration state (post-OpenRewrite)
 
-OR does not rewrite `AggregateLifecycle.apply(...)` call sites — they remain after the bulk pass, sometimes mixed with hand-edited handlers that already use `eventAppender.append(...)`. Common half-state in one class:
+OR's `ReplaceAggregateLifecycleApply` rewrites the common case in full (call site + parameter injection + static import removal). The remaining AI follow-up cases are narrow:
 
-```java
-@CommandHandler
-public void handleA(CmdA cmd, EventAppender eventAppender) {
-    eventAppender.append(new EventA());          // already migrated
-}
-
-@CommandHandler
-public void handleB(CmdB cmd) {                  // EventAppender param missing
-    AggregateLifecycle.apply(new EventB());      // still AF4
-}
-```
-
-Minimal fix: for each handler still calling `AggregateLifecycle.apply(...)`, add the `EventAppender eventAppender` parameter (per [command-handler.md](command-handler.md)) and rewrite only the `apply(...)` lines that are still there. Do NOT re-rewrite handlers already using `eventAppender.append(...)`. Once every site is converted, drop the `AggregateLifecycle` import.
+- **`AggregateLifecycle.markDeleted()`** is not rewritten — no AF5 equivalent. Remove the call and audit downstream code that relied on the deletion semantics.
+- **`AggregateLifecycle.apply(...)` calls from non-aggregate utilities** (helper classes, base types) where OR's `onlyIfUsing` predicate didn't match. Rewrite manually per the Rules above.
 
 ```bash
-grep -rn 'AggregateLifecycle\.apply\|import .*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
+grep -rn 'AggregateLifecycle\.\(apply\|markDeleted\)\|import .*AggregateLifecycle' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
 ```
 
 ## Notes
 
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
 - **Do not call `AggregateLifecycle.markDeleted()`** — there is no AF5 equivalent; remove the call entirely.
+- **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) rewrites `AggregateLifecycle.apply(...)` → `eventAppender.append(...)` and injects the `EventAppender eventAppender` parameter into the enclosing method.

@@ -75,3 +75,4 @@ public void handle(CreateOrderCommand cmd, EventAppender eventAppender) {
 - **`EventAppender.append(…)` is one-event-at-a-time** — for multiple events use separate calls:
   `eventAppender.append(e1); eventAppender.append(e2);`
 - **grep after migration**: `grep -rn 'AggregateLifecycle' …` — any surviving call is a compile error.
+- **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) handles both the `apply(...)` → `eventAppender.append(...)` rewrite and the `EventAppender` parameter injection; the `@CommandHandler` import move is handled by `ChangeType` in `axon4-to-axon5-messaging.yml`.

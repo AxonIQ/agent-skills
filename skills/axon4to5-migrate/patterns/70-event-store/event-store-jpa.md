@@ -75,3 +75,4 @@ the `@EntityScan` packages alongside your application's own packages, or the eve
 - When Axon Server is enabled (`axon.axonserver.enabled: true`), no explicit `EventStorageEngine` bean is needed.
 - `AggregateBasedJpaEventStorageEngine` is the AF5 equivalent of AF4's `JpaEventStorageEngine`.
 - `UnaryOperator.identity()` is the no-op event transformer (events stored as-is).
+- **OpenRewrite status:** None — no OR rule creates the `EventStoreConfiguration` bean or the `@EntityScan` / `axon.axonserver.enabled: false` settings; AI writes them from scratch.

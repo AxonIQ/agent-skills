@@ -72,3 +72,4 @@ public void handle(UpdateCommand cmd, EventAppender eventAppender) {
 - **ALWAYS → static factory** is the most common case where OpenRewrite does NOT flip to `static` — always
   verify the handler is static after removing `@CreationPolicy(ALWAYS)`.
 - **`@EntityCreator` on the no-arg constructor** is required in all cases — see [entity-creator.md](entity-creator.md).
+- **OpenRewrite status:** Partial — `RemoveAnnotation` strips `@CreationPolicy` and `ConvertCommandHandlerConstructorToStaticMethod` converts AF4 command-handler constructors to AF5 static factory methods; AI still flips ALWAYS handlers that weren't constructors to `static` and reviews CREATE_IF_MISSING semantics manually.

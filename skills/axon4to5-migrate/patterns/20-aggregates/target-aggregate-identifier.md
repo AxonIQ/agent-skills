@@ -43,3 +43,4 @@ public record CreateOrderCommand(
 - AF5 routes commands by matching the command's field type against the aggregate's `idType = OrderId.class`
   declared on `@EventSourced`. The field name is irrelevant; the type match is the routing key.
 - If two fields share the same type as `idType`, routing is ambiguous — rename one or use a wrapper type.
+- **OpenRewrite status:** Partial — OR's `ChangeType` (in `axon4-to-axon5-modelling.yml`) renames the annotation to `@TargetEntityId` rather than removing it; AI removes both the annotation and its import since AF5 routes by `idType` instead.

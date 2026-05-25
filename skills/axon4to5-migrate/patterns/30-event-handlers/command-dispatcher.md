@@ -90,3 +90,4 @@ commandDispatcher.send(cmd).resultAs(Void.class)   // returns CompletableFuture<
 - **Compensation logic**: AF4 try/catch around `sendAndWait` becomes `.exceptionallyCompose(…)` on the future.
   Forgetting this means compensation silently stops on failure.
 - **Simple cases** where you do not need the result: `return commandDispatcher.send(cmd).getResultMessage().thenApply(_ -> null);`
+- **OpenRewrite status:** Partial — `MigrateCommandGatewayInEventHandler` (in `axon4-to-axon5-messaging.yml`) rewrites single-dispatch and try/catch bodies; AI handles compound shapes (loops, multiple sequential dispatches, conditional branches).

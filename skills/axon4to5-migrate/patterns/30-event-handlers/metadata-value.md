@@ -49,3 +49,4 @@ public void on(OrderCreatedEvent event,
 - **String key is unchanged** — the metadata key string stays the same.
 - This annotation is used in `@EventHandler`, `@CommandHandler`, `@QueryHandler` methods, and interceptors —
   update it everywhere.
+- **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) rewrites the annotation type and import.

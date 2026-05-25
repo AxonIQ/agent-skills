@@ -99,3 +99,4 @@ grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --includ
   a blocker that requires manual resolution.
 - **OpenRewrite Phase 1** sometimes rewrites `@Aggregate` → `@EventSourced` without adding `tagKey`/`idType`.
   Always grep for `@EventSourced` without attributes after Phase 1 and add them.
+- **OpenRewrite status:** Partial — `ChangeType` rewrites `@Aggregate` → `@EventSourced` and `ConfigureEventSourcedAnnotation` adds `tagKey = "<SimpleName>"` + `idType = Object.class` placeholder; AI replaces the `Object.class` placeholder with the real id class.

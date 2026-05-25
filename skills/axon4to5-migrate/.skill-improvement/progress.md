@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-003 — Script parity / Makefile
-**Next action:** Start IMP-004: OpenRewrite coverage mapping
-**Current session commit:** 20efcde (IMP-001), 69044a0 (IMP-002); IMP-003 pending
+**Last completed:** IMP-004 — OpenRewrite coverage mapping
+**Next action:** Start IMP-005: Real Java code examples
+**Current session commit:** 20efcde (IMP-001), 69044a0 (IMP-002), fd2a8b2 (IMP-003); IMP-004 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -24,7 +24,7 @@ session-count: 1
 | IMP-001 | Compile-error-driven validation | done | Step 4 rewritten: compile is definition-of-done; grep demoted to 4b audit; behaviour rule added. |
 | IMP-002 | Idempotent patterns | done | 5 patterns + README + SKILL.md got "Partial migration state (post-OpenRewrite)" guidance, grounded in OR YAML rules. |
 | IMP-003 | Script parity / Makefile | done | Makefile added (generate/check/help); script regenerates patterns/README.md catalog between markers; SKILL.md rule added. |
-| IMP-004 | OpenRewrite coverage mapping | pending | |
+| IMP-004 | OpenRewrite coverage mapping | done | SKILL.md has 27-row coverage table; every pattern has OpenRewrite status line. 12 Full / 11 Partial / 4 None. Also reconciled aggregate-lifecycle.md + command-handler.md partial-state sections against ReplaceAggregateLifecycleApply evidence. |
 | IMP-005 | Real Java code examples | pending | |
 | IMP-006 | Pattern gap audit | pending | |
 | IMP-007 | Durability in SKILL.md | pending | |
@@ -41,3 +41,4 @@ session-count: 1
 - IMP-001 done: SKILL.md Step 4 rewritten — compile-driven validation; grep demoted to leftover audit; new behaviour rule.
 - IMP-002 done: Partial-migration-state sections added to aggregate-class, command-handler, aggregate-lifecycle, namespace-routing, test-fixture; README + SKILL.md note idempotency.
 - IMP-003 done: Makefile (`generate`, `check`, `help`); script regenerates catalog table inside `patterns/README.md` between markers; SKILL.md rule added forbidding hand edits to generated files.
+- IMP-004 done: SKILL.md gained "What OpenRewrite covers" sub-section (27-row table); every pattern Notes section ends with "OpenRewrite status:" tagged Full / Partial / None grounded in YAML rule names. Reconciled aggregate-lifecycle.md + command-handler.md partial sections (IMP-002 assumed OR didn't rewrite apply() — actually does via ReplaceAggregateLifecycleApply).
