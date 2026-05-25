@@ -54,6 +54,25 @@ Places to update:
 - `EventProcessorDefinition.pooledStreaming("orders")` in Spring `@Bean` config.
 - `MessagingConfigurer.eventProcessing(…).processor("orders", …)` in native config.
 
+## Partial migration state (post-OpenRewrite)
+
+OR rewrites the `@ProcessingGroup` symbol to `@Namespace`, but an unrelated `import org.axonframework.config.ProcessingGroup;` line (from a class no longer using it, or a stale wildcard) may linger and fail to resolve. Common half-state:
+
+```java
+import org.axonframework.config.ProcessingGroup;             // stale — class is gone in AF5
+import org.axonframework.messaging.core.annotation.Namespace; // already AF5
+
+@Namespace("orders")
+public class OrderProjector { /* ... */ }
+```
+
+Minimal fix: delete the lingering AF4 `ProcessingGroup` import line. Do NOT revert the `@Namespace` annotation. Audit:
+
+```bash
+grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonframework\.common\.configuration\.ProcessingGroup' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
 ## Notes
 
 - **OpenRewrite Phase 1** usually swaps the annotation but may leave the AF4 import. Always grep for the old import.

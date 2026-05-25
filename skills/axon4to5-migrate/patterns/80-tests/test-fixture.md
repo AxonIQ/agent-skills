@@ -99,6 +99,28 @@ validation on empty state.
 .then().exception(OrderNotFoundException.class)
 ```
 
+## Partial migration state (post-OpenRewrite)
+
+OR renames the type to `AxonTestFixture` and rewrites the fluent DSL, but the **Java**-only `AddAxonTestFixtureTearDown` recipe is conservative: it skips Kotlin sources and any class that already has an `@AfterEach`. The `MigrateAggregateTestFixtureSetup` recipe also may leave a raw `new AxonTestFixture(...)` constructor when it could not infer the id type. Common half-state:
+
+```java
+private AxonTestFixture fixture;   // type already renamed
+
+@BeforeEach
+void setUp() {
+    fixture = new AxonTestFixture<>(Order.class);   // still AF4-shape constructor
+}
+// no @AfterEach tearDown() — fixture.stop() missing
+```
+
+Minimal fix: replace the constructor with the `EventSourcingConfigurer.create().registerEntity(EventSourcedEntityModule.autodetected(OrderId.class, Order.class))` builder shown in the AF5 example, drop the `<…>` type argument, and add the `@AfterEach tearDown() { fixture.stop(); }` if absent. Do NOT rename `AxonTestFixture` back to `AggregateTestFixture`. Audit:
+
+```bash
+grep -rn 'new AxonTestFixture\|AxonTestFixture<' --include='*.java' --include='*.kt' --include='*.scala' .
+grep -rLn 'fixture\.stop()' --include='*.java' --include='*.kt' --include='*.scala' \
+  $(grep -rln 'AxonTestFixture' --include='*.java' --include='*.kt' --include='*.scala' .)
+```
+
 ## Notes
 
 - **`fixture.stop()` in `@AfterEach` is required** — omitting it causes resource leaks across test runs.

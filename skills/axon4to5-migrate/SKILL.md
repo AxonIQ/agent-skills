@@ -94,6 +94,8 @@ Read: patterns/ALL_IN_ONE.md
 
 Then execute the phases in order.
 
+**Idempotency — handle partially-migrated code.** Before applying a pattern, check whether the AF5 shape is already partially present from a prior pass (commonly: OpenRewrite). If so, complete the gaps (e.g. fix the placeholder `idType = Object.class`, add the missing `EventAppender` parameter, drop the lingering AF4 import) instead of re-applying the full pattern from the AF4 shape — re-application creates duplicates or reverses already-correct edits. See each pattern's **"Partial migration state (post-OpenRewrite)"** section for the concrete half-state and the minimal completion step.
+
 ---
 
 ### Phase 1: Dependencies

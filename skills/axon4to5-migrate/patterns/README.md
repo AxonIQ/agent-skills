@@ -35,3 +35,5 @@ Each file contains:
 4. **Axon Framework 4 Code** — before
 5. **Axon Framework 5 Code** — after
 6. Notes and caveats (including blockers where applicable)
+
+**Patterns must be applied idempotently.** If the AF5 shape is already partially in place (commonly from a prior OpenRewrite pass), finish the gaps rather than reset back to the AF4 shape and re-do the migration. Patterns that have an observable post-OpenRewrite half-state include a **"Partial migration state (post-OpenRewrite)"** section that names the gap and the minimal fix.

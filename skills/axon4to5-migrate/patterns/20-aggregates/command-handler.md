@@ -40,6 +40,27 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 }
 ```
 
+## Partial migration state (post-OpenRewrite)
+
+OR moves the import to the `messaging.commandhandling.annotation` package but does NOT add the `EventAppender` parameter to handler signatures — the handler body still calls `AggregateLifecycle.apply(...)` (or has been partially rewritten elsewhere). Common half-state:
+
+```java
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;  // import already AF5
+// EventAppender NOT imported
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd) {                 // signature still AF4 — no EventAppender
+    AggregateLifecycle.apply(new OrderShippedEvent(orderId));
+}
+```
+
+Minimal fix: append `EventAppender eventAppender` as the **last** parameter, add the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, and rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import. Audit:
+
+```bash
+grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | grep -v 'EventAppender'
+```
+
 ## Notes
 
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.commandhandling.annotation.CommandHandler`.

@@ -219,6 +219,24 @@ public class Order {
 | `tagKey` | Simple class name string, e.g. `"Order"` | Event routing key — defaults to class name but silently breaks on rename |
 | `idType` | Class of the AF4 `@AggregateIdentifier` field, e.g. `OrderId.class` | Default is `String.class`; wrong type → silent identity resolution failure |
 
+##### Partial migration state (post-OpenRewrite)
+
+OR rewrites `@Aggregate` → `@EventSourced` and inserts a placeholder `idType = Object.class`. `tagKey` defaults to the simple class name but may still be missing on hand-written / unusual cases. Common half-state:
+
+```java
+@EventSourced(tagKey = "Order", idType = Object.class)   // idType is a placeholder
+public class Order {
+    private OrderId orderId;  // @AggregateIdentifier already stripped
+    protected Order() { }     // @EntityCreator NOT added — see entity-creator.md
+}
+```
+
+Minimal fix: replace `idType = Object.class` with the real id class (`OrderId.class`), confirm `tagKey` matches the simple class name used by event `@EventTag(key = …)`, and add `@EntityCreator` to the no-arg constructor. Do NOT re-add `@AggregateIdentifier` or revert `@EventSourced` to `@Aggregate`. Audit:
+
+```bash
+grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
 ##### Notes
 
 - **`.extension.spring.` infix is mandatory** in Path A — `org.axonframework.extension.spring.stereotype.EventSourced`.
@@ -281,6 +299,28 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 2. Every `AggregateLifecycle.apply(event)` becomes `eventAppender.append(event)`.
 3. Remove both the static import and the regular import for `AggregateLifecycle`.
 4. Static `@CommandHandler` factory methods also receive `EventAppender` as a parameter — static methods can receive injected parameters.
+
+##### Partial migration state (post-OpenRewrite)
+
+OR does not rewrite `AggregateLifecycle.apply(...)` call sites — they remain after the bulk pass, sometimes mixed with hand-edited handlers that already use `eventAppender.append(...)`. Common half-state in one class:
+
+```java
+@CommandHandler
+public void handleA(CmdA cmd, EventAppender eventAppender) {
+    eventAppender.append(new EventA());          // already migrated
+}
+
+@CommandHandler
+public void handleB(CmdB cmd) {                  // EventAppender param missing
+    AggregateLifecycle.apply(new EventB());      // still AF4
+}
+```
+
+Minimal fix: for each handler still calling `AggregateLifecycle.apply(...)`, add the `EventAppender eventAppender` parameter (per [command-handler.md](command-handler.md)) and rewrite only the `apply(...)` lines that are still there. Do NOT re-rewrite handlers already using `eventAppender.append(...)`. Once every site is converted, drop the `AggregateLifecycle` import.
+
+```bash
+grep -rn 'AggregateLifecycle\.apply\|import .*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
+```
 
 ##### Notes
 
@@ -408,6 +448,27 @@ import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
     eventAppender.append(new OrderShippedEvent(orderId));
 }
+```
+
+##### Partial migration state (post-OpenRewrite)
+
+OR moves the import to the `messaging.commandhandling.annotation` package but does NOT add the `EventAppender` parameter to handler signatures — the handler body still calls `AggregateLifecycle.apply(...)` (or has been partially rewritten elsewhere). Common half-state:
+
+```java
+import org.axonframework.messaging.commandhandling.annotation.CommandHandler;  // import already AF5
+// EventAppender NOT imported
+
+@CommandHandler
+public void handle(ShipOrderCommand cmd) {                 // signature still AF4 — no EventAppender
+    AggregateLifecycle.apply(new OrderShippedEvent(orderId));
+}
+```
+
+Minimal fix: append `EventAppender eventAppender` as the **last** parameter, add the `org.axonframework.messaging.eventhandling.gateway.EventAppender` import, and rewrite the body per [aggregate-lifecycle.md](aggregate-lifecycle.md). Do NOT touch the already-correct `@CommandHandler` import. Audit:
+
+```bash
+grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | grep -v 'EventAppender'
 ```
 
 ##### Notes
@@ -1263,6 +1324,25 @@ Places to update:
 - `EventProcessorDefinition.pooledStreaming("orders")` in Spring `@Bean` config.
 - `MessagingConfigurer.eventProcessing(…).processor("orders", …)` in native config.
 
+##### Partial migration state (post-OpenRewrite)
+
+OR rewrites the `@ProcessingGroup` symbol to `@Namespace`, but an unrelated `import org.axonframework.config.ProcessingGroup;` line (from a class no longer using it, or a stale wildcard) may linger and fail to resolve. Common half-state:
+
+```java
+import org.axonframework.config.ProcessingGroup;             // stale — class is gone in AF5
+import org.axonframework.messaging.core.annotation.Namespace; // already AF5
+
+@Namespace("orders")
+public class OrderProjector { /* ... */ }
+```
+
+Minimal fix: delete the lingering AF4 `ProcessingGroup` import line. Do NOT revert the `@Namespace` annotation. Audit:
+
+```bash
+grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonframework\.common\.configuration\.ProcessingGroup' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
 ##### Notes
 
 - **OpenRewrite Phase 1** usually swaps the annotation but may leave the AF4 import. Always grep for the old import.
@@ -2097,6 +2177,28 @@ validation on empty state.
 
 // AF5 — replace with the domain exception thrown by your domain rules
 .then().exception(OrderNotFoundException.class)
+```
+
+##### Partial migration state (post-OpenRewrite)
+
+OR renames the type to `AxonTestFixture` and rewrites the fluent DSL, but the **Java**-only `AddAxonTestFixtureTearDown` recipe is conservative: it skips Kotlin sources and any class that already has an `@AfterEach`. The `MigrateAggregateTestFixtureSetup` recipe also may leave a raw `new AxonTestFixture(...)` constructor when it could not infer the id type. Common half-state:
+
+```java
+private AxonTestFixture fixture;   // type already renamed
+
+@BeforeEach
+void setUp() {
+    fixture = new AxonTestFixture<>(Order.class);   // still AF4-shape constructor
+}
+// no @AfterEach tearDown() — fixture.stop() missing
+```
+
+Minimal fix: replace the constructor with the `EventSourcingConfigurer.create().registerEntity(EventSourcedEntityModule.autodetected(OrderId.class, Order.class))` builder shown in the AF5 example, drop the `<…>` type argument, and add the `@AfterEach tearDown() { fixture.stop(); }` if absent. Do NOT rename `AxonTestFixture` back to `AggregateTestFixture`. Audit:
+
+```bash
+grep -rn 'new AxonTestFixture\|AxonTestFixture<' --include='*.java' --include='*.kt' --include='*.scala' .
+grep -rLn 'fixture\.stop()' --include='*.java' --include='*.kt' --include='*.scala' \
+  $(grep -rln 'AxonTestFixture' --include='*.java' --include='*.kt' --include='*.scala' .)
 ```
 
 ##### Notes

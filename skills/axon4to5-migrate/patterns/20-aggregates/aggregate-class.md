@@ -71,6 +71,24 @@ public class Order {
 | `tagKey` | Simple class name string, e.g. `"Order"` | Event routing key — defaults to class name but silently breaks on rename |
 | `idType` | Class of the AF4 `@AggregateIdentifier` field, e.g. `OrderId.class` | Default is `String.class`; wrong type → silent identity resolution failure |
 
+## Partial migration state (post-OpenRewrite)
+
+OR rewrites `@Aggregate` → `@EventSourced` and inserts a placeholder `idType = Object.class`. `tagKey` defaults to the simple class name but may still be missing on hand-written / unusual cases. Common half-state:
+
+```java
+@EventSourced(tagKey = "Order", idType = Object.class)   // idType is a placeholder
+public class Order {
+    private OrderId orderId;  // @AggregateIdentifier already stripped
+    protected Order() { }     // @EntityCreator NOT added — see entity-creator.md
+}
+```
+
+Minimal fix: replace `idType = Object.class` with the real id class (`OrderId.class`), confirm `tagKey` matches the simple class name used by event `@EventTag(key = …)`, and add `@EntityCreator` to the no-arg constructor. Do NOT re-add `@AggregateIdentifier` or revert `@EventSourced` to `@Aggregate`. Audit:
+
+```bash
+grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
 ## Notes
 
 - **`.extension.spring.` infix is mandatory** in Path A — `org.axonframework.extension.spring.stereotype.EventSourced`.

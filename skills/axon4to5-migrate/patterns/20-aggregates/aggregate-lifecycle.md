@@ -48,6 +48,28 @@ public void handle(ShipOrderCommand cmd, EventAppender eventAppender) {
 3. Remove both the static import and the regular import for `AggregateLifecycle`.
 4. Static `@CommandHandler` factory methods also receive `EventAppender` as a parameter — static methods can receive injected parameters.
 
+## Partial migration state (post-OpenRewrite)
+
+OR does not rewrite `AggregateLifecycle.apply(...)` call sites — they remain after the bulk pass, sometimes mixed with hand-edited handlers that already use `eventAppender.append(...)`. Common half-state in one class:
+
+```java
+@CommandHandler
+public void handleA(CmdA cmd, EventAppender eventAppender) {
+    eventAppender.append(new EventA());          // already migrated
+}
+
+@CommandHandler
+public void handleB(CmdB cmd) {                  // EventAppender param missing
+    AggregateLifecycle.apply(new EventB());      // still AF4
+}
+```
+
+Minimal fix: for each handler still calling `AggregateLifecycle.apply(...)`, add the `EventAppender eventAppender` parameter (per [command-handler.md](command-handler.md)) and rewrite only the `apply(...)` lines that are still there. Do NOT re-rewrite handlers already using `eventAppender.append(...)`. Once every site is converted, drop the `AggregateLifecycle` import.
+
+```bash
+grep -rn 'AggregateLifecycle\.apply\|import .*AggregateLifecycle' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
 ## Notes
 
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
