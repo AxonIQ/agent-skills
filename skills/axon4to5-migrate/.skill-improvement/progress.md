@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-004 — OpenRewrite coverage mapping
-**Next action:** Start IMP-005: Real Java code examples
-**Current session commit:** 20efcde (IMP-001), 69044a0 (IMP-002), fd2a8b2 (IMP-003); IMP-004 pending
+**Last completed:** IMP-005 — Real Java code examples
+**Next action:** Start IMP-006: Pattern gap audit
+**Current session commit:** 20efcde, 69044a0, fd2a8b2, 2c3e287 (IMP-001..004); IMP-005 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -25,7 +25,7 @@ session-count: 1
 | IMP-002 | Idempotent patterns | done | 5 patterns + README + SKILL.md got "Partial migration state (post-OpenRewrite)" guidance, grounded in OR YAML rules. |
 | IMP-003 | Script parity / Makefile | done | Makefile added (generate/check/help); script regenerates patterns/README.md catalog between markers; SKILL.md rule added. |
 | IMP-004 | OpenRewrite coverage mapping | done | SKILL.md has 27-row coverage table; every pattern has OpenRewrite status line. 12 Full / 11 Partial / 4 None. Also reconciled aggregate-lifecycle.md + command-handler.md partial-state sections against ReplaceAggregateLifecycleApply evidence. |
-| IMP-005 | Real Java code examples | pending | |
+| IMP-005 | Real Java code examples | done | 12 Heroes Java files copied (6 AF4 + 6 AF5) covering aggregate/projector/REST/test; java/README.md pairs table; generator skips empty subtrees. |
 | IMP-006 | Pattern gap audit | pending | |
 | IMP-007 | Durability in SKILL.md | pending | |
 | IMP-008 | Detection — post-OR greps | pending | |
@@ -42,3 +42,4 @@ session-count: 1
 - IMP-002 done: Partial-migration-state sections added to aggregate-class, command-handler, aggregate-lifecycle, namespace-routing, test-fixture; README + SKILL.md note idempotency.
 - IMP-003 done: Makefile (`generate`, `check`, `help`); script regenerates catalog table inside `patterns/README.md` between markers; SKILL.md rule added forbidding hand edits to generated files.
 - IMP-004 done: SKILL.md gained "What OpenRewrite covers" sub-section (27-row table); every pattern Notes section ends with "OpenRewrite status:" tagged Full / Partial / None grounded in YAML rule names. Reconciled aggregate-lifecycle.md + command-handler.md partial sections (IMP-002 assumed OR didn't rewrite apply() — actually does via ReplaceAggregateLifecycleApply).
+- IMP-005 done: examples/java/{af4,af5}/ holds 12 real Heroes Java files (aggregate + projector + REST + test pair); java/README.md is a pairs table; generator now skips Java package subtrees without markdown.

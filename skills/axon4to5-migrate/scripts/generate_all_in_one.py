@@ -30,6 +30,20 @@ def normalize_headings(content, level_offset):
     return re.sub(r"^(#{1,6}) ", replace, content, flags=re.MULTILINE)
 
 
+def has_markdown(directory):
+    """Recursively check if a directory contains any .md files worth emitting.
+
+    A directory's own README.md counts as content (it provides the section body),
+    but the global ALL_*.md aggregate files do not.
+    """
+    aggregate_only = {"ALL_IN_ONE.md", "ALL_EXAMPLES.md"}
+    for root, _dirs, files in os.walk(directory):
+        for f in files:
+            if f.endswith(".md") and f not in aggregate_only:
+                return True
+    return False
+
+
 def collect(directory, depth=1, top_dir=None):
     if top_dir is None:
         top_dir = directory
@@ -46,6 +60,7 @@ def collect(directory, depth=1, top_dir=None):
     subdirs = [
         e for e in entries
         if os.path.isdir(os.path.join(directory, e))
+        and has_markdown(os.path.join(directory, e))
     ]
 
     is_top = os.path.realpath(directory) == os.path.realpath(top_dir)
