@@ -154,6 +154,7 @@ OR coverage values: **Full** = no AI work after OR; **Partial** = OR does part, 
 | 20-aggregates/generic-domain-event-message.md | None | No OR rule; AI rewrites `GenericDomainEventMessage` → `GenericEventMessage`. |
 | 20-aggregates/target-aggregate-identifier.md | Partial | OR renames `@TargetAggregateIdentifier` → `@TargetEntityId` (keeps the annotation); AI removes it entirely per AF5 routing-by-`idType`. |
 | 30-event-handlers/command-dispatcher.md | Partial | `MigrateCommandGatewayInEventHandler` rewrites single-dispatch and try/catch handler bodies; AI handles compound shapes (loops, multiple sequential dispatches). |
+| 30-event-handlers/command-gateway-top-level.md | Partial | `ChangePackage` moves the `CommandGateway` import to the `.messaging.` path; AI rewrites the `.send()`/`.sendAndWait()` chains (insert `.resultAs(Type.class)`; replace `.sendAndWait` with `.send().resultAs().orTimeout().join()`). |
 | 30-event-handlers/event-bus-to-sink.md | Full | `ChangeType` `EventBus` → `EventSink` (after the upstream `eventhandling` → `messaging.eventhandling` package move). |
 | 30-event-handlers/event-handler-annotation.md | Full | `ChangeType` for `@EventHandler`, `@DisallowReplay`, `@ResetHandler` package moves. |
 | 30-event-handlers/message-accessors.md | Full | `ChangeMethodName` rewrites `getPayload`/`getMetaData`/`getIdentifier`/`getTimestamp`/`getPayloadType`. |

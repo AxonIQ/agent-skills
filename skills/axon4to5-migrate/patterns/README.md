@@ -37,6 +37,7 @@ edit the pattern files themselves and re-run `make generate`.
 | 20 — Aggregates | [generic-domain-event-message.md](20-aggregates/generic-domain-event-message.md) | GenericDomainEventMessage Removal |
 | 20 — Aggregates | [target-aggregate-identifier.md](20-aggregates/target-aggregate-identifier.md) | @TargetAggregateIdentifier Removal |
 | 30 — Event Handlers | [command-dispatcher.md](30-event-handlers/command-dispatcher.md) | In-Handler Command Dispatch — CommandGateway → CommandDispatcher |
+| 30 — Event Handlers | [command-gateway-top-level.md](30-event-handlers/command-gateway-top-level.md) | CommandGateway — Top-Level Dispatchers (REST/MCP/CLI) |
 | 30 — Event Handlers | [event-bus-to-sink.md](30-event-handlers/event-bus-to-sink.md) | EventBus → EventSink |
 | 30 — Event Handlers | [event-handler-annotation.md](30-event-handlers/event-handler-annotation.md) | @EventHandler, @DisallowReplay, @ResetHandler — Import Package Moves |
 | 30 — Event Handlers | [message-accessors.md](30-event-handlers/message-accessors.md) | Message Accessor Renames |

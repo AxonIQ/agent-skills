@@ -99,7 +99,8 @@ commandDispatcher.send(cmd).resultAs(Void.class)   // returns CompletableFuture<
 - **Event handler must return `CompletableFuture<?>`** when it dispatches commands — the framework propagates the
   future correctly. Do not call `.join()` inside the handler (blocks the thread).
 - **`CommandDispatcher` only works inside a `ProcessingContext`** — it cannot be used in REST controllers or
-  scheduled tasks. For those, keep `CommandGateway` (see command-gateway recipe).
+  scheduled tasks. For top-level dispatchers (REST/MCP/CLI/scheduled), see
+  [command-gateway-top-level.md](command-gateway-top-level.md).
 - **Compensation logic**: AF4 try/catch around `sendAndWait` becomes `.exceptionallyCompose(…)` on the future.
   Forgetting this means compensation silently stops on failure.
 - **Simple cases** where you do not need the result: `return commandDispatcher.send(cmd).getResultMessage().thenApply(_ -> null);`
