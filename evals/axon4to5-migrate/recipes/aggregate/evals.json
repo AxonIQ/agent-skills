@@ -8,15 +8,15 @@
     {
       "id": 1,
       "name": "spring-axoniq-calendar-straight",
-      "prompt": "You are inside an interactive Claude Code session. The axon4to5-migrate Skill lives at $SKILL_DIR. Open SKILL.md there, then invoke the orchestrator with arguments exactly `framework=axoniq configuration=spring mode=single source=$SOURCE`. The orchestrator must: run its OpenRewrite pre-step, match the aggregate recipe (Calendar is annotated @Aggregate + @EventSourcingHandler), execute the recipe sub-flow, and rewrite $SOURCE IN PLACE to AF5 shape. After it finishes, copy the orchestrator's emitted Result block VERBATIM to $WORKSPACE/result.md (the block starts with `**Result:**` and ends after the last bullet). Do not invent content for result.md \u2014 it must be the literal block. No blocker is expected. No pinned decisions are needed.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `1: spring-axoniq-calendar-straight` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/event-sourcing-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/20-aggregates/event-emission.md`, `patterns/20-aggregates/creation-policy.md`, `patterns/20-aggregates/target-aggregate-identifier.md`, `patterns/20-aggregates/event-annotation.md`. Reach for `examples/aggregates/01-spring-boot-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Rewrite `$SOURCE` IN PLACE to AF5 shape using the patterns named above. Write the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/axon4/heroes/Calendar.java"
       ],
       "expectations": [
         "Path A annotation @EventSourced applied with explicit tagKey=\"Calendar\"",
         "idType explicitly set on @EventSourced (non-String identifier)",
-        "AF5 Path A import \u2014 note the .extension.spring. infix",
+        "AF5 Path A import — note the .extension.spring. infix",
         "AF5 EventSourcingHandler import (.annotation. infix)",
         "AF5 EntityCreator import (.reflection. infix mandatory)",
         "AF5 CommandHandler import (.messaging. infix mandatory)",
@@ -40,10 +40,7 @@
       "fixture": "axon4/heroes/Calendar.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -65,7 +62,7 @@
           "target": "source",
           "type": "grep_require",
           "pattern": "org.axonframework.extension.spring.stereotype.EventSourced",
-          "text": "AF5 Path A import \u2014 note the .extension.spring. infix"
+          "text": "AF5 Path A import — note the .extension.spring. infix"
         },
         {
           "target": "source",
@@ -166,7 +163,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -180,8 +177,8 @@
     {
       "id": 5,
       "name": "spring-axoniq-game-constructor-handler",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Game has a CONSTRUCTOR-STYLE @CommandHandler (`public Game(RegisterGameCommand)`), a @Profile(\"command\") Spring annotation that must be preserved, and an @ExceptionHandler (which is an Axon, not Spring, interceptor). Apply the aggregate recipe in-place. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `5: spring-axoniq-game-constructor-handler` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/20-aggregates/event-emission.md`. Reach for `examples/aggregates/03-constructor-command-handler.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Game has a CONSTRUCTOR-STYLE @CommandHandler (`public Game(RegisterGameCommand)`), a @Profile(\"command\") Spring annotation that must be preserved, and an @ExceptionHandler (which is an Axon, not Spring, interceptor). Apply the matching patterns in-place.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/axon4/gamerental/Game.java"
       ],
@@ -201,10 +198,7 @@
       "fixture": "axon4/gamerental/Game.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -267,7 +261,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         }
       ]
@@ -275,13 +269,13 @@
     {
       "id": 6,
       "name": "spring-axoniq-dwelling-snapshot-blocker-emitted",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Dwelling declares @Aggregate(snapshotTriggerDefinition=\"dwellingSnapshotTrigger\"). AF5 has no portable equivalent \u2192 expect Blocker B1. No decision is pre-pinned \u2014 the recipe must emit the Blocker rather than silently dropping the attribute. Copy the Result block VERBATIM (must contain the Options list with skip/revert/solve-manually) to $WORKSPACE/result.md. The file MAY be partially rewritten by OpenRewrite \u2014 do not fail the eval if so; we only check the recipe's emitted Result.",
-      "expected_output": "The orchestrator emits a `**Result:** \ud83d\udea7 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
+      "prompt": "You are running eval `6: spring-axoniq-dwelling-snapshot-blocker-emitted` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`. Reach for `examples/aggregates/04-snapshot-blocker.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Dwelling declares @Aggregate(snapshotTriggerDefinition=\"dwellingSnapshotTrigger\"). AF5 has no portable equivalent → expect Blocker B1. No decision is pre-pinned — the migration must emit the Blocker rather than silently dropping the attribute. The file MAY be partially rewritten by OpenRewrite — do not fail the eval if so; we only check the recipe's emitted Result.\n\nThis eval expects a **Blocker** outcome. The fixture contains an AF4 shape that has no AF5 equivalent (e.g. `@DeadlineHandler`, `SagaTestFixture`, `snapshotTriggerDefinition`, Map-typed `@AggregateMember`, `MongoEventStorageEngine`, the `@MessageHandlerInterceptor` method-annotation form). Comment out the blocking code, add a `// TODO: no AF5 equivalent` note, and surface the blocker in the Result block.\n\nDo NOT edit the source file beyond what SKILL.md Step 2 prescribes for blockers (comment out + `// TODO: no AF5 equivalent`). Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** 🚧 Blocker`, `**Recipe:** axon4to5-aggregate`, a `**Notes:**` line naming the blocker, and an `**Options:**` list enumerating `skip`, `revert`, `solve-manually`.",
+      "expected_output": "The orchestrator emits a `**Result:** 🚧 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
       "files": [
         "evals/fixtures/axon4/heroes/Dwelling.java"
       ],
       "expectations": [
-        "Result block marks Blocker (\ud83d\udea7 emoji)",
+        "Result block marks Blocker (🚧 emoji)",
         "Blocker notes reference snapshotting",
         "Default Option `skip` is enumerated",
         "Default Option `revert` is enumerated",
@@ -292,10 +286,7 @@
       "fixture": "axon4/heroes/Dwelling.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Blocker",
@@ -304,8 +295,8 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \ud83d\udea7 Blocker",
-          "text": "Result block marks Blocker (\ud83d\udea7 emoji)"
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Result block marks Blocker (🚧 emoji)"
         },
         {
           "target": "result",
@@ -342,13 +333,13 @@
     {
       "id": 8,
       "name": "spring-axoniq-shipment-deadline-blocker",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Shipment uses @DeadlineHandler + DeadlineManager. AF5 has no direct successor \u2192 expect Blocker B4. Copy the Result block verbatim (must enumerate the three default Options) to $WORKSPACE/result.md.",
-      "expected_output": "The orchestrator emits a `**Result:** \ud83d\udea7 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
+      "prompt": "You are running eval `8: spring-axoniq-shipment-deadline-blocker` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`. Reach for `examples/sagas/02-deadline-blocker-comment-out.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Shipment uses @DeadlineHandler + DeadlineManager. AF5 has no direct successor → expect Blocker B4.\n\nThis eval expects a **Blocker** outcome. The fixture contains an AF4 shape that has no AF5 equivalent (e.g. `@DeadlineHandler`, `SagaTestFixture`, `snapshotTriggerDefinition`, Map-typed `@AggregateMember`, `MongoEventStorageEngine`, the `@MessageHandlerInterceptor` method-annotation form). Comment out the blocking code, add a `// TODO: no AF5 equivalent` note, and surface the blocker in the Result block.\n\nDo NOT edit the source file beyond what SKILL.md Step 2 prescribes for blockers (comment out + `// TODO: no AF5 equivalent`). Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** 🚧 Blocker`, `**Recipe:** axon4to5-aggregate`, a `**Notes:**` line naming the blocker, and an `**Options:**` list enumerating `skip`, `revert`, `solve-manually`.",
+      "expected_output": "The orchestrator emits a `**Result:** 🚧 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
       "files": [
         "evals/fixtures/synthetic/Shipment.java"
       ],
       "expectations": [
-        "Blocker emitted (\ud83d\udea7)",
+        "Blocker emitted (🚧)",
         "Blocker notes reference deadline-handler",
         "Option `skip` listed",
         "Option `revert` listed",
@@ -358,10 +349,7 @@
       "fixture": "synthetic/Shipment.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Blocker",
@@ -370,8 +358,8 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \ud83d\udea7 Blocker",
-          "text": "Blocker emitted (\ud83d\udea7)"
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emitted (🚧)"
         },
         {
           "target": "result",
@@ -402,14 +390,14 @@
     {
       "id": 9,
       "name": "spring-axoniq-inventory-map-aggregatemember-blocker",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Inventory has `@AggregateMember private Map<String, StockItem> items` \u2014 AF5 @EntityMember does NOT support Map-typed members \u2192 expect Blocker B2. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "The orchestrator emits a `**Result:** \ud83d\udea7 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
+      "prompt": "You are running eval `9: spring-axoniq-inventory-map-aggregatemember-blocker` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/aggregate-member.md`. Reach for `examples/aggregates/05-multi-entity.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Inventory has `@AggregateMember private Map<String, StockItem> items` — AF5 @EntityMember does NOT support Map-typed members → expect Blocker B2.\n\nThis eval expects a **Blocker** outcome. The fixture contains an AF4 shape that has no AF5 equivalent (e.g. `@DeadlineHandler`, `SagaTestFixture`, `snapshotTriggerDefinition`, Map-typed `@AggregateMember`, `MongoEventStorageEngine`, the `@MessageHandlerInterceptor` method-annotation form). Comment out the blocking code, add a `// TODO: no AF5 equivalent` note, and surface the blocker in the Result block.\n\nDo NOT edit the source file beyond what SKILL.md Step 2 prescribes for blockers (comment out + `// TODO: no AF5 equivalent`). Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** 🚧 Blocker`, `**Recipe:** axon4to5-aggregate`, a `**Notes:**` line naming the blocker, and an `**Options:**` list enumerating `skip`, `revert`, `solve-manually`.",
+      "expected_output": "The orchestrator emits a `**Result:** 🚧 Blocker` block naming the blocker, with the three default Options (skip / revert / solve-manually). The source on disk MAY be partially edited; the recipe MUST NOT silently bypass the blocker.",
       "files": [
         "evals/fixtures/synthetic/Inventory.java",
         "evals/fixtures/synthetic/StockItem.java"
       ],
       "expectations": [
-        "Blocker emitted (\ud83d\udea7)",
+        "Blocker emitted (🚧)",
         "Blocker notes reference Map-typed @AggregateMember",
         "Blocker explicitly names @AggregateMember",
         "Option `skip` listed",
@@ -422,10 +410,7 @@
         "synthetic/StockItem.java"
       ],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Blocker",
@@ -434,8 +419,8 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \ud83d\udea7 Blocker",
-          "text": "Blocker emitted (\ud83d\udea7)"
+          "pattern": "Result:** 🚧 Blocker",
+          "text": "Blocker emitted (🚧)"
         },
         {
           "target": "result",
@@ -472,8 +457,8 @@
     {
       "id": 10,
       "name": "native-axoniq-calendar-straight",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. Native = framework Configurer wiring (Path B): expect @EventSourcedEntity (not the Spring stereotype @EventSourced). Apply the aggregate recipe in-place. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `10: native-axoniq-calendar-straight` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=native`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/event-sourcing-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/20-aggregates/event-emission.md`, `patterns/20-aggregates/target-aggregate-identifier.md`. Reach for `examples/aggregates/02-native-configurer-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Native = framework Configurer wiring (Path B): expect @EventSourcedEntity (not the Spring stereotype @EventSourced). Apply the matching patterns in-place.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/axon4/heroes/Calendar.java"
       ],
@@ -494,10 +479,7 @@
       "fixture": "axon4/heroes/Calendar.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "native",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -566,7 +548,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         }
       ]
@@ -574,13 +556,13 @@
     {
       "id": 18,
       "name": "spring-axoniq-projector-rejected",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. The source is a read-model projector (@ProcessingGroup + @EventHandler), NOT an aggregate. The orchestrator's Match step in single mode must EITHER ask which recipe to apply OR (if it forces aggregate based on the user's recipe hint) the aggregate recipe must reject. For this eval, assume the user pinned recipe=aggregate \u2014 the recipe's # Applicable predicate must reject. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "The orchestrator emits a `**Result:** \u23ed\ufe0f Rejected` block. The source on disk is unchanged \u2014 the aggregate recipe's `# Applicable` predicate decided this is not an aggregate.",
+      "prompt": "You are running eval `18: spring-axoniq-projector-rejected` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`. Reach for `examples/aggregates/08-rejected-projector.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** The source is a read-model projector (@ProcessingGroup + @EventHandler), NOT an aggregate. This file is out of scope for the aggregate pattern set — Reject. This eval expects a **Rejected** outcome. The file is out of scope for the `aggregate` pattern set (e.g. a projector when this recipe targets aggregates, an aggregate when this recipe targets sagas). Do not migrate it — record Rejected in the Result block.\n\nThe source must NOT be edited — no patterns from this recipe apply. Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** ⏭️ Rejected`, `**Recipe:** axon4to5-aggregate`, and a `**Notes:**` line explaining why this file is not in scope for the aggregate pattern set.",
+      "expected_output": "The orchestrator emits a `**Result:** ⏭️ Rejected` block. The source on disk is unchanged — the aggregate recipe's `# Applicable` predicate decided this is not an aggregate.",
       "files": [
         "evals/fixtures/axon4/heroes/DwellingReadModelProjector.java"
       ],
       "expectations": [
-        "Rejected outcome emoji (\u23ed\ufe0f)",
+        "Rejected outcome emoji (⏭️)",
         "Rejected text present",
         "Recipe identifier present",
         "Source untouched: original @ProcessingGroup intact",
@@ -592,10 +574,7 @@
       "fixture": "axon4/heroes/DwellingReadModelProjector.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Rejected",
@@ -604,8 +583,8 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u23ed",
-          "text": "Rejected outcome emoji (\u23ed\ufe0f)"
+          "pattern": "Result:** ⏭",
+          "text": "Rejected outcome emoji (⏭️)"
         },
         {
           "target": "result",
@@ -648,8 +627,8 @@
     {
       "id": 21,
       "name": "spring-axoniq-idempotent-already-migrated-calendar",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. The source is ALREADY on AF5 shape (extracted from .knowledge/repositories/axon-examples/axon5). Recipe must return Success with NOTES indicating `edits=none (idempotent)` per FLOW.md S5 pre-Apply check. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `21: spring-axoniq-idempotent-already-migrated-calendar` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`. Reach for `examples/aggregates/01-spring-boot-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** The source is ALREADY on AF5 shape (extracted from .knowledge/repositories/axon-examples/axon5). The migration must return Success with NOTES indicating `edits=none (idempotent)` per the SKILL.md idempotency check.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/axon5/heroes/Calendar.java"
       ],
@@ -666,10 +645,7 @@
       "fixture": "axon5/heroes/Calendar.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -708,7 +684,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         },
         {
@@ -722,8 +698,8 @@
     {
       "id": 23,
       "name": "spring-axoniq-giftcard-multi-entity-list",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. GiftCard has `@AggregateMember List<Transaction> transactions`. AF5 maps this to `@EntityMember(routingKey = \"txId\") List<Transaction>` on the parent + Transaction becomes a child entity with its own @EntityCreator + @EntityId-derived routing (no class-level @EventSourcedEntity on a child \u2014 it's reached via the parent). Both GiftCard.java AND the secondary Transaction.java in the same workspace must be rewritten. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `23: spring-axoniq-giftcard-multi-entity-list` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/aggregate-member.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/aggregate-lifecycle.md`. Reach for `examples/aggregates/05-multi-entity.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** GiftCard has `@AggregateMember List<Transaction> transactions`. AF5 maps this to `@EntityMember(routingKey = \"txId\") List<Transaction>` on the parent + Transaction becomes a child entity with its own @EntityCreator + @EntityId-derived routing (no class-level @EventSourcedEntity on a child — it's reached via the parent). Both GiftCard.java AND the secondary Transaction.java in the same workspace must be rewritten.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/synthetic/GiftCard.java",
         "evals/fixtures/synthetic/Transaction.java"
@@ -737,8 +713,8 @@
         "AF4 AggregateMember import removed",
         "Transaction child has @EntityCreator on its constructor",
         "Transaction's @CommandHandler uses EventAppender",
-        "Child Transaction NOT annotated with class-level @EventSourced \u2014 reached via parent",
-        "Child Transaction NOT annotated with @EventSourcedEntity \u2014 reached via parent",
+        "Child Transaction NOT annotated with class-level @EventSourced — reached via parent",
+        "Child Transaction NOT annotated with @EventSourcedEntity — reached via parent",
         "AggregateLifecycle gone from child too",
         "Success result"
       ],
@@ -748,10 +724,7 @@
         "synthetic/Transaction.java"
       ],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -809,13 +782,13 @@
           "target": "secondary:Transaction.java",
           "type": "grep_forbid",
           "pattern": "@EventSourced",
-          "text": "Child Transaction NOT annotated with class-level @EventSourced \u2014 reached via parent"
+          "text": "Child Transaction NOT annotated with class-level @EventSourced — reached via parent"
         },
         {
           "target": "secondary:Transaction.java",
           "type": "grep_forbid",
           "pattern": "@EventSourcedEntity",
-          "text": "Child Transaction NOT annotated with @EventSourcedEntity \u2014 reached via parent"
+          "text": "Child Transaction NOT annotated with @EventSourcedEntity — reached via parent"
         },
         {
           "target": "secondary:Transaction.java",
@@ -826,7 +799,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         }
       ]
@@ -834,8 +807,8 @@
     {
       "id": 24,
       "name": "native-axoniq-polymorphic-card-hierarchy",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. Card is an abstract @AggregateRoot with two concrete subtypes (OpenLoopGiftCard, RechargeableGiftCard, both @Aggregate). AF5 shape: base class carries @EventSourcedEntity(concreteTypes = {OpenLoopGiftCard.class, RechargeableGiftCard.class}), subtypes are NOT annotated. Migrate the base AND the two subtypes. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `24: native-axoniq-polymorphic-card-hierarchy` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=native`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/aggregate-lifecycle.md`. Reach for `examples/aggregates/06-polymorphic.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Card is an abstract @AggregateRoot with two concrete subtypes (OpenLoopGiftCard, RechargeableGiftCard, both @Aggregate). AF5 shape: base class carries @EventSourcedEntity(concreteTypes = {OpenLoopGiftCard.class, RechargeableGiftCard.class}), subtypes are NOT annotated. Migrate the base AND the two subtypes.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/synthetic/Card.java",
         "evals/fixtures/synthetic/OpenLoopGiftCard.java",
@@ -865,10 +838,7 @@
         "synthetic/RechargeableGiftCard.java"
       ],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "native",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -961,7 +931,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         }
       ]
@@ -969,8 +939,8 @@
     {
       "id": 27,
       "name": "spring-axoniq-calendar-plus-test-fixture",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. A CalendarTest.java with AggregateTestFixture is in the workspace next to Calendar.java. The aggregate recipe's scope must include the test class \u2014 it migrates BOTH: Calendar.java to AF5 + CalendarTest.java from AggregateTestFixture to AxonTestFixture, fluent given/when/then, AF5 record-style payload accessors. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `27: spring-axoniq-calendar-plus-test-fixture` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/80-tests/test-fixture.md`. Reach for `examples/aggregates/07-test-fixture.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** A CalendarTest.java with AggregateTestFixture is in the workspace next to Calendar.java. The aggregate recipe's scope must include the test class — it migrates BOTH: Calendar.java to AF5 + CalendarTest.java from AggregateTestFixture to AxonTestFixture, fluent given/when/then, AF5 record-style payload accessors.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/axon4/heroes/Calendar.java",
         "evals/fixtures/synthetic/CalendarTest.java"
@@ -995,10 +965,7 @@
         "synthetic/CalendarTest.java"
       ],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -1073,7 +1040,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Success result"
         }
       ]
@@ -1081,7 +1048,7 @@
     {
       "id": 28,
       "name": "invalid-arg-unsupported-framework",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=spring configuration=spring mode=single source=$SOURCE`. `framework=spring` is NOT supported (must be `axon` or `axoniq`). Per SKILL.md pre-step 1, the orchestrator MUST STOP and report unsupported framework \u2014 no migration runs. Write whatever message the orchestrator produces verbatim to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `28: invalid-arg-unsupported-framework` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`. Reach for `examples/aggregates/01-spring-boot-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** An unsupported `framework=spring` argument was passed. SKILL.md only accepts `configuration=spring|native` and `skip-openrewrite=true|false` — there is no `framework` argument. Detect the unsupported argument, do NOT migrate, and write a stop message to result.md.\n\nDo NOT edit the source file. Write a message to `$WORKSPACE/outputs/result.md` explaining that the supplied `framework` argument is unsupported (the skill accepts no such argument — only `configuration=spring|native` and `skip-openrewrite=true|false`). Include the word `unsupported` (or `invalid` / `STOP`) and the literal token `framework` in your message so the grader detects the stop condition.",
       "expected_output": "The orchestrator STOPS at the pre-step and reports the invalid argument verbatim. No migration runs; the source on disk is unchanged.",
       "files": [
         "evals/fixtures/axon4/heroes/Calendar.java"
@@ -1097,10 +1064,7 @@
       "fixture": "axon4/heroes/Calendar.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "spring",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Stop",
@@ -1146,8 +1110,8 @@
     {
       "id": 29,
       "name": "spring-axoniq-partial-already-rewritten",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. PartialCalendarSpring.java is a realistic OpenRewrite-Phase-1 partial state: `@EventSourced` annotation is present (mechanically swapped from `@Aggregate`) but tagKey/idType attributes are missing; `@AggregateIdentifier` annotation + import still there; `@CreationPolicy(CREATE_IF_MISSING)` still there; `AggregateLifecycle.apply(...)` still in handler bodies; no `@EntityCreator`; no `EventAppender` parameter; AF4 `@CommandHandler` / `@EventSourcingHandler` imports. The recipe MUST apply # Applicable predicate 5 (partially-migrated event-sourced aggregate \u2014 continue to Research), find that the Success Criteria pre-Apply check fails (AF4 imports present, no EntityCreator, no EventAppender threading), run Plan-Apply once, and finish the migration to a fully-AF5 shape. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** \u2705 Success` block.",
+      "prompt": "You are running eval `29: spring-axoniq-partial-already-rewritten` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/event-sourcing-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/20-aggregates/creation-policy.md`, `patterns/20-aggregates/target-aggregate-identifier.md`. Reach for `examples/aggregates/01-spring-boot-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** PartialCalendarSpring.java is a realistic OpenRewrite-Phase-1 partial state: `@EventSourced` annotation is present (mechanically swapped from `@Aggregate`) but tagKey/idType attributes are missing; `@AggregateIdentifier` annotation + import still there; `@CreationPolicy(CREATE_IF_MISSING)` still there; `AggregateLifecycle.apply(...)` still in handler bodies; no `@EntityCreator`; no `EventAppender` parameter; AF4 `@CommandHandler` / `@EventSourcingHandler` imports. the migration must detect partial-migration state (partially-migrated event-sourced aggregate — continue to Research), find that the Success Criteria idempotency check fails (AF4 imports present, no EntityCreator, no EventAppender threading), run Plan-Apply once, and finish the migration to a fully-AF5 shape.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file(s) are on AF5 shape per the aggregate recipe, and the orchestrator emits a `**Result:** ✅ Success` block.",
       "files": [
         "evals/fixtures/synthetic/PartialCalendarSpring.java"
       ],
@@ -1168,10 +1132,7 @@
       "fixture": "synthetic/PartialCalendarSpring.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -1276,7 +1237,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -1290,8 +1251,8 @@
     {
       "id": 31,
       "name": "native-axoniq-bike-snapshot-migrate-to-policy",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. BikeWithSnapshot.java is an AF4 aggregate with `@Aggregate(snapshotTriggerDefinition = \"bikeSnapshotDefinition\")`. The companion bean BikeSnapshotDefinition.java extends EventCountSnapshotTriggerDefinition with threshold 10. The recipe MUST auto-migrate (not emit Blocker B1): detect the translatable companion bean, replace the snapshotTriggerDefinition attribute with `EventSourcedEntityModule.declarative(String.class, Bike.class).snapshotPolicy(c -> SnapshotPolicy.afterEvents(10)).build()` in a new or existing Configurer registration, register a SnapshotStore, and mark BikeSnapshotDefinition as dead code in LEARNINGS. The entity class must end on `@EventSourcedEntity(tagKey = \"Bike\", idType = String.class)`. Copy the Result block verbatim to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file is on AF5 Path B shape; the recipe auto-migrated the snapshot trigger to EventSourcedEntityModule.declarative(...).snapshotPolicy(...); orchestrator emits `**Result:** \u2705 Success`.",
+      "prompt": "You are running eval `31: native-axoniq-bike-snapshot-migrate-to-policy` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=native`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`. Reach for `examples/aggregates/04-snapshot-blocker.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** BikeWithSnapshot.java is an AF4 aggregate with `@Aggregate(snapshotTriggerDefinition = \"bikeSnapshotDefinition\")`. The companion bean BikeSnapshotDefinition.java extends EventCountSnapshotTriggerDefinition with threshold 10. the migration must auto-handle this case (NOT emit Blocker B1): detect the translatable companion bean, replace the snapshotTriggerDefinition attribute with `EventSourcedEntityModule.declarative(String.class, Bike.class).snapshotPolicy(c -> SnapshotPolicy.afterEvents(10)).build()` in a new or existing Configurer registration, register a SnapshotStore, and mark BikeSnapshotDefinition as dead code in LEARNINGS. The entity class must end on `@EventSourcedEntity(tagKey = \"Bike\", idType = String.class)`.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file is on AF5 Path B shape; the recipe auto-migrated the snapshot trigger to EventSourcedEntityModule.declarative(...).snapshotPolicy(...); orchestrator emits `**Result:** ✅ Success`.",
       "files": [
         "evals/fixtures/synthetic/BikeWithSnapshot.java",
         "evals/fixtures/synthetic/BikeSnapshotDefinition.java"
@@ -1314,10 +1275,7 @@
         "synthetic/BikeSnapshotDefinition.java"
       ],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "native",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -1384,7 +1342,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result marks Success"
         }
       ]
@@ -1392,8 +1350,8 @@
     {
       "id": 30,
       "name": "native-axoniq-partial-already-rewritten",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. PartialOrderNative.java is the framework-Configurer (Path B) equivalent of eval 29: `@EventSourcedEntity` annotation already present (swapped from `@AggregateRoot`) but with NO tagKey/idType attributes; `@AggregateIdentifier` still there; `@CreationPolicy(ALWAYS)` still there; `AggregateLifecycle.apply(...)` in handler bodies; AF4 `@CommandHandler` / `@EventSourcingHandler` imports; no `@EntityCreator`; no `EventAppender` parameter. The recipe MUST apply predicate 5 (partial), see Success Criteria mismatch, run Plan-Apply once, and finish the migration. The `@CreationPolicy(ALWAYS)` should become a **static** `@CommandHandler` factory per the recipe's # Common steps \u00a7 @CreationPolicy mapping. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "Migrated source file is on AF5 Path B shape per the aggregate recipe; the orchestrator emits `**Result:** \u2705 Success`.",
+      "prompt": "You are running eval `30: native-axoniq-partial-already-rewritten` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=native`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/20-aggregates/aggregate-class.md`, `patterns/20-aggregates/command-handler.md`, `patterns/20-aggregates/event-sourcing-handler.md`, `patterns/20-aggregates/entity-creator.md`, `patterns/20-aggregates/aggregate-lifecycle.md`, `patterns/20-aggregates/creation-policy.md`, `patterns/20-aggregates/target-aggregate-identifier.md`. Reach for `examples/aggregates/02-native-configurer-straight.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** PartialOrderNative.java is the framework-Configurer (Path B) equivalent of eval 29: `@EventSourcedEntity` annotation already present (swapped from `@AggregateRoot`) but with NO tagKey/idType attributes; `@AggregateIdentifier` still there; `@CreationPolicy(ALWAYS)` still there; `AggregateLifecycle.apply(...)` in handler bodies; AF4 `@CommandHandler` / `@EventSourcingHandler` imports; no `@EntityCreator`; no `EventAppender` parameter. the migration must detect partial-migration state (partial), see Success Criteria mismatch, run Plan-Apply once, and finish the migration. The `@CreationPolicy(ALWAYS)` should become a **static** `@CommandHandler` factory per the @CreationPolicy pattern (patterns/20-aggregates/creation-policy.md).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Migrated source file is on AF5 Path B shape per the aggregate recipe; the orchestrator emits `**Result:** ✅ Success`.",
       "files": [
         "evals/fixtures/synthetic/PartialOrderNative.java"
       ],
@@ -1414,10 +1372,7 @@
       "fixture": "synthetic/PartialOrderNative.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "native",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -1528,7 +1483,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {

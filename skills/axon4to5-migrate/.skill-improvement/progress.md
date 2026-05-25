@@ -5,10 +5,10 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-017 — Pattern Notes formatting consistency
-**Next action:** No `pending` items remain (IMP-016 is blocked on IMP-019, IMP-019 is the next discovery follow-up). Consider another discovery pass or wrap up.
-**Current session commit:** IMP-001..015, 017, 018 committed
-**Blocked items:** IMP-016 — eval infrastructure mismatches flat-pattern SKILL.md; see IMP-019 follow-up.
+**Last completed:** IMP-019 — Reconcile evals with flat-pattern skill design
+**Next action:** Start IMP-016: Eval coverage for the 5 new patterns (now unblocked).
+**Current session commit:** IMP-001..015, 017, 018 committed; IMP-019 pending
+**Blocked items:** none
 
 ## Pinned Decisions
 
@@ -36,8 +36,9 @@ session-count: 1
 | IMP-013 | Renumber duplicate examples in query-handlers/ | done | Renamed 10 files into a single sequential `01-handler-…05-handler-…06-caller-…10-caller-…` scheme; H1 numbers in 5 caller files updated to match. |
 | IMP-014 | Cross-link patterns ↔ examples/java/ | done | 11 patterns gained a "Reference source:" line pointing at the matching `examples/java/af5/.../*.java` file. |
 | IMP-015 | Move OR coverage table out of SKILL.md | done | 32-row table moved to `references/openrewrite-coverage.md`; SKILL.md slimmed to 265 lines (was 297). |
-| IMP-016 | Eval coverage for new patterns | blocked | Eval infrastructure (`evals/axon4to5-migrate/recipes/{aggregate,command-gateway,event-processor,…}/evals.json`) was authored against a recipe-driven SKILL.md design that no longer matches the current flat-pattern skill. Eval prompts say things like "invoke the orchestrator with `mode=single source=…`" and "execute the recipe sub-flow" — none of which the current SKILL.md exposes. Adding evals for the 5 new patterns without first reconciling this is wasted work. See IMP-019. |
-| IMP-019 | Reconcile evals with flat-pattern skill design | pending | Eval prompts must be rewritten to drive the current flat-phase SKILL.md (no recipe orchestrator, no `mode=single source=…` arg). Decide: (a) rewrite eval prompts to use Step 2 detection + Step 3 phase invocation, OR (b) reintroduce a thin recipe layer in SKILL.md. Once chosen, IMP-016 (evals for the 5 new patterns) becomes unblocked. |
+| IMP-016 | Eval coverage for new patterns (unblocked) | pending | See row below for current state. |
+| IMP-019 | Reconcile evals with flat-pattern skill design | done | 49 evals across 8 recipes had `prompt` + `skill_args` rewritten to drive the flat-pattern SKILL.md. `skill_args` now `{configuration, skip-openrewrite}`. RUN_EVALS_PROMPT.md + skill CLAUDE.md updated. Smoke-tested `run.py prep`. |
+| IMP-016 | Eval coverage for new patterns | pending | Unblocked now that IMP-019 is done. Add eval entries for `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`, `command-gateway-top-level`. |
 | IMP-017 | Pattern Notes formatting consistency | done | 3/32 patterns normalised (29 already compliant); stray "## Notes (continued)" headers folded into single Notes section; OR-status + Reference-source bullets land at tail. |
 | IMP-018 | `make check-attribution` target | done | New `make check-attribution` target uses `scripts/forbidden-names.txt` as a regex list; wired into `make check` so CI catches regressions. |
 
@@ -63,3 +64,4 @@ session-count: 1
 - IMP-015 done: 32-row OR coverage table moved to `references/openrewrite-coverage.md`; SKILL.md now 265 lines and points at the per-pattern `OpenRewrite status:` line.
 - IMP-017 done: Notes sections normalised (29/32 already compliant); 3 patterns lost stray "## Notes (continued)" headers and ended up with OpenRewrite status + Reference source bullets at the tail.
 - IMP-016 blocked, IMP-019 seeded: eval infrastructure targets an older recipe-driven SKILL.md ("invoke the orchestrator with `mode=single source=…`"). Adding evals for the 5 new patterns needs eval prompts/infra rewritten to drive the current flat-phase design first (IMP-019). Marking IMP-016 blocked rather than authoring evals against a design mismatch.
+- IMP-019 done: 49 evals across 8 recipes rewritten — `prompt` body re-templated to load SKILL.md + ALL_IN_ONE.md, skip Step 1/Step 2.5, cite specific pattern files; `skill_args` reduced to `{configuration, skip-openrewrite}`. RUN_EVALS_PROMPT.md + skill CLAUDE.md aligned. Smoke-tested `run.py prep` for aggregate eval 1. IMP-016 now unblocked.

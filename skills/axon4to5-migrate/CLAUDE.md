@@ -27,7 +27,13 @@ evals/axon4to5-migrate/
 ├── fixtures/               # shared AF4 fixtures
 ├── recipes/
 │   ├── aggregate/evals.json
-│   └── event-processor/evals.json
+│   ├── command-gateway/evals.json
+│   ├── event-processor/evals.json
+│   ├── event-store/evals.json
+│   ├── interceptors/evals.json
+│   ├── query-gateway/evals.json
+│   ├── query-handler/evals.json
+│   └── saga/evals.json
 └── workspace/iteration-N/<recipe>/eval-<name>/{with_skill,without_skill}/run-1/
 ```
 
@@ -37,7 +43,7 @@ evals/axon4to5-migrate/
 prep → [DISPATCH SUBAGENTS via Agent tool] → grade → aggregate
 ```
 
-Every eval's `skill_args` includes `skip-openrewrite=true` (defined as an optional skill input in SKILL.md). This bypasses Pre-step 2 (the OpenRewrite bulk pass) — necessary because subagents can't recursively invoke another Skill, and because eval fixtures aren't real Maven/Gradle projects. Recipes still run their full `# Applicable` predicate set + Plan-Apply loop normally; they just don't have Phase 1 to lean on.
+Every eval's `skill_args` is `{configuration: spring|native, skip-openrewrite: "true"}` and the eval prompt explicitly tells the subagent to **skip SKILL.md Step 1** (the AskUserQuestion Q1/Q2/Q3) and **skip Step 2.5** (progress tracking). This is required because (a) subagents can't recursively invoke another Skill so they can't run the OpenRewrite bulk pass from Step 3 Approach A, (b) eval fixtures aren't real Maven/Gradle projects, and (c) there is no project root to host `.axon4to5-migration/progress.md`. Subagents still load `patterns/ALL_IN_ONE.md` + the specific pattern files named in the eval prompt and apply them to the staged fixture in place.
 
 ### Quick start — drive a full iteration in one go
 
@@ -74,19 +80,18 @@ workspace/iteration-1/<recipe>/eval-<name>/
 For each eval's `prompt.md`, dispatch **one `Agent` tool call** with `subagent_type=general-purpose`. Send all calls in **one message** so they run in parallel. Pattern:
 
 ```
-You are executing eval <N> of axon4to5-migrate. Skill: <path-to-skill>. You ARE the orchestrator.
+You are executing eval <N> of axon4to5-migrate. The skill lives at <path-to-skill>.
 
-1. Read: SKILL.md, references/recipes/FLOW.md, references/recipes/DEFAULT.md,
-   references/recipes/<recipe>/RECIPE.md,
-   references/recipes/<recipe>/use-cases/<matching-use-case>.md,
-   references/docs/paths/<relevant-catalog-entry>.adoc
+1. Read: <skill>/SKILL.md, <skill>/patterns/ALL_IN_ONE.md
+   (and <skill>/examples/ALL_EXAMPLES.md if the prompt names a specific
+   example file you need a full walkthrough for).
 2. Read the prompt at: <workspace>/<recipe>/eval-<name>/with_skill/run-1/prompt.md
 3. Target file(s) to migrate IN PLACE: <workspace>/.../outputs/<File>.java
-4. Skip OpenRewrite pre-step (you cannot run that subprocess). Execute the recipe
-   sub-flow per FLOW.md directly. Use Edit/Write.
-5. Apply the recipe's edits (per the use-case file). Specific guidance per eval —
-   include enough detail that the subagent doesn't have to invent AF5 shape from
-   scratch (cite imports, annotation names, parameter signatures verbatim).
+4. Skip SKILL.md Step 1 (AskUserQuestion Q1/Q2/Q3) and Step 2.5 (progress
+   tracking) — the eval prompt pins configuration + Approach B + skip-openrewrite.
+5. Identify the AF4 shapes in the source against the pattern catalog, apply the
+   matching patterns IN PLACE (Edit/Write). Specific guidance per eval — the
+   prompt already cites the relevant imports/annotation names verbatim.
 6. Write the Result block to <workspace>/.../outputs/result.md.
    Required: `**Result:** ✅ Success | 🚧 Blocker | ⏭️ Rejected | ❌ Failure`,
    `**Recipe:** axon4to5-<recipe>`, `**Notes:** …`.
@@ -95,7 +100,7 @@ You are executing eval <N> of axon4to5-migrate. Skill: <path-to-skill>. You ARE 
 Tips:
 - **Drive only `with_skill/run-1` by default.** The `without_skill` baseline is for measuring delta — usually skip unless you need it.
 - **Cite imports + annotation names verbatim** in the dispatch prompt. AF5 package paths (`.extension.spring.`, `.messaging.`, `.reflection.` infixes) are the most common silent failures when the subagent guesses.
-- **Tell the subagent to NOT invoke another skill / agent recursively** — subagents can't dispatch subagents in this harness. They ARE the orchestrator.
+- **Tell the subagent to NOT invoke another skill / agent recursively** — subagents can't dispatch subagents in this harness.
 - For Blocker / Rejected evals, instruct: "Do NOT edit the source file" — only write `result.md`.
 
 ### Step 3 — Grade
@@ -135,7 +140,7 @@ Shows per-eval table: source migrated, result.md written, graded, pass count.
 
 ### Re-running specific evals
 
-After tweaking RECIPE.md or use-cases, prep just the failing evals and dispatch them again:
+After tweaking patterns or examples, prep just the failing evals and dispatch them again:
 
 ```bash
 python3 evals/axon4to5-migrate/run.py prep --iteration 1 --recipe event-processor --evals 2,5
@@ -145,10 +150,11 @@ python3 evals/axon4to5-migrate/run.py grade --iteration 1 --recipe event-process
 
 `prep` overwrites the workspace for the prepped evals (re-copies fixtures, resets `result.md`). Already-green evals stay untouched if you scope `--evals`.
 
-### Adding a new recipe
+### Adding a new eval recipe (grouping)
 
-1. Author `references/recipes/<recipe>/RECIPE.md` (sections per `references/recipes/_template/RECIPE.md`).
-2. Author `references/recipes/<recipe>/use-cases/*.md` (markdown-linked from RECIPE.md `# Use cases`).
-3. Create `evals/axon4to5-migrate/recipes/<recipe>/evals.json` with eval definitions (canonical skill-creator schema + the `assertions[]` extension).
-4. Add any new fixtures to `evals/axon4to5-migrate/fixtures/synthetic/` (or reuse `evals/axon4to5-migrate/fixtures/axon4/heroes/*` for real AF4 sources).
-5. `run.py` auto-discovers the new recipe — no script changes needed.
+Recipes are workspace groupings for the eval pipeline, not a runtime concept in SKILL.md any more — SKILL.md is a flat pattern catalog. Each `recipes/<name>/evals.json` just selects which fixtures + assertions belong together.
+
+1. Confirm the patterns the new recipe exercises already exist under `patterns/<phase>/*` (and corresponding examples under `examples/<area>/*`). If not, add them via `axon4to5-knowledge-update` first.
+2. Create `evals/axon4to5-migrate/recipes/<recipe>/evals.json` with eval definitions (canonical skill-creator schema + the `assertions[]` extension). Each eval's `prompt` should name the specific pattern + example files it covers.
+3. Add any new fixtures to `evals/axon4to5-migrate/fixtures/synthetic/` (or reuse `evals/axon4to5-migrate/fixtures/axon4/heroes/*` for real AF4 sources).
+4. `run.py` auto-discovers the new recipe — no script changes needed.

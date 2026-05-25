@@ -1,6 +1,6 @@
 # Drive-evals prompt — paste into a fresh Claude Code session
 
-Fill in `<RECIPE>` (`aggregate` | `event-processor` | `all`) and paste:
+Fill in `<RECIPE>` (`aggregate` | `command-gateway` | `event-processor` | `event-store` | `interceptors` | `query-gateway` | `query-handler` | `saga` | `all`) and paste:
 
 ---
 
@@ -18,14 +18,17 @@ Pin these defaults so skill-creator doesn't reinvent them:
   - grade: `python3 evals/axon4to5-migrate/run.py grade --recipe <RECIPE>`
   - aggregate: `python3 evals/axon4to5-migrate/run.py aggregate --recipe <RECIPE>`
 - **Workspace per eval (the iteration root is whatever `run.py` chose):** `<workspace>/<recipe>/eval-<name>/with_skill/run-1/outputs/`
-- **Subagent contract per eval:** read `prompt.md` in the run dir, read
-  `references/recipes/<RECIPE>/RECIPE.md` + the matching use-case under
-  `references/recipes/<RECIPE>/use-cases/`, migrate the file(s) in `outputs/` in
-  place, write the `**Result:**` block to `outputs/result.md`. The eval prompt
-  passes `skip-openrewrite=true` so the subagent skips Pre-step 2 cleanly per
-  SKILL.md (no need to invoke the OpenRewrite Skill recursively). Cite AF5
-  import FQNs verbatim (the `.extension.spring.`, `.messaging.`, `.reflection.`
-  infixes are load-bearing).
+- **Subagent contract per eval:** read `prompt.md` in the run dir, then read
+  `$SKILL_DIR/SKILL.md` and `$SKILL_DIR/patterns/ALL_IN_ONE.md` (and
+  `$SKILL_DIR/examples/ALL_EXAMPLES.md` when a fuller walkthrough is needed —
+  individual pattern + example files are linked from the eval prompt). Identify
+  the AF4 shapes in the staged source(s), apply the matching patterns IN PLACE,
+  then write the `**Result:**` block to `outputs/result.md`. Each eval prompt
+  pins `configuration=<spring|native>`, Migration approach **B (AI only)**, and
+  `skip-openrewrite=true` so the subagent skips SKILL.md Step 1 (AskUserQuestion
+  prompts) and Step 2.5 (progress tracking) cleanly — the harness has no real
+  Maven/Gradle project and no project root. Cite AF5 import FQNs verbatim (the
+  `.extension.spring.`, `.messaging.`, `.reflection.` infixes are load-bearing).
 - **Drive `with_skill/run-1` only** (baseline `without_skill` is optional).
 
 Dashboard at the end: refresh via the skill-creator viewer pointed at the

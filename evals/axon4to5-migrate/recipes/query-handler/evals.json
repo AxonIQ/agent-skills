@@ -8,7 +8,7 @@
     {
       "id": 1,
       "name": "simple-import-swap",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. BikeStatusHandler is a Spring @Component with two @QueryHandler methods: findAll(FindAllBikes query) and findOne(FindBikeById query). Both methods already use typed payload classes. Apply the query-handler recipe use-case 01: swap the @QueryHandler import from org.axonframework.queryhandling.QueryHandler to org.axonframework.messaging.queryhandling.annotation.QueryHandler. Method bodies, parameters, and all other annotations stay identical. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `1: simple-import-swap` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`. Reach for `examples/query-handlers/01-handler-simple-import-swap.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** BikeStatusHandler is a Spring @Component with two @QueryHandler methods: findAll(FindAllBikes query) and findOne(FindBikeById query). Both methods already use typed payload classes. Apply the matching patterns: swap the @QueryHandler import from org.axonframework.queryhandling.QueryHandler to org.axonframework.messaging.queryhandling.annotation.QueryHandler. Method bodies, parameters, and all other annotations stay identical.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-handler` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 QueryHandler import; method signatures and bodies unchanged; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/BikeStatusHandler.java"
@@ -24,10 +24,7 @@
       "fixture": "synthetic/BikeStatusHandler.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -74,7 +71,7 @@
     {
       "id": 2,
       "name": "named-query-removal",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. RentalBikeQueryProjection has three @QueryHandler methods each with queryName attribute: findAll() with queryName=\"findAll\" (no params), findAvailable(String bikeType) with queryName=\"findAvailable\", findOne(String bikeId) with queryName=\"findOne\". Apply the query-handler recipe use-case 02: (1) swap QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler, (2) add import org.axonframework.messaging.queryhandling.annotation.Query, (3) introduce three inner records: @Query(name=\"findAll\") record FindAllQuery() {}, @Query(name=\"findAvailable\") record FindAvailableQuery(String bikeType) {}, @Query(name=\"findOne\") record FindOneQuery(String bikeId) {}, (4) update method signatures: findAll(FindAllQuery ignored), findAvailable(FindAvailableQuery query), findOne(FindOneQuery query), (5) update method bodies: replace bare param references bikeType→query.bikeType() and bikeId→query.bikeId(), (6) remove all queryName attributes from @QueryHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `2: named-query-removal` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`, `patterns/40-query-handlers/query-named.md`. Reach for `examples/query-handlers/02-handler-named-query-removal.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** RentalBikeQueryProjection has three @QueryHandler methods each with queryName attribute: findAll() with queryName=\"findAll\" (no params), findAvailable(String bikeType) with queryName=\"findAvailable\", findOne(String bikeId) with queryName=\"findOne\". Apply the matching patterns: (1) swap QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler, (2) add import org.axonframework.messaging.queryhandling.annotation.Query, (3) introduce three inner records: @Query(name=\"findAll\") record FindAllQuery() {}, @Query(name=\"findAvailable\") record FindAvailableQuery(String bikeType) {}, @Query(name=\"findOne\") record FindOneQuery(String bikeId) {}, (4) update method signatures: findAll(FindAllQuery ignored), findAvailable(FindAvailableQuery query), findOne(FindOneQuery query), (5) update method bodies: replace bare param references bikeType→query.bikeType() and bikeId→query.bikeId(), (6) remove all queryName attributes from @QueryHandler.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-handler` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 QueryHandler import; three payload records introduced with @Query annotations; queryName attributes removed; method bodies updated; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/RentalBikeQueryProjection.java"
@@ -94,10 +91,7 @@
       "fixture": "synthetic/RentalBikeQueryProjection.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -162,7 +156,7 @@
     {
       "id": 3,
       "name": "query-update-emitter-migration",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. BikeStatusSubscriptionProjection has QueryUpdateEmitter as a constructor field and an @EventHandler method on(BikeRegisteredEvent event) that calls `updateEmitter.emit(q -> \"findAll\".equals(q.getQueryName()), bikeStatus)`. Apply the query-handler recipe use-case 03: (1) remove private final QueryUpdateEmitter updateEmitter field, (2) remove QueryUpdateEmitter updateEmitter from constructor parameters and body, (3) add QueryUpdateEmitter updateEmitter as a method parameter to the @EventHandler on() method, (4) update emit() from 2-arg to 3-arg: `updateEmitter.emit(FindAllBikes.class, q -> true, bikeStatus)`, (5) swap QueryUpdateEmitter import to org.axonframework.messaging.queryhandling.QueryUpdateEmitter, (6) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler, (7) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `3: query-update-emitter-migration` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`, `patterns/40-query-handlers/query-update-emitter.md`, `patterns/30-event-handlers/event-handler-annotation.md`. Reach for `examples/query-handlers/03-handler-query-update-emitter.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** BikeStatusSubscriptionProjection has QueryUpdateEmitter as a constructor field and an @EventHandler method on(BikeRegisteredEvent event) that calls `updateEmitter.emit(q -> \"findAll\".equals(q.getQueryName()), bikeStatus)`. Apply the matching patterns: (1) remove private final QueryUpdateEmitter updateEmitter field, (2) remove QueryUpdateEmitter updateEmitter from constructor parameters and body, (3) add QueryUpdateEmitter updateEmitter as a method parameter to the @EventHandler on() method, (4) update emit() from 2-arg to 3-arg: `updateEmitter.emit(FindAllBikes.class, q -> true, bikeStatus)`, (5) swap QueryUpdateEmitter import to org.axonframework.messaging.queryhandling.QueryUpdateEmitter, (6) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler, (7) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-handler` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "QueryUpdateEmitter field removed; injected as method param in @EventHandler; emit() updated to 3-arg class-based form; all imports updated; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/BikeStatusSubscriptionProjection.java"
@@ -181,10 +175,7 @@
       "fixture": "synthetic/BikeStatusSubscriptionProjection.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -249,7 +240,7 @@
     {
       "id": 4,
       "name": "processing-group-metadata-migration",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. GetAllDwellingsQueryHandler is annotated with @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") and has an @EventHandler method with a @MetaDataValue(\"gameId\") String gameId parameter. Apply the query-handler recipe use-case 04: (1) replace @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") with @Namespace(\"Read_GetAllDwellings_QueryCache\"); add import org.axonframework.messaging.core.annotation.Namespace; remove import org.axonframework.config.ProcessingGroup. (2) replace @MetaDataValue(\"gameId\") with @MetadataValue(\"gameId\"); add import org.axonframework.messaging.core.annotation.MetadataValue; remove import org.axonframework.messaging.annotation.MetaDataValue. (3) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler. (4) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler (this method is being modified). Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `4: processing-group-metadata-migration` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`, `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/namespace-routing.md`, `patterns/30-event-handlers/metadata-value.md`. Reach for `examples/query-handlers/04-handler-processing-group-metadata.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** GetAllDwellingsQueryHandler is annotated with @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") and has an @EventHandler method with a @MetaDataValue(\"gameId\") String gameId parameter. Apply the matching patterns: (1) replace @ProcessingGroup(\"Read_GetAllDwellings_QueryCache\") with @Namespace(\"Read_GetAllDwellings_QueryCache\"); add import org.axonframework.messaging.core.annotation.Namespace; remove import org.axonframework.config.ProcessingGroup. (2) replace @MetaDataValue(\"gameId\") with @MetadataValue(\"gameId\"); add import org.axonframework.messaging.core.annotation.MetadataValue; remove import org.axonframework.messaging.annotation.MetaDataValue. (3) swap @QueryHandler import to org.axonframework.messaging.queryhandling.annotation.QueryHandler. (4) swap @EventHandler import to org.axonframework.messaging.eventhandling.annotation.EventHandler (this method is being modified).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-handler` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "@Namespace replaces @ProcessingGroup; @MetadataValue replaces @MetaDataValue; all imports updated; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/GetAllDwellingsQueryHandler.java"
@@ -267,10 +258,7 @@
       "fixture": "synthetic/GetAllDwellingsQueryHandler.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -341,7 +329,7 @@
     {
       "id": 5,
       "name": "rejected-no-query-handler",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE skip-openrewrite=true`. PaymentDispatchService is a @Service that injects QueryGateway and dispatches queries via queryGateway.query(...) but has NO @QueryHandler annotation. The query-handler recipe's Applicable predicate 4 must reject this class (no @QueryHandler found — suggest query-gateway recipe). The source MUST stay byte-identical — no imports changed, no annotations added. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `5: rejected-no-query-handler` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`. Reach for `examples/query-handlers/10-caller-rejected-no-query-handler.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** PaymentDispatchService is a @Service that injects QueryGateway and dispatches queries via queryGateway.query(...) but has NO @QueryHandler annotation. this file is out of scope for the matching pattern set (Reject) this class (no @QueryHandler found — suggest query-gateway recipe). The source MUST stay byte-identical — no imports changed, no annotations added.\n\nThis eval expects a **Rejected** outcome. The file is out of scope for the `query-handler` pattern set (e.g. a projector when this recipe targets aggregates, an aggregate when this recipe targets sagas). Do not migrate it — record Rejected in the Result block.\n\nThe source must NOT be edited — no patterns from this recipe apply. Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** ⏭️ Rejected`, `**Recipe:** axon4to5-query-handler`, and a `**Notes:**` line explaining why this file is not in scope for the query-handler pattern set.",
       "expected_output": "Pure dispatcher rejected; source untouched; Result: ⏭️ Rejected noting query-gateway as the appropriate recipe.",
       "files": [
         "evals/fixtures/synthetic/PaymentDispatchService.java"
@@ -357,10 +345,7 @@
       "fixture": "synthetic/PaymentDispatchService.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Rejected",

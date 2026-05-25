@@ -8,7 +8,7 @@
     {
       "id": 1,
       "name": "spring-rest-send-with-metadata",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. OrderRestController is a Spring @RestController. It imports AF4 CommandGateway (org.axonframework.commandhandling.gateway.CommandGateway) and returns `commandGateway.send(command, RequestContext.with(userId))` from a `CompletableFuture<Void>` method. Apply the command-gateway recipe: (1) swap the CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway), (2) append .resultAs(Void.class) to the send call so the return type compiles. Field type, constructor, and method signature stay the same. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `1: spring-rest-send-with-metadata` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/command-dispatcher.md`, `patterns/30-event-handlers/command-gateway-top-level.md`. Reach for `examples/command-gateway/01-rest-controller-send-with-metadata.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** OrderRestController is a Spring @RestController. It imports AF4 CommandGateway (org.axonframework.commandhandling.gateway.CommandGateway) and returns `commandGateway.send(command, RequestContext.with(userId))` from a `CompletableFuture<Void>` method. Apply the command-gateway recipe: (1) swap the CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway), (2) append .resultAs(Void.class) to the send call so the return type compiles. Field type, constructor, and method signature stay the same.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-command-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 CommandGateway import; .resultAs(Void.class) appended; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/OrderRestController.java"
@@ -26,10 +26,7 @@
       "fixture": "synthetic/OrderRestController.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -94,7 +91,7 @@
     {
       "id": 2,
       "name": "spring-rest-sendandwait-to-async",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. CapacityRestController is a Spring @RestController. It uses commandGateway.sendAndWait(cmd, ReservationResult.class) in a method returning ReservationResult (blocking). Apply the command-gateway recipe per use-case 02: (1) swap CommandGateway import to AF5, (2) prefer async — upgrade method return type from ReservationResult to CompletableFuture<ReservationResult>, rewrite sendAndWait(cmd, ReservationResult.class) to send(cmd, ReservationResult.class), add import java.util.concurrent.CompletableFuture. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `2: spring-rest-sendandwait-to-async` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/command-dispatcher.md`, `patterns/30-event-handlers/command-gateway-top-level.md`. Reach for `examples/command-gateway/02-rest-controller-sendandwait-to-async.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** CapacityRestController is a Spring @RestController. It uses commandGateway.sendAndWait(cmd, ReservationResult.class) in a method returning ReservationResult (blocking). Apply the matching patterns: (1) swap CommandGateway import to AF5, (2) prefer async — upgrade method return type from ReservationResult to CompletableFuture<ReservationResult>, rewrite sendAndWait(cmd, ReservationResult.class) to send(cmd, ReservationResult.class), add import java.util.concurrent.CompletableFuture.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-command-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 CommandGateway import; method returns CompletableFuture<ReservationResult>; sendAndWait replaced by send(cmd, R.class); CompletableFuture import added; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/CapacityRestController.java"
@@ -113,10 +110,7 @@
       "fixture": "synthetic/CapacityRestController.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -181,7 +175,7 @@
     {
       "id": 3,
       "name": "spring-scheduled-sendandwait-import-only",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. ScheduledOrderProcessor is a @Scheduled void method caller — it cannot accept a CompletableFuture. Apply the command-gateway recipe per use-case 03: import-only change — swap CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway). sendAndWait call, field, constructor, and method body stay byte-identical. Do NOT introduce CompletableFuture or change the method signature. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `3: spring-scheduled-sendandwait-import-only` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/command-dispatcher.md`, `patterns/30-event-handlers/command-gateway-top-level.md`. Reach for `examples/command-gateway/03-scheduler-runner-sendandwait.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** ScheduledOrderProcessor is a @Scheduled void method caller — it cannot accept a CompletableFuture. Apply the matching patterns: import-only change — swap CommandGateway import to AF5 (org.axonframework.messaging.commandhandling.gateway.CommandGateway). sendAndWait call, field, constructor, and method body stay byte-identical. Do NOT introduce CompletableFuture or change the method signature.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-command-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 CommandGateway import; sendAndWait and void method unchanged; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/ScheduledOrderProcessor.java"
@@ -200,10 +194,7 @@
       "fixture": "synthetic/ScheduledOrderProcessor.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -268,7 +259,7 @@
     {
       "id": 4,
       "name": "spring-handler-rejected",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. WhenCreatureRecruitedThenAddToArmyProcessor has an @EventHandler method AND injects CommandGateway as a class-level field. The command-gateway recipe's # Applicable predicate 2 must reject (route to event-processor recipe). The source MUST stay byte-identical — no AF5 CommandGateway import, no @Namespace, no CommandDispatcher. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `4: spring-handler-rejected` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/command-dispatcher.md`. Reach for `examples/command-gateway/05-rejected-handler-class.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** WhenCreatureRecruitedThenAddToArmyProcessor has an @EventHandler method AND injects CommandGateway as a class-level field. this file is out of scope for the matching pattern set (Reject). The source MUST stay byte-identical — no AF5 CommandGateway import, no @Namespace, no CommandDispatcher.\n\nThis eval expects a **Rejected** outcome. The file is out of scope for the `command-gateway` pattern set (e.g. a projector when this recipe targets aggregates, an aggregate when this recipe targets sagas). Do not migrate it — record Rejected in the Result block.\n\nThe source must NOT be edited — no patterns from this recipe apply. Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** ⏭️ Rejected`, `**Recipe:** axon4to5-command-gateway`, and a `**Notes:**` line explaining why this file is not in scope for the command-gateway pattern set.",
       "expected_output": "Event-handler class rejected; source untouched; Result: ⏭️ Rejected with NOTES naming event-processor recipe.",
       "files": [
         "evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java"
@@ -287,10 +278,7 @@
       "fixture": "axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Rejected",

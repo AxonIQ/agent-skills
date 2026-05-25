@@ -8,7 +8,7 @@
     {
       "id": 1,
       "name": "spring-rest-import-only",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingRestController is a Spring @RestController. It imports AF4 QueryGateway (org.axonframework.queryhandling.QueryGateway) and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` — already using the Class<R> overload. Apply the query-gateway recipe: (1) swap the QueryGateway import to AF5 (org.axonframework.messaging.queryhandling.gateway.QueryGateway). Body, field, constructor, return type, and method signature stay identical. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `1: spring-rest-import-only` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`. Reach for `examples/query-handlers/06-caller-rest-controller-import-only.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** DwellingRestController is a Spring @RestController. It imports AF4 QueryGateway (org.axonframework.queryhandling.QueryGateway) and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` — already using the Class<R> overload. Apply the query-gateway recipe: (1) swap the QueryGateway import to AF5 (org.axonframework.messaging.queryhandling.gateway.QueryGateway). Body, field, constructor, return type, and method signature stay identical.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 QueryGateway import; body unchanged; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/DwellingRestController.java"
@@ -26,10 +26,7 @@
       "fixture": "synthetic/DwellingRestController.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -88,7 +85,7 @@
     {
       "id": 2,
       "name": "spring-rest-response-type-removal",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. BikeStatusController is a Spring @RestController. It uses `ResponseTypes.instanceOf(BikeStatus.class)` for a single-response query and `ResponseTypes.multipleInstancesOf(BikeStatus.class)` for a multi-response query. Apply the query-gateway recipe per use-case 03: (1) swap QueryGateway import to AF5, (2) replace ResponseTypes.instanceOf(BikeStatus.class) with BikeStatus.class, (3) replace query(..., ResponseTypes.multipleInstancesOf(BikeStatus.class)) with queryMany(..., BikeStatus.class), (4) remove the ResponseTypes import. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `2: spring-rest-response-type-removal` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`, `patterns/40-query-handlers/query-response-types.md`. Reach for `examples/query-handlers/08-caller-response-type-wrapper-removal.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** BikeStatusController is a Spring @RestController. It uses `ResponseTypes.instanceOf(BikeStatus.class)` for a single-response query and `ResponseTypes.multipleInstancesOf(BikeStatus.class)` for a multi-response query. Apply the matching patterns: (1) swap QueryGateway import to AF5, (2) replace ResponseTypes.instanceOf(BikeStatus.class) with BikeStatus.class, (3) replace query(..., ResponseTypes.multipleInstancesOf(BikeStatus.class)) with queryMany(..., BikeStatus.class), (4) remove the ResponseTypes import.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 QueryGateway import; ResponseTypes wrappers removed; queryMany used for multi-response; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/BikeStatusController.java"
@@ -106,10 +103,7 @@
       "fixture": "synthetic/BikeStatusController.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -174,7 +168,7 @@
     {
       "id": 3,
       "name": "blocking-get-to-async-upgrade",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingsQueryService is a @Component with method `getDwelling(String dwellingId)` that returns `DwellingReadModel` and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class).get()` (bare blocking call). The method is a plain service method with no sync contract constraint. Apply the query-gateway recipe per use-case 02 Path A (preferred): (1) swap QueryGateway import to AF5, (2) change method return type from `DwellingReadModel` to `CompletableFuture<DwellingReadModel>`, (3) simplify the body to `return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` (no .get(), no try-catch), (4) add `import java.util.concurrent.CompletableFuture`. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `3: blocking-get-to-async-upgrade` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`. Reach for `examples/query-handlers/07-caller-blocking-get-to-async.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** DwellingsQueryService is a @Component with method `getDwelling(String dwellingId)` that returns `DwellingReadModel` and calls `queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class).get()` (bare blocking call). The method is a plain service method with no sync contract constraint. Apply the matching patterns: Path A (preferred): (1) swap QueryGateway import to AF5, (2) change method return type from `DwellingReadModel` to `CompletableFuture<DwellingReadModel>`, (3) simplify the body to `return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class)` (no .get(), no try-catch), (4) add `import java.util.concurrent.CompletableFuture`.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-query-gateway` and a `**Notes:**` line summarising what was changed.",
       "expected_output": "AF5 QueryGateway import; method return type upgraded to CompletableFuture<DwellingReadModel>; body returns future directly; no .get(); CompletableFuture import added; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/DwellingsQueryService.java"
@@ -192,10 +186,7 @@
       "fixture": "synthetic/DwellingsQueryService.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -254,7 +245,7 @@
     {
       "id": 4,
       "name": "spring-handler-rejected",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. QueryGatewayInHandlerClass has an @EventHandler method AND injects QueryGateway as a class-level field. The query-gateway recipe's Applicable predicate 2 must reject (route to event-processor recipe). The source MUST stay byte-identical — no AF5 QueryGateway import, no changes to @ProcessingGroup, no changes to @EventHandler. Copy the Result block to $WORKSPACE/result.md.",
+      "prompt": "You are running eval `4: spring-handler-rejected` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/40-query-handlers/query-handler.md`. Reach for `examples/query-handlers/10-caller-rejected-no-query-handler.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** QueryGatewayInHandlerClass has an @EventHandler method AND injects QueryGateway as a class-level field. this file is out of scope for the matching pattern set (Reject). The source MUST stay byte-identical — no AF5 QueryGateway import, no changes to @ProcessingGroup, no changes to @EventHandler.\n\nThis eval expects a **Rejected** outcome. The file is out of scope for the `query-gateway` pattern set (e.g. a projector when this recipe targets aggregates, an aggregate when this recipe targets sagas). Do not migrate it — record Rejected in the Result block.\n\nThe source must NOT be edited — no patterns from this recipe apply. Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** ⏭️ Rejected`, `**Recipe:** axon4to5-query-gateway`, and a `**Notes:**` line explaining why this file is not in scope for the query-gateway pattern set.",
       "expected_output": "Handler class rejected; source untouched; Result: ⏭️ Rejected with NOTES naming event-processor recipe.",
       "files": [
         "evals/fixtures/synthetic/QueryGatewayInHandlerClass.java"
@@ -271,10 +262,7 @@
       "fixture": "synthetic/QueryGatewayInHandlerClass.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Rejected",

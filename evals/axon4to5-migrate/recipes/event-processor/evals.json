@@ -2,14 +2,14 @@
   "skill_name": "axon4to5-migrate",
   "recipe_under_test": "event-processor",
   "mode_under_test": "single",
-  "notes": "Each eval drives the axon4to5-migrate Skill with the event-processor recipe in single mode. Coverage: pure projector (Path A), projector-with-command-dispatch (CommandGateway \u2192 CommandDispatcher), YAML+@Bean SequencingPolicy \u2192 class-level annotation, EventProcessorDefinition (Spring Path A) wiring, MessagingConfigurer.eventProcessing(...) (native Path B) wiring, custom SequencingPolicy class rewrite, dual-role @EventHandler + @QueryHandler, Rejected (aggregate). Fixtures live in evals/fixtures/ (heroes/, gamerental/, synthetic/) and are shared with the aggregate recipe where applicable.",
+  "notes": "Each eval drives the axon4to5-migrate Skill with the event-processor recipe in single mode. Coverage: pure projector (Path A), projector-with-command-dispatch (CommandGateway → CommandDispatcher), YAML+@Bean SequencingPolicy → class-level annotation, EventProcessorDefinition (Spring Path A) wiring, MessagingConfigurer.eventProcessing(...) (native Path B) wiring, custom SequencingPolicy class rewrite, dual-role @EventHandler + @QueryHandler, Rejected (aggregate). Fixtures live in evals/fixtures/ (heroes/, gamerental/, synthetic/) and are shared with the aggregate recipe where applicable.",
   "fixtures_root": "evals/fixtures",
   "evals": [
     {
       "id": 1,
       "name": "spring-axoniq-pure-projector",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. DwellingReadModelProjector is a pure read-model projector (@ProcessingGroup + @EventHandler + @ResetHandler, no CommandGateway field, no in-handler dispatch). Apply the event-processor recipe: @ProcessingGroup \u2192 @Namespace (same string), AF5 imports for @EventHandler / @ResetHandler / @MetadataValue, plus class-level @SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY) because the project's GameConfiguration had a @Bean SequencingPolicy gameIdSequencingPolicy reading the same metadata key. Do NOT introduce CommandDispatcher (pure projection). Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "Source rewritten to AF5: @Namespace, AF5 imports, @SequencingPolicy applied; Result: \u2705 Success.",
+      "prompt": "You are running eval `1: spring-axoniq-pure-projector` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/namespace-routing.md`, `patterns/30-event-handlers/sequencing-policy.md`, `patterns/30-event-handlers/metadata-type.md`, `patterns/30-event-handlers/metadata-value.md`. Reach for `examples/event-handlers/01-pure-projector-spring.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** DwellingReadModelProjector is a pure read-model projector (@ProcessingGroup + @EventHandler + @ResetHandler, no CommandGateway field, no in-handler dispatch). Apply the event-processor recipe: @ProcessingGroup → @Namespace (same string), AF5 imports for @EventHandler / @ResetHandler / @MetadataValue, plus class-level @SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY) because the project's GameConfiguration had a @Bean SequencingPolicy gameIdSequencingPolicy reading the same metadata key. Do NOT introduce CommandDispatcher (pure projection).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Source rewritten to AF5: @Namespace, AF5 imports, @SequencingPolicy applied; Result: ✅ Success.",
       "files": [
         "evals/fixtures/axon4/heroes/DwellingReadModelProjector.java"
       ],
@@ -31,10 +31,7 @@
       "fixture": "axon4/heroes/DwellingReadModelProjector.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -139,7 +136,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -153,8 +150,8 @@
     {
       "id": 2,
       "name": "spring-axoniq-projector-with-command-dispatch",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. WhenCreatureRecruitedThenAddToArmyProcessor is an automation that listens to CreatureRecruited events and dispatches commands. It injects CommandGateway as a class-level field and calls sendAndWait inside the handler, with a try/catch for compensation. Apply the event-processor recipe per use-case 02: rewrite the CommandGateway field \u2192 CommandDispatcher method parameter; sendAndWait \u2192 async send(...).getResultMessage() chain; try/catch \u2192 .exceptionallyCompose(...); handler return type \u2192 CompletableFuture<? extends Message> (NOT CompletableFuture<? extends Message<?>> \u2014 AF5 Message is non-generic). Also: @ProcessingGroup \u2192 @Namespace, @DisallowReplay AF5 import, @MetaDataValue \u2192 @MetadataValue, and class-level @SequencingPolicy(MetadataSequencingPolicy with GameMetaData.GAME_ID_KEY). Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "CommandGateway field \u2192 CommandDispatcher param; async chain; AF5 annotations; Result: \u2705 Success.",
+      "prompt": "You are running eval `2: spring-axoniq-projector-with-command-dispatch` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/namespace-routing.md`, `patterns/30-event-handlers/sequencing-policy.md`, `patterns/30-event-handlers/metadata-type.md`, `patterns/30-event-handlers/metadata-value.md`, `patterns/30-event-handlers/command-dispatcher.md`. Reach for `examples/event-handlers/02-projector-with-command-dispatch.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** WhenCreatureRecruitedThenAddToArmyProcessor is an automation that listens to CreatureRecruited events and dispatches commands. It injects CommandGateway as a class-level field and calls sendAndWait inside the handler, with a try/catch for compensation. Apply the matching patterns: rewrite the CommandGateway field → CommandDispatcher method parameter; sendAndWait → async send(...).getResultMessage() chain; try/catch → .exceptionallyCompose(...); handler return type → CompletableFuture<? extends Message> (NOT CompletableFuture<? extends Message<?>> — AF5 Message is non-generic). Also: @ProcessingGroup → @Namespace, @DisallowReplay AF5 import, @MetaDataValue → @MetadataValue, and class-level @SequencingPolicy(MetadataSequencingPolicy with GameMetaData.GAME_ID_KEY).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "CommandGateway field → CommandDispatcher param; async chain; AF5 annotations; Result: ✅ Success.",
       "files": [
         "evals/fixtures/axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java"
       ],
@@ -176,10 +173,7 @@
       "fixture": "axon4/heroes/WhenCreatureRecruitedThenAddToArmyProcessor.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -303,12 +297,12 @@
           "target": "source",
           "type": "grep_forbid",
           "pattern": "Message<?>",
-          "text": "AF5 Message is non-generic \u2014 Message<?> must not appear"
+          "text": "AF5 Message is non-generic — Message<?> must not appear"
         },
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -322,8 +316,8 @@
     {
       "id": 3,
       "name": "spring-axoniq-yaml-sequencing-policy-move",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. The source is application.yaml. Per use-case 03: delete every `sequencing-policy:` key under `axon.eventhandling.processors.<group>.` (it moves to class-level @SequencingPolicy on each projector \u2014 out of THIS eval's scope); rename `axon.serializer.*` \u2192 `axon.converter.*`; rewrite `mode: tracking` \u2192 `mode: pooled` (AF5 has no TrackingEventProcessor). Preserve every other key byte-for-byte. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "YAML mode tracking \u2192 pooled, serializer \u2192 converter, sequencing-policy keys removed; Result: \u2705 Success.",
+      "prompt": "You are running eval `3: spring-axoniq-yaml-sequencing-policy-move` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/10-dependencies/serializer-to-converter.md`, `patterns/30-event-handlers/sequencing-policy.md`. Reach for `examples/event-handlers/03-yaml-to-sequencing-policy.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** The source is application.yaml. Per the matching pattern(s): delete every `sequencing-policy:` key under `axon.eventhandling.processors.<group>.` (it moves to class-level @SequencingPolicy on each projector — out of THIS eval's scope); rename `axon.serializer.*` → `axon.converter.*`; rewrite `mode: tracking` → `mode: pooled` (AF5 has no TrackingEventProcessor). Preserve every other key byte-for-byte.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "YAML mode tracking → pooled, serializer → converter, sequencing-policy keys removed; Result: ✅ Success.",
       "files": [
         "evals/fixtures/axon4/heroes/application.yaml"
       ],
@@ -339,10 +333,7 @@
       "fixture": "axon4/heroes/application.yaml",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -381,7 +372,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -395,8 +386,8 @@
     {
       "id": 4,
       "name": "spring-axoniq-event-processor-definition",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. AxonProcessorConfigSpring.java has an AF4 @Bean ConfigurerModule wiring a pooled streaming processor + handler matcher + customisation. Per use-case 04: replace the @Bean ConfigurerModule with @Bean EventProcessorDefinition (import org.axonframework.extension.spring.config.EventProcessorDefinition) using the fluent builder .pooledStreaming(\"ReadModel_Dwelling\").assigningHandlers(...).customized(...). Delete the AF4 ConfigurerModule/EventProcessingConfigurer imports. The @Bean method name is free choice; the AF4 method is named configureProjectors. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "AF4 @Bean ConfigurerModule replaced by @Bean EventProcessorDefinition fluent builder; Result: \u2705 Success.",
+      "prompt": "You are running eval `4: spring-axoniq-event-processor-definition` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/sequencing-policy.md`. Reach for `examples/event-handlers/04-event-processor-definition-spring.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** AxonProcessorConfigSpring.java has an AF4 @Bean ConfigurerModule wiring a pooled streaming processor + handler matcher + customisation. Per the matching pattern(s): replace the @Bean ConfigurerModule with @Bean EventProcessorDefinition (import org.axonframework.extension.spring.config.EventProcessorDefinition) using the fluent builder .pooledStreaming(\"ReadModel_Dwelling\").assigningHandlers(...).customized(...). Delete the AF4 ConfigurerModule/EventProcessingConfigurer imports. The @Bean method name is free choice; the AF4 method is named configureProjectors.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "AF4 @Bean ConfigurerModule replaced by @Bean EventProcessorDefinition fluent builder; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/AxonProcessorConfigSpring.java"
       ],
@@ -416,10 +407,7 @@
       "fixture": "synthetic/AxonProcessorConfigSpring.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -488,7 +476,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -502,8 +490,8 @@
     {
       "id": 5,
       "name": "native-axoniq-messaging-configurer-event-processing",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=native mode=single source=$SOURCE`. AxonProcessorConfigNative.java has an AF4 main()-based bootstrap calling configurer.eventProcessing().registerPooledStreamingEventProcessor(...). Per use-case 05: replace the AF4 chain with EventSourcingConfigurer.create().messaging(messaging -> messaging.eventProcessing(eventProcessing -> eventProcessing.pooledStreaming(pooledStreaming -> pooledStreaming.processor(\"ReadModel_Dwelling\", module -> module.eventHandlingComponents(components -> components.autodetected(cfg -> new DwellingReadModelProjector(...))).customized((cfg, conf) -> conf.batchSize(100).initialSegmentCount(8)))))). Add MessagingConfigurer / EventSourcingConfigurer imports. Drop AF4 DefaultConfigurer / EventProcessingConfigurer / Configurer imports. Do NOT introduce the Spring-only EventProcessorDefinition. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "AF4 EventProcessingConfigurer chain replaced by fluent MessagingConfigurer.eventProcessing(...); Result: \u2705 Success.",
+      "prompt": "You are running eval `5: native-axoniq-messaging-configurer-event-processing` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=native`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/sequencing-policy.md`. Reach for `examples/event-handlers/05-native-configurer-event-processing.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** AxonProcessorConfigNative.java has an AF4 main()-based bootstrap calling configurer.eventProcessing().registerPooledStreamingEventProcessor(...). Per the matching pattern(s): replace the AF4 chain with EventSourcingConfigurer.create().messaging(messaging -> messaging.eventProcessing(eventProcessing -> eventProcessing.pooledStreaming(pooledStreaming -> pooledStreaming.processor(\"ReadModel_Dwelling\", module -> module.eventHandlingComponents(components -> components.autodetected(cfg -> new DwellingReadModelProjector(...))).customized((cfg, conf) -> conf.batchSize(100).initialSegmentCount(8)))))). Add MessagingConfigurer / EventSourcingConfigurer imports. Drop AF4 DefaultConfigurer / EventProcessingConfigurer / Configurer imports. Do NOT introduce the Spring-only EventProcessorDefinition.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "AF4 EventProcessingConfigurer chain replaced by fluent MessagingConfigurer.eventProcessing(...); Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/AxonProcessorConfigNative.java"
       ],
@@ -522,10 +510,7 @@
       "fixture": "synthetic/AxonProcessorConfigNative.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "native",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -597,7 +582,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -611,8 +596,8 @@
     {
       "id": 6,
       "name": "spring-axoniq-custom-sequencing-policy-rewrite",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. TenantAndGameSequencingPolicy.java is a custom AF4 SequencingPolicy<EventMessage<?>> reading two metadata keys. Per use-case 06: swap interface to org.axonframework.messaging.core.sequencing.SequencingPolicy (no generic parameter); rename method getSequenceIdentifierFor \u2192 sequenceIdentifierFor; add ProcessingContext context parameter; return type Object \u2192 Optional<Object>; replace return null with Optional.empty() and bare returns with Optional.of(...); replace event.getMetaData() with message.metaData(); rename EventMessage import to AF5 location. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "Custom SequencingPolicy rewritten to AF5 signature + Optional wrapping + AF5 imports; Result: \u2705 Success.",
+      "prompt": "You are running eval `6: spring-axoniq-custom-sequencing-policy-rewrite` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/sequencing-policy.md`, `patterns/30-event-handlers/message-accessors.md`. Reach for `examples/event-handlers/06-custom-sequencing-policy-rewrite.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** TenantAndGameSequencingPolicy.java is a custom AF4 SequencingPolicy<EventMessage<?>> reading two metadata keys. Per the matching pattern(s): swap interface to org.axonframework.messaging.core.sequencing.SequencingPolicy (no generic parameter); rename method getSequenceIdentifierFor → sequenceIdentifierFor; add ProcessingContext context parameter; return type Object → Optional<Object>; replace return null with Optional.empty() and bare returns with Optional.of(...); replace event.getMetaData() with message.metaData(); rename EventMessage import to AF5 location.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Custom SequencingPolicy rewritten to AF5 signature + Optional wrapping + AF5 imports; Result: ✅ Success.",
       "files": [
         "evals/fixtures/synthetic/TenantAndGameSequencingPolicy.java"
       ],
@@ -635,10 +620,7 @@
       "fixture": "synthetic/TenantAndGameSequencingPolicy.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -731,7 +713,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -745,8 +727,8 @@
     {
       "id": 7,
       "name": "spring-axoniq-dual-role-event-and-query",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. GetAllDwellingsQueryHandler has BOTH @QueryHandler AND @EventHandler methods on the same class \u2014 dual-role per use-case 07. Apply: @ProcessingGroup \u2192 @Namespace (preserve string), @SequencingPolicy(MetadataSequencingPolicy with GameMetaData.GAME_ID_KEY) at class level, AF5 @EventHandler / @QueryHandler imports (both must move \u2014 keep the file internally consistent), @MetaDataValue \u2192 @MetadataValue on every method (query AND event), preserve @Component. Do NOT touch method bodies, return types, or ResponseType. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "Both @QueryHandler + @EventHandler imports moved; @Namespace + @SequencingPolicy applied; Result: \u2705 Success.",
+      "prompt": "You are running eval `7: spring-axoniq-dual-role-event-and-query` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`, `patterns/30-event-handlers/namespace-routing.md`, `patterns/30-event-handlers/sequencing-policy.md`, `patterns/30-event-handlers/metadata-value.md`, `patterns/40-query-handlers/query-handler.md`. Reach for `examples/event-handlers/07-dual-role-event-and-query-handler.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** GetAllDwellingsQueryHandler has BOTH @QueryHandler AND @EventHandler methods on the same class — dual-role Per the matching pattern(s): . Apply: @ProcessingGroup → @Namespace (preserve string), @SequencingPolicy(MetadataSequencingPolicy with GameMetaData.GAME_ID_KEY) at class level, AF5 @EventHandler / @QueryHandler imports (both must move — keep the file internally consistent), @MetaDataValue → @MetadataValue on every method (query AND event), preserve @Component. Do NOT touch method bodies, return types, or ResponseType.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "Both @QueryHandler + @EventHandler imports moved; @Namespace + @SequencingPolicy applied; Result: ✅ Success.",
       "files": [
         "evals/fixtures/axon4/heroes/GetAllDwellingsQueryHandler.java"
       ],
@@ -769,10 +751,7 @@
       "fixture": "axon4/heroes/GetAllDwellingsQueryHandler.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Success",
@@ -865,7 +844,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u2705 Success",
+          "pattern": "Result:** ✅ Success",
           "text": "Result block marks Success"
         },
         {
@@ -879,13 +858,13 @@
     {
       "id": 8,
       "name": "spring-axoniq-aggregate-rejected",
-      "prompt": "Invoke axon4to5-migrate at $SKILL_DIR with `framework=axoniq configuration=spring mode=single source=$SOURCE`. Calendar.java is an event-sourced aggregate (@Aggregate + @EventSourcingHandler). The event-processor recipe's # Applicable predicate 2 must reject (route to aggregate recipe). The source MUST stay byte-identical \u2014 no @Namespace, no @EventHandler import, no @EntityCreator. Copy the Result block to $WORKSPACE/result.md.",
-      "expected_output": "Aggregate rejected; source untouched; Result: \u23ed\ufe0f Rejected with NOTES naming aggregate recipe.",
+      "prompt": "You are running eval `8: spring-axoniq-aggregate-rejected` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The patterns this eval exercises are: `patterns/30-event-handlers/event-handler-annotation.md`. Reach for `examples/event-handlers/08-rejected-aggregate.md` when you need a full before/after walkthrough.\n\n**Eval-specific guidance:** Calendar.java is an event-sourced aggregate (@Aggregate + @EventSourcingHandler). this file is out of scope for the matching pattern set (Reject). The source MUST stay byte-identical — no @Namespace, no @EventHandler import, no @EntityCreator.\n\nThis eval expects a **Rejected** outcome. The file is out of scope for the `event-processor` pattern set (e.g. a projector when this recipe targets aggregates, an aggregate when this recipe targets sagas). Do not migrate it — record Rejected in the Result block.\n\nThe source must NOT be edited — no patterns from this recipe apply. Write the `**Result:**` block to `$WORKSPACE/outputs/result.md` with `**Result:** ⏭️ Rejected`, `**Recipe:** axon4to5-event-processor`, and a `**Notes:**` line explaining why this file is not in scope for the event-processor pattern set.",
+      "expected_output": "Aggregate rejected; source untouched; Result: ⏭️ Rejected with NOTES naming aggregate recipe.",
       "files": [
         "evals/fixtures/axon4/heroes/Calendar.java"
       ],
       "expectations": [
-        "Result block marks Rejected (\u23ed\ufe0f)",
+        "Result block marks Rejected (⏭️)",
         "Notes name `aggregate` as the failed predicate / target recipe",
         "Source untouched: @Aggregate still present",
         "No @Namespace added",
@@ -897,10 +876,7 @@
       "fixture": "axon4/heroes/Calendar.java",
       "secondary_fixtures": [],
       "skill_args": {
-        "framework": "axoniq",
         "configuration": "spring",
-        "mode": "single",
-        "source": "$SOURCE",
         "skip-openrewrite": "true"
       },
       "expected_result": "Rejected",
@@ -909,7 +885,7 @@
         {
           "target": "result",
           "type": "result_block_contains",
-          "pattern": "Result:** \u23ed",
+          "pattern": "Result:** ⏭",
           "text": "Rejected emoji"
         },
         {
