@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-019 — Reconcile evals with flat-pattern skill design
-**Next action:** Start IMP-016: Eval coverage for the 5 new patterns (now unblocked).
-**Current session commit:** IMP-001..015, 017, 018 committed; IMP-019 pending
+**Last completed:** IMP-016 — Eval coverage for new patterns
+**Next action:** Backlog empty. Run another discovery pass when ready.
+**Current session commit:** IMP-001..015, 017..019 committed; IMP-016 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -36,9 +36,9 @@ session-count: 1
 | IMP-013 | Renumber duplicate examples in query-handlers/ | done | Renamed 10 files into a single sequential `01-handler-…05-handler-…06-caller-…10-caller-…` scheme; H1 numbers in 5 caller files updated to match. |
 | IMP-014 | Cross-link patterns ↔ examples/java/ | done | 11 patterns gained a "Reference source:" line pointing at the matching `examples/java/af5/.../*.java` file. |
 | IMP-015 | Move OR coverage table out of SKILL.md | done | 32-row table moved to `references/openrewrite-coverage.md`; SKILL.md slimmed to 265 lines (was 297). |
-| IMP-016 | Eval coverage for new patterns (unblocked) | pending | See row below for current state. |
+| IMP-016 | Eval coverage for new patterns (unblocked) | obsolete-row | See below for live row. |
 | IMP-019 | Reconcile evals with flat-pattern skill design | done | 49 evals across 8 recipes had `prompt` + `skill_args` rewritten to drive the flat-pattern SKILL.md. `skill_args` now `{configuration, skip-openrewrite}`. RUN_EVALS_PROMPT.md + skill CLAUDE.md updated. Smoke-tested `run.py prep`. |
-| IMP-016 | Eval coverage for new patterns | pending | Unblocked now that IMP-019 is done. Add eval entries for `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`, `command-gateway-top-level`. |
+| IMP-016 | Eval coverage for new patterns | done | 3 new evals + fixtures: event-store/5 serializer-to-converter, aggregate/32 command-annotation, event-processor/9 event-bus-to-sink. query-response-types covered by query-gateway/2; command-gateway-top-level covered by command-gateway/2. Prep smoke-tested. |
 | IMP-017 | Pattern Notes formatting consistency | done | 3/32 patterns normalised (29 already compliant); stray "## Notes (continued)" headers folded into single Notes section; OR-status + Reference-source bullets land at tail. |
 | IMP-018 | `make check-attribution` target | done | New `make check-attribution` target uses `scripts/forbidden-names.txt` as a regex list; wired into `make check` so CI catches regressions. |
 
@@ -65,3 +65,4 @@ session-count: 1
 - IMP-017 done: Notes sections normalised (29/32 already compliant); 3 patterns lost stray "## Notes (continued)" headers and ended up with OpenRewrite status + Reference source bullets at the tail.
 - IMP-016 blocked, IMP-019 seeded: eval infrastructure targets an older recipe-driven SKILL.md ("invoke the orchestrator with `mode=single source=…`"). Adding evals for the 5 new patterns needs eval prompts/infra rewritten to drive the current flat-phase design first (IMP-019). Marking IMP-016 blocked rather than authoring evals against a design mismatch.
 - IMP-019 done: 49 evals across 8 recipes rewritten — `prompt` body re-templated to load SKILL.md + ALL_IN_ONE.md, skip Step 1/Step 2.5, cite specific pattern files; `skill_args` reduced to `{configuration, skip-openrewrite}`. RUN_EVALS_PROMPT.md + skill CLAUDE.md aligned. Smoke-tested `run.py prep` for aggregate eval 1. IMP-016 now unblocked.
+- IMP-016 done: 3 new evals + fixtures — `event-store/5 spring-axoniq-serializer-to-converter` (SerializerConfig.java), `aggregate/32 spring-axoniq-command-annotation` (ShipOrderCommand.java), `event-processor/9 spring-axoniq-event-bus-to-sink` (ExternalEventPublisher.java). query-response-types and command-gateway-top-level already covered by existing query-gateway/2 and command-gateway/2 evals.

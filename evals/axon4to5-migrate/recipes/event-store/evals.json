@@ -300,6 +300,83 @@
           "text": "No AF5 Axon Server engine added (source untouched)"
         }
       ]
+    },
+    {
+      "id": 5,
+      "name": "spring-axoniq-serializer-to-converter",
+      "prompt": "You are running eval `5: spring-axoniq-serializer-to-converter` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The pattern this eval exercises is: `patterns/10-dependencies/serializer-to-converter.md`.\n\n**Eval-specific guidance:** `SerializerConfig.java` is an AF4 Spring `@Configuration` class exposing a Jackson-backed `Serializer` `@Bean`. Apply the serializer-to-converter pattern: (1) rewrite the import `org.axonframework.serialization.Serializer` → `org.axonframework.conversion.Converter`; (2) rewrite the import `org.axonframework.serialization.json.JacksonSerializer` → `org.axonframework.conversion.json.JacksonConverter`; (3) change the `@Bean` method return type to `Converter` and rewrite `JacksonSerializer.builder()` to `JacksonConverter.builder()`; (4) rename the bean method `serializer` → `converter` (conventional, matches the new SPI); (5) update any internal references (parameter types, helper methods) so no AF4 `Serializer` type remains. Do NOT migrate the `Configurer` import — that is out of scope for this eval (treat its presence as a secondary concern; if you remove the helper method, that is fine, but the assertions only check the serializer/converter SPI rename).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-store` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "SerializerConfig.java rewritten: Serializer SPI renamed to Converter under org.axonframework.conversion; JacksonSerializer.builder() → JacksonConverter.builder(); imports updated; bean method renamed to converter(); Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/SerializerConfig.java"
+      ],
+      "expectations": [
+        "AF5 Converter import (org.axonframework.conversion.Converter) present",
+        "AF5 JacksonConverter import (org.axonframework.conversion.json.JacksonConverter) present",
+        "JacksonConverter.builder() call present",
+        "No AF4 JacksonSerializer references",
+        "No AF4 org.axonframework.serialization.json.JacksonSerializer import",
+        "No AF4 org.axonframework.serialization.Serializer import",
+        "Result block marks Success with axon4to5-event-store"
+      ],
+      "category": "serializer-config-rename",
+      "fixture": "synthetic/SerializerConfig.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "configuration": "spring",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.conversion.Converter",
+          "text": "AF5 Converter import present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.conversion.json.JacksonConverter",
+          "text": "AF5 JacksonConverter import present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "JacksonConverter.builder",
+          "text": "JacksonConverter.builder() call present"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.serialization.json.JacksonSerializer",
+          "text": "AF4 JacksonSerializer import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.serialization.Serializer",
+          "text": "AF4 Serializer import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "JacksonSerializer.builder",
+          "text": "AF4 JacksonSerializer.builder() call removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-store",
+          "text": "Recipe identifier present"
+        }
+      ]
     }
   ]
 }

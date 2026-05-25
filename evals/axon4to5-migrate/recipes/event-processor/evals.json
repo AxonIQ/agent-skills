@@ -931,6 +931,76 @@
           "text": "No @EntityCreator added (aggregate recipe's territory)"
         }
       ]
+    },
+    {
+      "id": 9,
+      "name": "spring-axoniq-event-bus-to-sink",
+      "prompt": "You are running eval `9: spring-axoniq-event-bus-to-sink` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The pattern this eval exercises is: `patterns/30-event-handlers/event-bus-to-sink.md`.\n\n**Eval-specific guidance:** `ExternalEventPublisher.java` is an AF4 Spring `@RestController` that publishes events to the framework from outside any aggregate, via a constructor-injected `EventBus` field. Apply the event-bus-to-sink pattern: (1) rewrite the import `org.axonframework.eventhandling.EventBus` → `org.axonframework.messaging.eventhandling.EventSink`; (2) also rewrite the import `org.axonframework.eventhandling.GenericEventMessage` → `org.axonframework.messaging.eventhandling.GenericEventMessage`; (3) change the field type and constructor parameter type from `EventBus` to `EventSink`; (4) rename the field/parameter `eventBus` → `eventSink` (conventional, matches the new SPI); (5) rewrite the call site `eventBus.publish(...)` → `eventSink.publish(...)` — the `publish` method shape is unchanged. No AF4 `EventBus` type reference may remain.\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-event-processor` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "ExternalEventPublisher.java rewritten: EventBus renamed to EventSink under org.axonframework.messaging.eventhandling; field/parameter renamed eventBus → eventSink; call site updated to eventSink.publish(...); AF4 imports removed; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/ExternalEventPublisher.java"
+      ],
+      "expectations": [
+        "AF5 EventSink import (org.axonframework.messaging.eventhandling.EventSink) present",
+        "EventSink type reference present",
+        "eventSink.publish(...) call site present",
+        "No AF4 EventBus type reference",
+        "No AF4 org.axonframework.eventhandling.EventBus import",
+        "Result block marks Success with axon4to5-event-processor"
+      ],
+      "category": "event-bus-rename",
+      "fixture": "synthetic/ExternalEventPublisher.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "configuration": "spring",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.eventhandling.EventSink",
+          "text": "AF5 EventSink import present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "EventSink",
+          "text": "EventSink type reference present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "eventSink.publish",
+          "text": "publish call rewired to eventSink"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.eventhandling.EventBus",
+          "text": "AF4 EventBus import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "EventBus",
+          "text": "AF4 EventBus type reference removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-event-processor",
+          "text": "Recipe identifier present"
+        }
+      ]
     }
   ]
 }

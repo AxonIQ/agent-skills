@@ -1493,6 +1493,90 @@
           "text": "Recipe identifier present"
         }
       ]
+    },
+    {
+      "id": 32,
+      "name": "spring-axoniq-command-annotation",
+      "prompt": "You are running eval `32: spring-axoniq-command-annotation` for the `axon4to5-migrate` Skill. The Skill lives at `$SKILL_DIR`. Load `$SKILL_DIR/SKILL.md`, `$SKILL_DIR/patterns/ALL_IN_ONE.md`, and (if you need fuller before/after walkthroughs) `$SKILL_DIR/examples/ALL_EXAMPLES.md`.\n\n**Skip SKILL.md Step 1** (the Q1/Q2/Q3 AskUserQuestion prompts) — pin these answers directly: `configuration=spring`, Migration approach **B (AI only)**, `skip-openrewrite=true` (the harness has no Maven/Gradle project and you cannot invoke another Skill recursively). **Skip Step 2.5** progress tracking — there is no project root, just a single workspace directory.\n\nThe migration target is the file at `$SOURCE`. Its parent directory `$WORKSPACE/outputs/` is the working directory; treat any `secondary_fixtures` siblings already staged there as additional in-scope files. Migrate every target file IN PLACE.\n\n**Identify the AF4 shapes in `$SOURCE` against `patterns/ALL_IN_ONE.md`** and apply the matching pattern(s). The pattern this eval exercises is: `patterns/20-aggregates/command-annotation.md`.\n\n**Eval-specific guidance:** `ShipOrderCommand.java` is an AF4 command payload (`record`) with two routing-relevant field annotations: `@TargetAggregateIdentifier String orderId` and `@RoutingKey String warehouseId`. Apply the command-annotation pattern: (1) add `@Command(routingKey = \"warehouseId\")` at the class level (import `org.axonframework.messaging.commandhandling.annotation.Command`); (2) REMOVE the field-level `@TargetAggregateIdentifier` and `@RoutingKey` annotations; (3) REMOVE the AF4 imports `org.axonframework.modelling.command.TargetAggregateIdentifier` and `org.axonframework.commandhandling.RoutingKey`. The AF5 routing-key attribute references the field name as a string (`\"warehouseId\"`).\n\nWrite the `**Result:**` block (per SKILL.md Step 4d) to `$WORKSPACE/outputs/result.md`. Required format: `**Result:** ✅ Success`, followed by `**Recipe:** axon4to5-aggregate` and a `**Notes:**` line summarising what was changed.",
+      "expected_output": "ShipOrderCommand.java rewritten: @Command(routingKey = \"warehouseId\") added at the class level; @TargetAggregateIdentifier and @RoutingKey field annotations removed; AF4 imports removed; AF5 Command import added; Result: ✅ Success.",
+      "files": [
+        "evals/fixtures/synthetic/ShipOrderCommand.java"
+      ],
+      "expectations": [
+        "AF5 @Command annotation present",
+        "AF5 Command import (org.axonframework.messaging.commandhandling.annotation.Command) present",
+        "routingKey = \"warehouseId\" attribute on @Command",
+        "No @TargetAggregateIdentifier field annotation",
+        "No @RoutingKey field annotation",
+        "No AF4 TargetAggregateIdentifier import",
+        "No AF4 RoutingKey import",
+        "Result block marks Success with axon4to5-aggregate"
+      ],
+      "category": "command-class-annotation",
+      "fixture": "synthetic/ShipOrderCommand.java",
+      "secondary_fixtures": [],
+      "skill_args": {
+        "configuration": "spring",
+        "skip-openrewrite": "true"
+      },
+      "expected_result": "Success",
+      "expected_blocker": null,
+      "assertions": [
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "@Command",
+          "text": "AF5 @Command annotation present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "org.axonframework.messaging.commandhandling.annotation.Command",
+          "text": "AF5 Command import present"
+        },
+        {
+          "target": "source",
+          "type": "grep_require",
+          "pattern": "routingKey = \"warehouseId\"",
+          "text": "routingKey attribute references the warehouseId field by name"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@TargetAggregateIdentifier",
+          "text": "AF4 @TargetAggregateIdentifier annotation removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "@RoutingKey",
+          "text": "AF4 @RoutingKey field annotation removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.modelling.command.TargetAggregateIdentifier",
+          "text": "AF4 TargetAggregateIdentifier import removed"
+        },
+        {
+          "target": "source",
+          "type": "grep_forbid",
+          "pattern": "org.axonframework.commandhandling.RoutingKey",
+          "text": "AF4 RoutingKey import removed"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "Result:** ✅ Success",
+          "text": "Result block marks Success"
+        },
+        {
+          "target": "result",
+          "type": "result_block_contains",
+          "pattern": "axon4to5-aggregate",
+          "text": "Recipe identifier present"
+        }
+      ]
     }
   ]
 }
