@@ -5,23 +5,23 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** none yet
-**Next action:** Start IMP-001: Compile-error-driven validation
-**Current session commit:** not yet
+**Last completed:** IMP-001 — Compile-error-driven validation
+**Next action:** Start IMP-002: Idempotent patterns
+**Current session commit:** pending IMP-001 commit
 **Blocked items:** none
 
 ## Pinned Decisions
 
 | Question | Answer | Rationale |
 |----------|--------|-----------|
-| Camunda mentions in skill files | Forbidden | CLAUDE.md hard rule |
+| External-tool attribution in skill files | Forbidden | CLAUDE.md hard rule — no foreign-product names in skill content |
 | ALL_IN_ONE.md / ALL_EXAMPLES.md edits | Generator only | Hand edits will be overwritten |
 
 ## Backlog
 
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
-| IMP-001 | Compile-error-driven validation | in_progress | |
+| IMP-001 | Compile-error-driven validation | done | Step 4 rewritten: compile is definition-of-done; grep demoted to 4b audit; behaviour rule added. |
 | IMP-002 | Idempotent patterns | pending | |
 | IMP-003 | Script parity / Makefile | pending | |
 | IMP-004 | OpenRewrite coverage mapping | pending | |
@@ -38,3 +38,4 @@ session-count: 1
 
 ### Session 1 — 2026-05-25
 - Initialized progress file and backlog.
+- IMP-001 done: SKILL.md Step 4 rewritten — compile-driven validation; grep demoted to leftover audit; new behaviour rule.

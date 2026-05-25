@@ -236,49 +236,72 @@ For each test using `AggregateTestFixture`:
 
 ## Step 4: Validate
 
-**1. Compile check**
+**Definition of done: `mvn compile` (or `./gradlew compileJava`) exits 0.** Grep emptiness is NOT the gate — OpenRewrite renames symbols, so AF4 strings can be gone while the code still won't compile (e.g. `@EventSourced` present but missing `tagKey`/`idType`; `@CommandHandler` import updated but signature still lacks `EventAppender`).
+
+**Intermediate non-compiling states are expected.** Phase 3 step 1 renames `@Aggregate` → `@EventSourced`, but the code only compiles again once steps 2–7 (remove `@AggregateIdentifier`, add `@EntityCreator`, add `EventAppender` params, rewrite `AggregateLifecycle.apply` → `eventAppender.append`, update imports) are also applied. Do NOT roll back on a red intermediate compile — keep applying the dependent patterns until the loop converges.
+
+### 4a. Compile loop (PRIMARY)
 
 ```bash
 # Maven
-mvn compile -q 2>&1 | head -100
+mvn compile -q 2>&1 | tee /tmp/axon-compile.log
 
 # Gradle
-./gradlew classes 2>&1 | head -100
+./gradlew compileJava 2>&1 | tee /tmp/axon-compile.log
 ```
 
-**2. Scan for remaining AF4 symbols**
+For each `[ERROR]` line, map the symbol/method to a pattern and apply it. Re-compile. Repeat until clean.
+
+**Compiler-error → pattern map** (representative; not exhaustive):
+
+| Compiler error fragment                                                | Apply pattern                                          |
+|------------------------------------------------------------------------|--------------------------------------------------------|
+| `cannot find symbol: class Aggregate` / `AggregateRoot` / `AggregateIdentifier` | `patterns/20-aggregates/aggregate-class.md` (add `@EventSourced(tagKey=…, idType=…)`, remove `@AggregateIdentifier`) |
+| `@EventSourced` / `@EventSourcedEntity` reports missing attribute, or runtime tag mismatch | `patterns/20-aggregates/aggregate-class.md` "Required attributes" — `tagKey` + `idType` are mandatory |
+| `cannot find symbol: method apply(…)` inside an aggregate              | `patterns/20-aggregates/aggregate-lifecycle.md` + add `EventAppender` param (`patterns/20-aggregates/command-handler.md`) |
+| `package org.axonframework.commandhandling does not exist` for `CommandHandler` | `patterns/20-aggregates/command-handler.md` — import is `org.axonframework.messaging.commandhandling.annotation.CommandHandler` |
+| `cannot find symbol: class ProcessingGroup` / `MetaData` / `MetaDataValue` | `patterns/30-event-handlers/namespace-routing.md`, `metadata-type.md`, `metadata-value.md` |
+| `cannot find symbol: class AggregateTestFixture` / `SagaTestFixture`   | `patterns/80-tests/*` — `AggregateTestFixture` → `AxonTestFixture`; `SagaTestFixture` is a blocker (no AF5 equivalent) |
+
+If a compile error does not match any catalog pattern, stop and ask the user — do NOT guess.
+
+### 4b. Post-compile AF4-leftover audit (SECONDARY)
+
+Compiles green, but the compiler won't flag AF4 names inside comments, log strings, or YAML keys. Run a discovery scan to catch those:
 
 ```bash
 grep -rn \
-  'org.axonframework.spring.stereotype.Aggregate\|AggregateLifecycle\|@ProcessingGroup\|@TargetAggregateIdentifier\|CommandGateway\|AggregateTestFixture\|SagaEventHandler\|@Saga\b\|axon.serializer\|MetaData\b\|GenericDomainEventMessage' \
-  --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' <root>/src/
+  'org\.axonframework\.spring\.stereotype\.Aggregate\|AggregateLifecycle\|@ProcessingGroup\|@TargetAggregateIdentifier\|AggregateTestFixture\|SagaEventHandler\|@Saga\b\|axon\.serializer\|\bMetaData\b\|GenericDomainEventMessage' \
+  --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' <root>/src/
 ```
 
-Any match is an incomplete migration — apply the relevant pattern from `ALL_IN_ONE.md`.
+This is an audit, not a gate. Hits in comments/docs may be intentional history; hits in active code mean the compile loop missed something — re-enter 4a.
 
-**3. Test check**
+### 4c. Tests
 
 ```bash
-mvn test -pl <module>   # or ./gradlew test
+mvn test          # or ./gradlew test
 ```
 
-**4. Summary**
+### 4d. Summary
 
 ```
-| Phase              | Status      | Notes                        |
-|--------------------|-------------|------------------------------|
-| Dependencies       | ✅ / ❌     |                              |
-| Event classes      | ✅ / ❌     |                              |
-| Aggregates         | ✅ (N files)|                              |
-| Event handlers     | ✅ (N files)|                              |
-| Query handlers     | ✅ (N files)|                              |
-| Interceptors       | ✅ (N files)|                              |
-| Sagas              | ✅ / ⏭ / 🚧|                              |
-| Event store        | ✅ / ⏭     |                              |
-| Tests              | ✅ (N files)|                              |
+| Phase              | Status       | Notes                        |
+|--------------------|--------------|------------------------------|
+| Dependencies       | ✅ / ❌      |                              |
+| Event classes      | ✅ / ❌      |                              |
+| Aggregates         | ✅ (N files) |                              |
+| Event handlers     | ✅ (N files) |                              |
+| Query handlers     | ✅ (N files) |                              |
+| Interceptors       | ✅ (N files) |                              |
+| Sagas              | ✅ / ⏭ / 🚧 |                              |
+| Event store        | ✅ / ⏭      |                              |
+| Tests              | ✅ (N files) |                              |
 
 Compilation: ✅ green / ⚠️ N error(s) remain
-Blockers:    none / ⚠️ list here
+Tests:       ✅ green / ⚠️ N failure(s)
+AF4 leftovers (4b): none / list
+Blockers:    none / list here
 ```
 
 ---
@@ -289,6 +312,7 @@ Blockers:    none / ⚠️ list here
 - **For complex scenarios** (multi-entity aggregates, polymorphic hierarchies, saga persistence, named queries, dispatch interceptors), load `examples/ALL_EXAMPLES.md` for complete before/after file walkthroughs.
 - **Work through phases in order** — aggregates define events consumed by downstream handlers.
 - **Apply patterns one file at a time** and verify imports after each edit.
+- **Compilation green is the definition of done; grep emptiness is not.** OpenRewrite renames AF4 symbols out of the source, so a clean grep can hide an unfinished migration. Drive completion from `mvn compile` / `./gradlew compileJava` exit code and the `[ERROR]` list — see Step 4a. Intermediate red compiles between dependent patterns (e.g. Phase 3 steps 1 vs 5–7) are expected; keep applying patterns, do not revert.
 - **Flag blockers — never silently skip.** If a pattern has no AF5 equivalent (DeadlineHandler, SagaTestFixture, snapshotTriggerDefinition), comment out the code, add a `// TODO` note, and report it in the summary.
 - **Preserve architecture** — no DCB, no event storage engine swap, no new patterns.
 - **Do not auto-fix ambiguous cases.** When a compile error doesn't match a catalog pattern directly, ask the user before guessing.
