@@ -15,10 +15,24 @@ AF5 moves policy declaration to a class-level `@SequencingPolicy` annotation on 
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'SequencingPolicy\|sequencing-policy' \
   --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# OR injects `# TODO AF5 migration` above the obsolete YAML key — find those
+grep -rn '# TODO AF5 migration' --include='*.yaml' --include='*.yml' --include='*.properties' .
+# Stray @Bean SequencingPolicy declarations the recipe could not remove
+grep -rn '@Bean\s\+SequencingPolicy\|SequencingPolicy<EventMessage' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Part 1 — Remove YAML wiring, add @SequencingPolicy annotation
 

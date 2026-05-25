@@ -14,9 +14,19 @@ identity type is declared as an attribute, not via a field annotation.
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@Aggregate\|@AggregateRoot\|@AggregateIdentifier' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

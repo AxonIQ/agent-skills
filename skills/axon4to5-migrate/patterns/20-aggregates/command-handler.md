@@ -12,10 +12,21 @@ on an aggregate or child entity must also receive an `EventAppender` as its last
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'import org\.axonframework\.commandhandling\.CommandHandler' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | grep -v 'EventAppender'   # candidates — review each: legitimately param-less, or missed by OR?
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

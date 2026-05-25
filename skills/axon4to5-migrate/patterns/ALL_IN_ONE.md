@@ -7,11 +7,13 @@ make generate          # or: python3 scripts/generate_all_in_one.py
 
 - [dependencies](#dependencies)
   - [Dependency Migration — Maven / Gradle](#dependency-migration--maven--gradle)
+    - [Console starter is incompatible with AF5 and is NOT removed by OR](#console-starter-is-incompatible-with-af5-and-is-not-removed-by-or)
     - [AF4](#af4)
     - [AF5](#af5)
   - [Serializer → Converter](#serializer--converter)
     - [Code references](#code-references)
     - [Config keys](#config-keys)
+    - [Leftover class-name references after the package move](#leftover-class-name-references-after-the-package-move)
     - [application.yaml](#applicationyaml)
     - [application.yaml](#applicationyaml)
     - [Find leftover class-name references after the package move](#find-leftover-class-name-references-after-the-package-move)
@@ -23,6 +25,9 @@ make generate          # or: python3 scripts/generate_all_in_one.py
     - [Command payloads referenced from @CommandHandler methods; @RoutingKey usages.](#command-payloads-referenced-from-commandhandler-methods-routingkey-usages)
   - [@CommandHandler — Import Move + EventAppender Parameter](#commandhandler--import-move--eventappender-parameter)
   - [@CreationPolicy Removal](#creationpolicy-removal)
+    - [Stray references OR could not strip (rare) and entity files that still need](#stray-references-or-could-not-strip-rare-and-entity-files-that-still-need)
+    - [a manual ALWAYS-handler flip to `static` — list all @CommandHandler-bearing](#a-manual-always-handler-flip-to-static--list-all-commandhandler-bearing)
+    - [files inside @EventSourced classes for review.](#files-inside-eventsourced-classes-for-review)
   - [@EntityCreator — No-Arg Constructor Annotation](#entitycreator--no-arg-constructor-annotation)
     - [Find aggregate classes and check their no-arg constructors](#find-aggregate-classes-and-check-their-no-arg-constructors)
   - [Event Class Annotations](#event-class-annotations)
@@ -32,9 +37,12 @@ make generate          # or: python3 scripts/generate_all_in_one.py
   - [@EventSourcingHandler — Import Package Move](#eventsourcinghandler--import-package-move)
   - [GenericDomainEventMessage Removal](#genericdomaineventmessage-removal)
   - [@TargetAggregateIdentifier Removal](#targetaggregateidentifier-removal)
+    - [OR renames to @TargetEntityId — AF5 routes by idType, so AI removes annotation + import](#or-renames-to-targetentityid--af5-routes-by-idtype-so-ai-removes-annotation--import)
 - [event handlers](#event-handlers)
   - [In-Handler Command Dispatch — CommandGateway → CommandDispatcher](#in-handler-command-dispatch--commandgateway--commanddispatcher)
     - [Find event-handling classes that inject CommandGateway](#find-event-handling-classes-that-inject-commandgateway)
+    - [Compound shapes (loops, conditionals, multiple sequential dispatches) the](#compound-shapes-loops-conditionals-multiple-sequential-dispatches-the)
+    - [recipe could not rewrite — CommandGateway field still present in @EventHandler classes.](#recipe-could-not-rewrite--commandgateway-field-still-present-in-eventhandler-classes)
   - [EventBus → EventSink](#eventbus--eventsink)
   - [@EventHandler, @DisallowReplay, @ResetHandler — Import Package Moves](#eventhandler-disallowreplay-resethandler--import-package-moves)
   - [Message Accessor Renames](#message-accessor-renames)
@@ -42,6 +50,8 @@ make generate          # or: python3 scripts/generate_all_in_one.py
   - [@MetaDataValue → @MetadataValue](#metadatavalue--metadatavalue)
   - [@ProcessingGroup → @Namespace (Event Processor Routing)](#processinggroup--namespace-event-processor-routing)
   - [Sequencing Policy Migration](#sequencing-policy-migration)
+    - [OR injects `# TODO AF5 migration` above the obsolete YAML key — find those](#or-injects--todo-af5-migration-above-the-obsolete-yaml-key--find-those)
+    - [Stray @Bean SequencingPolicy declarations the recipe could not remove](#stray-bean-sequencingpolicy-declarations-the-recipe-could-not-remove)
     - [application.yaml](#applicationyaml)
     - [application.yaml — remove sequencing-policy key; mode stays](#applicationyaml--remove-sequencing-policy-key-mode-stays)
 - [query handlers](#query-handlers)
@@ -50,10 +60,18 @@ make generate          # or: python3 scripts/generate_all_in_one.py
   - [QueryGateway — Drop ResponseTypes Wrappers](#querygateway--drop-responsetypes-wrappers)
     - [Sites the recipe could not finish — 3-argument named queries](#sites-the-recipe-could-not-finish--3-argument-named-queries)
     - [multipleInstancesOf sites — convert to queryMany](#multipleinstancesof-sites--convert-to-querymany)
+    - [Sites the recipe could not finish — 3-argument named queries](#sites-the-recipe-could-not-finish--3-argument-named-queries)
+    - [multipleInstancesOf sites — convert to queryMany](#multipleinstancesof-sites--convert-to-querymany)
   - [QueryUpdateEmitter — Constructor Field → Method Parameter](#queryupdateemitter--constructor-field--method-parameter)
+    - [Import moved by ChangePackage, but field/constructor injection still present](#import-moved-by-changepackage-but-fieldconstructor-injection-still-present)
+    - [AI moves it to a method parameter and adds Class<Q> arg to emit(...).](#ai-moves-it-to-a-method-parameter-and-adds-classq-arg-to-emit)
 - [interceptors](#interceptors)
   - [MessageDispatchInterceptor — handle(List) → interceptOnDispatch](#messagedispatchinterceptor--handlelist--interceptondispatch)
+    - [Signature rewritten by MigrateMessageInterceptorSignatures, body left alone.](#signature-rewritten-by-migratemessageinterceptorsignatures-body-left-alone)
+    - [OR injects a `// TODO #LLM` class-level comment pointing at the migration doc.](#or-injects-a--todo-llm-class-level-comment-pointing-at-the-migration-doc)
   - [MessageHandlerInterceptor — Handle Method Signature Migration](#messagehandlerinterceptor--handle-method-signature-migration)
+    - [Signature rewritten by MigrateMessageInterceptorSignatures, body left alone.](#signature-rewritten-by-migratemessageinterceptorsignatures-body-left-alone)
+    - [OR injects a `// TODO #LLM` class-level comment pointing at the migration doc.](#or-injects-a--todo-llm-class-level-comment-pointing-at-the-migration-doc)
 - [sagas](#sagas)
   - [Saga Migration — @Saga → @Component @DisallowReplay](#saga-migration--saga--component-disallowreplay)
 - [event store](#event-store)
@@ -78,10 +96,22 @@ changed; the YAML configuration namespace changed from `axon.serializer` to `axo
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'org.axonframework' --include='pom.xml' --include='build.gradle' --include='build.gradle.kts' .
 grep -rn 'axon.serializer' --include='*.yaml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Console starter is incompatible with AF5 and is NOT removed by OR
+grep -rn 'console-framework-client-spring-boot-starter' \
+  --include='pom.xml' --include='build.gradle' --include='build.gradle.kts' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 — pom.xml
 
@@ -175,6 +205,8 @@ concrete class names (`JacksonSerializer`, `XStreamSerializer`) are NOT auto-ren
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 #### Code references
 grep -rn '\bSerializer\b\|JacksonSerializer\|XStreamSerializer' \
@@ -183,6 +215,16 @@ grep -rn '\bSerializer\b\|JacksonSerializer\|XStreamSerializer' \
 #### Config keys
 grep -rn 'axon\.serializer' --include='*.yaml' --include='*.yml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Leftover class-name references after the package move
+grep -rn 'JacksonSerializer\|XStreamSerializer\|\bSerializer\b' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -284,9 +326,19 @@ identity type is declared as an attribute, not via a field annotation.
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@Aggregate\|@AggregateRoot\|@AggregateIdentifier' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -606,10 +658,21 @@ on an aggregate or child entity must also receive an `EventAppender` as its last
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'import org\.axonframework\.commandhandling\.CommandHandler' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | grep -v 'EventAppender'   # candidates — review each: legitimately param-less, or missed by OR?
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -671,10 +734,24 @@ replaced by the `@EntityCreator` constructor and the presence/absence of static 
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@CreationPolicy\|AggregateCreationPolicy\|import.*CreationPolicy' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Stray references OR could not strip (rare) and entity files that still need
+#### a manual ALWAYS-handler flip to `static` — list all @CommandHandler-bearing
+#### files inside @EventSourced classes for review.
+grep -rln '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | xargs grep -l '@EventSourced\|@EventSourcedEntity'
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Migration by policy value
 
@@ -1068,9 +1145,20 @@ correct aggregate instance. AF5 removes this annotation — routing is now drive
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@TargetAggregateIdentifier\|TargetAggregateIdentifier' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### OR renames to @TargetEntityId — AF5 routes by idType, so AI removes annotation + import
+grep -rn '@TargetEntityId\|TargetEntityId' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -1121,11 +1209,24 @@ framework automatically binds it to the active `ProcessingContext`. The dispatch
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 #### Find event-handling classes that inject CommandGateway
 grep -rln 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . \
   | xargs grep -l '@EventHandler'
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Compound shapes (loops, conditionals, multiple sequential dispatches) the
+#### recipe could not rewrite — CommandGateway field still present in @EventHandler classes.
+grep -rln 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | xargs grep -l '@EventHandler'
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -1639,10 +1740,24 @@ AF5 moves policy declaration to a class-level `@SequencingPolicy` annotation on 
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'SequencingPolicy\|sequencing-policy' \
   --include='*.java' --include='*.kt' --include='*.scala' --include='*.yaml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### OR injects `# TODO AF5 migration` above the obsolete YAML key — find those
+grep -rn '# TODO AF5 migration' --include='*.yaml' --include='*.yml' --include='*.properties' .
+#### Stray @Bean SequencingPolicy declarations the recipe could not remove
+grep -rn '@Bean\s\+SequencingPolicy\|SequencingPolicy<EventMessage' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Part 1 — Remove YAML wiring, add @SequencingPolicy annotation
 
@@ -1901,10 +2016,23 @@ package entirely. The gateway accepts `Class<R>` directly for single-instance re
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'ResponseTypes\.\|responsetypes\|multipleInstancesOf\|instanceOf' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Sites the recipe could not finish — 3-argument named queries
+grep -rn 'queryGateway\.query("' --include='*.java' --include='*.kt' --include='*.scala' .
+#### multipleInstancesOf sites — convert to queryMany
+grep -rn 'multipleInstancesOf' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -1986,9 +2114,22 @@ argument.
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'QueryUpdateEmitter' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Import moved by ChangePackage, but field/constructor injection still present
+#### AI moves it to a method parameter and adds Class<Q> arg to emit(...).
+grep -rn 'private.*QueryUpdateEmitter\|QueryUpdateEmitter\s\+[a-z][A-Za-z0-9_]*\s*[;,)]\|\.emit\s*(' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -2068,10 +2209,23 @@ receives one message, modifies it inline, and delegates to the chain.
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'implements MessageDispatchInterceptor\|BiFunction.*handle.*List' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Signature rewritten by MigrateMessageInterceptorSignatures, body left alone.
+#### OR injects a `// TODO #LLM` class-level comment pointing at the migration doc.
+grep -rn 'interceptOnDispatch\|// TODO #LLM' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -2147,10 +2301,23 @@ The chain call changes from no-arg `chain.proceed()` to `chain.proceed(message, 
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'implements MessageHandlerInterceptor\|UnitOfWork.*InterceptorChain\|InterceptorChain.*UnitOfWork' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+#### Signature rewritten by MigrateMessageInterceptorSignatures, body left alone.
+#### OR injects a `// TODO #LLM` class-level comment pointing at the migration doc.
+grep -rn 'interceptOnHandle\|// TODO #LLM' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 
@@ -2462,9 +2629,19 @@ which wraps an `EventSourcingConfigurer` rather than a bare class reference.
 
 ##### Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'AggregateTestFixture' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+grep -rn 'new AxonTestFixture\|AxonTestFixture<' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ##### Axon Framework 4 Code
 

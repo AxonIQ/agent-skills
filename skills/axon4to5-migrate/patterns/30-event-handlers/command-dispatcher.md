@@ -14,11 +14,24 @@ framework automatically binds it to the active `ProcessingContext`. The dispatch
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 # Find event-handling classes that inject CommandGateway
 grep -rln 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . \
   | xargs grep -l '@EventHandler'
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Compound shapes (loops, conditionals, multiple sequential dispatches) the
+# recipe could not rewrite — CommandGateway field still present in @EventHandler classes.
+grep -rln 'CommandGateway' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | xargs grep -l '@EventHandler'
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

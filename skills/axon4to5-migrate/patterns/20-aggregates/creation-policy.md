@@ -12,10 +12,24 @@ replaced by the `@EntityCreator` constructor and the presence/absence of static 
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@CreationPolicy\|AggregateCreationPolicy\|import.*CreationPolicy' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Stray references OR could not strip (rare) and entity files that still need
+# a manual ALWAYS-handler flip to `static` — list all @CommandHandler-bearing
+# files inside @EventSourced classes for review.
+grep -rln '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' . \
+  | xargs grep -l '@EventSourced\|@EventSourcedEntity'
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Migration by policy value
 

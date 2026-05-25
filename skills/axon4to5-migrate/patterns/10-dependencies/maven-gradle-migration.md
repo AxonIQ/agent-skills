@@ -13,10 +13,22 @@ changed; the YAML configuration namespace changed from `axon.serializer` to `axo
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'org.axonframework' --include='pom.xml' --include='build.gradle' --include='build.gradle.kts' .
 grep -rn 'axon.serializer' --include='*.yaml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Console starter is incompatible with AF5 and is NOT removed by OR
+grep -rn 'console-framework-client-spring-boot-starter' \
+  --include='pom.xml' --include='build.gradle' --include='build.gradle.kts' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 — pom.xml
 

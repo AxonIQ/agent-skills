@@ -12,9 +12,20 @@ correct aggregate instance. AF5 removes this annotation — routing is now drive
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn '@TargetAggregateIdentifier\|TargetAggregateIdentifier' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# OR renames to @TargetEntityId — AF5 routes by idType, so AI removes annotation + import
+grep -rn '@TargetEntityId\|TargetEntityId' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

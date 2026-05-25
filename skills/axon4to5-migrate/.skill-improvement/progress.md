@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-007 — Durability in SKILL.md
-**Next action:** Start IMP-008: Detection — post-OR greps
-**Current session commit:** IMP-001..006 committed; IMP-007 pending
+**Last completed:** IMP-008 — Detection post-OR greps
+**Next action:** Start IMP-009: SKILL.md simplification
+**Current session commit:** IMP-001..007 committed; IMP-008 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -28,7 +28,7 @@ session-count: 1
 | IMP-005 | Real Java code examples | done | 12 Heroes Java files copied (6 AF4 + 6 AF5) covering aggregate/projector/REST/test; java/README.md pairs table; generator skips empty subtrees. |
 | IMP-006 | Pattern gap audit | done | 4 new patterns: serializer-to-converter, command-annotation, event-bus-to-sink, query-response-types. SKILL.md coverage table updated. |
 | IMP-007 | Durability in SKILL.md | done | New Step 2.5 (~73 lines) adds `.axon4to5-migration/progress.md` schema; new behaviour rule mandates per-file progress commit. |
-| IMP-008 | Detection — post-OR greps | pending | |
+| IMP-008 | Detection — post-OR greps | done | 13 Partial patterns now have dual-form Detection (Pre-migration AF4 / Post-OpenRewrite partial). |
 | IMP-009 | SKILL.md simplification | pending | |
 | IMP-010 | Examples import audit | pending | |
 | IMP-011 | Command-gateway top-level pattern | pending | |
@@ -45,3 +45,4 @@ session-count: 1
 - IMP-005 done: examples/java/{af4,af5}/ holds 12 real Heroes Java files (aggregate + projector + REST + test pair); java/README.md is a pairs table; generator now skips Java package subtrees without markdown.
 - IMP-006 done: 4 new patterns — `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`; SKILL.md coverage table got 4 new rows.
 - IMP-007 done: SKILL.md Step 2.5 added — `.axon4to5-migration/progress.md` schema with RESUME HERE block, Pinned Decisions, Phase status table, per-phase items, Blockers; behaviour rule mandates per-file persist.
+- IMP-008 done: every Partial-tagged pattern's Detection section is dual-form (Pre-migration AF4 grep + Post-OpenRewrite partial-state grep). 13 patterns touched.

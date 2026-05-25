@@ -12,9 +12,22 @@ argument.
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'QueryUpdateEmitter' --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Import moved by ChangePackage, but field/constructor injection still present
+# AI moves it to a method parameter and adds Class<Q> arg to emit(...).
+grep -rn 'private.*QueryUpdateEmitter\|QueryUpdateEmitter\s\+[a-z][A-Za-z0-9_]*\s*[;,)]\|\.emit\s*(' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

@@ -17,10 +17,23 @@ receives one message, modifies it inline, and delegates to the chain.
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'implements MessageDispatchInterceptor\|BiFunction.*handle.*List' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Signature rewritten by MigrateMessageInterceptorSignatures, body left alone.
+# OR injects a `// TODO #LLM` class-level comment pointing at the migration doc.
+grep -rn 'interceptOnDispatch\|// TODO #LLM' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

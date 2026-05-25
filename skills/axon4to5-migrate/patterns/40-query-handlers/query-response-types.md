@@ -18,10 +18,23 @@ package entirely. The gateway accepts `Class<R>` directly for single-instance re
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 grep -rn 'ResponseTypes\.\|responsetypes\|multipleInstancesOf\|instanceOf' \
   --include='*.java' --include='*.kt' --include='*.scala' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Sites the recipe could not finish — 3-argument named queries
+grep -rn 'queryGateway\.query("' --include='*.java' --include='*.kt' --include='*.scala' .
+# multipleInstancesOf sites — convert to queryMany
+grep -rn 'multipleInstancesOf' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 

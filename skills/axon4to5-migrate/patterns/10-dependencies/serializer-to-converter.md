@@ -16,6 +16,8 @@ concrete class names (`JacksonSerializer`, `XStreamSerializer`) are NOT auto-ren
 
 ## Detection
 
+**Pre-migration (AF4 original):**
+
 ```bash
 # Code references
 grep -rn '\bSerializer\b\|JacksonSerializer\|XStreamSerializer' \
@@ -24,6 +26,16 @@ grep -rn '\bSerializer\b\|JacksonSerializer\|XStreamSerializer' \
 # Config keys
 grep -rn 'axon\.serializer' --include='*.yaml' --include='*.yml' --include='*.properties' .
 ```
+
+**Post-OpenRewrite (partial AF5 shape):**
+
+```bash
+# Leftover class-name references after the package move
+grep -rn 'JacksonSerializer\|XStreamSerializer\|\bSerializer\b' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+Use the AF4 grep during Step 2 Assessment to scope the work. Use the post-OR grep during Step 4 Validate when the compile loop points at this pattern.
 
 ## Axon Framework 4 Code
 
