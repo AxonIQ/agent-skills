@@ -72,3 +72,4 @@ public class OrderProjector {
 - **Event handler return type**: handlers that dispatch commands via `CommandDispatcher` must return
   `CompletableFuture<?>` — see [command-dispatcher.md](command-dispatcher.md).
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) handles all three annotation imports (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`).
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java`.

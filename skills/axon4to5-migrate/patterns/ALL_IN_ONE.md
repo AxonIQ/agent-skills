@@ -427,6 +427,7 @@ grep -rn 'idType = Object\.class\|@EventSourced[^(]' --include='*.java' --includ
 - **OpenRewrite Phase 1** sometimes rewrites `@Aggregate` → `@EventSourced` without adding `tagKey`/`idType`.
   Always grep for `@EventSourced` without attributes after Phase 1 and add them.
 - **OpenRewrite status:** Partial — `ChangeType` rewrites `@Aggregate` → `@EventSourced` and `ConfigureEventSourcedAnnotation` adds `tagKey = "<SimpleName>"` + `idType = Object.class` placeholder; AI replaces the `Object.class` placeholder with the real id class.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java` (AF4 form: `examples/java/af4/.../Army.java`).
 
 ---
 
@@ -497,6 +498,7 @@ grep -rn 'AggregateLifecycle\.\(apply\|markDeleted\)\|import .*AggregateLifecycl
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
 - **Do not call `AggregateLifecycle.markDeleted()`** — there is no AF5 equivalent; remove the call entirely.
 - **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) rewrites `AggregateLifecycle.apply(...)` → `eventAppender.append(...)` and injects the `EventAppender eventAppender` parameter into the enclosing method.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.
 
 ---
 
@@ -646,6 +648,7 @@ public record ShipOrderCommand(String orderId, String address) { }
 - **OpenRewrite status:** Full — `AddCommandAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) scans
   `@CommandHandler` methods, adds `@Command` to their payload types, and migrates `@RoutingKey` field annotations
   into the `routingKey` attribute on `@Command`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/ArmyCommand.java`.
 
 ---
 
@@ -722,6 +725,7 @@ grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scal
   On non-aggregate components (event handlers, services) `@CommandHandler` is typically not used — apply this
   pattern only when the handler is inside an `@EventSourced`/`@EventSourcedEntity` class.
 - **OpenRewrite status:** Partial — `ChangeType` (in `axon4-to-axon5-messaging.yml`) moves the import; `EventAppender` is added only on handlers that called `AggregateLifecycle.apply(...)` — AI adds the parameter on remaining aggregate handlers.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.
 
 ---
 
@@ -877,6 +881,7 @@ public class Order {
 - **Omitting `@EntityCreator`** causes a runtime failure when the framework attempts to instantiate the entity —
   the failure message mentions missing creator constructor.
 - **OpenRewrite status:** Full — `AddEntityCreatorAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) annotates the no-arg constructor of every `@EventSourced` / `@EventSourcedEntity` class.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.
 
 ---
 
@@ -950,6 +955,7 @@ public record OrderCreatedEvent(
 - **`@Revision("N")` → `@Event(version = N)`** — the version is now an `int` attribute, not a string annotation.
 - **Pure value events** (not tied to any aggregate) still need `@Event`; they do not need `@EventTag`.
 - **OpenRewrite status:** Full — `AddEventAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) adds `@Event` to event payload types and migrates `@Revision("N")` → `@Event(version = "N")`; `AddEventTagAnnotation` (in `axon4-to-axon5-modelling.yml`) adds `@EventTag(key = "<EntitySimpleName>")` to the routing field.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/events/ArmyEvent.java`.
 
 ---
 
@@ -1081,6 +1087,7 @@ public void on(OrderCreatedEvent event) {
 - Methods inside `@EventSourcingHandler` that call `event.getPayload()` / `event.getMetaData()` should be updated
   to `event.payload()` / `event.metaData()` — see [message-accessors pattern](../30-event-handlers/message-accessors.md).
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-eventsourcing.yml`) rewrites the import to `eventsourcing.annotation.EventSourcingHandler`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.
 
 ---
 
@@ -1454,6 +1461,7 @@ rewriting `.sendAndWait(cmd)` to `.send(cmd).resultAs(<Type>.class).orTimeout(..
 - For in-handler dispatch (a class with `@EventHandler` that dispatches commands), see
   [command-dispatcher.md](command-dispatcher.md) — that pattern switches to `CommandDispatcher`; this one keeps
   `CommandGateway`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java`.
 
 ---
 
@@ -1612,6 +1620,7 @@ public class OrderProjector {
 - **Event handler return type**: handlers that dispatch commands via `CommandDispatcher` must return
   `CompletableFuture<?>` — see [command-dispatcher.md](command-dispatcher.md).
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-messaging.yml`) handles all three annotation imports (`@EventHandler`, `@DisallowReplay`, `@ResetHandler`).
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java`.
 
 ---
 
@@ -1875,6 +1884,7 @@ grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonfr
   argument must all be identical.
 - A **namespace mismatch silently drops all events** at runtime — there is no compile-time signal.
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-common.yml`) rewrites `@ProcessingGroup` → `@Namespace`; the string value is preserved.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java`.
 
 ---
 
@@ -2910,5 +2920,6 @@ grep -rLn 'fixture\.stop()' --include='*.java' --include='*.kt' --include='*.sca
   `registerEntity(…)` calls.
 - **`SagaTestFixture` removed** — no AF5 replacement; tests using it cannot be automatically migrated (blocker).
 - **OpenRewrite status:** Partial — OR (in `axon4-to-axon5-test.yml`) renames the type via `ChangeType`, rewrites the fluent DSL (`MigrateAxonTestFixtureFluentApi`), regenerates setup (`MigrateAggregateTestFixtureSetup`), and adds a Java `@AfterEach tearDown()` (`AddAxonTestFixtureTearDown`); AI completes Kotlin tear-down, fills setup the recipe could not infer (`new AxonTestFixture(...)` left over), and replaces `AggregateNotFoundException` with the domain exception.
+- **Reference source:** `examples/java/af5/src/test/java/com/dddheroes/heroesofddd/armies/write/ArmyTest.java`.
 
 ---

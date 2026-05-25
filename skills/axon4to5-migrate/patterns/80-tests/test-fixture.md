@@ -139,3 +139,4 @@ grep -rLn 'fixture\.stop()' --include='*.java' --include='*.kt' --include='*.sca
   `registerEntity(…)` calls.
 - **`SagaTestFixture` removed** — no AF5 replacement; tests using it cannot be automatically migrated (blocker).
 - **OpenRewrite status:** Partial — OR (in `axon4-to-axon5-test.yml`) renames the type via `ChangeType`, rewrites the fluent DSL (`MigrateAxonTestFixtureFluentApi`), regenerates setup (`MigrateAggregateTestFixtureSetup`), and adds a Java `@AfterEach tearDown()` (`AddAxonTestFixtureTearDown`); AI completes Kotlin tear-down, fills setup the recipe could not infer (`new AxonTestFixture(...)` left over), and replaces `AggregateNotFoundException` with the domain exception.
+- **Reference source:** `examples/java/af5/src/test/java/com/dddheroes/heroesofddd/armies/write/ArmyTest.java`.

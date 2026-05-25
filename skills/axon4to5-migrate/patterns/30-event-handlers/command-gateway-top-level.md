@@ -144,3 +144,4 @@ rewriting `.sendAndWait(cmd)` to `.send(cmd).resultAs(<Type>.class).orTimeout(..
 - For in-handler dispatch (a class with `@EventHandler` that dispatches commands), see
   [command-dispatcher.md](command-dispatcher.md) — that pattern switches to `CommandDispatcher`; this one keeps
   `CommandGateway`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/write/builddwelling/BuildDwellingRestApi.java`.

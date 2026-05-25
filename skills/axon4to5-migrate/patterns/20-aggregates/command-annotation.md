@@ -64,3 +64,4 @@ public record ShipOrderCommand(String orderId, String address) { }
 - **OpenRewrite status:** Full — `AddCommandAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) scans
   `@CommandHandler` methods, adds `@Command` to their payload types, and migrates `@RoutingKey` field annotations
   into the `routingKey` attribute on `@Command`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/ArmyCommand.java`.

@@ -68,3 +68,4 @@ public record OrderCreatedEvent(
 - **`@Revision("N")` → `@Event(version = N)`** — the version is now an `int` attribute, not a string annotation.
 - **Pure value events** (not tied to any aggregate) still need `@Event`; they do not need `@EventTag`.
 - **OpenRewrite status:** Full — `AddEventAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) adds `@Event` to event payload types and migrates `@Revision("N")` → `@Event(version = "N")`; `AddEventTagAnnotation` (in `axon4-to-axon5-modelling.yml`) adds `@EventTag(key = "<EntitySimpleName>")` to the routing field.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/events/ArmyEvent.java`.

@@ -58,3 +58,4 @@ public class Order {
 - **Omitting `@EntityCreator`** causes a runtime failure when the framework attempts to instantiate the entity —
   the failure message mentions missing creator constructor.
 - **OpenRewrite status:** Full — `AddEntityCreatorAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) annotates the no-arg constructor of every `@EventSourced` / `@EventSourcedEntity` class.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.

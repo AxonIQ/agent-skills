@@ -80,3 +80,4 @@ grep -rn 'import org\.axonframework\.config\.ProcessingGroup\|import org\.axonfr
   argument must all be identical.
 - A **namespace mismatch silently drops all events** at runtime — there is no compile-time signal.
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-common.yml`) rewrites `@ProcessingGroup` → `@Namespace`; the string value is preserved.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/creaturerecruitment/read/DwellingReadModelProjector.java`.

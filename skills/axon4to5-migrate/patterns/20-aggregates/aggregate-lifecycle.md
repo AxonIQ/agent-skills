@@ -65,3 +65,4 @@ grep -rn 'AggregateLifecycle\.\(apply\|markDeleted\)\|import .*AggregateLifecycl
 - **`.messaging.` infix is mandatory** — `org.axonframework.messaging.eventhandling.gateway.EventAppender`. The path without `.messaging.` does not exist.
 - **Do not call `AggregateLifecycle.markDeleted()`** — there is no AF5 equivalent; remove the call entirely.
 - **OpenRewrite status:** Full — `ReplaceAggregateLifecycleApply` (in `axon4-to-axon5-eventsourcing.yml`) rewrites `AggregateLifecycle.apply(...)` → `eventAppender.append(...)` and injects the `EventAppender eventAppender` parameter into the enclosing method.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.

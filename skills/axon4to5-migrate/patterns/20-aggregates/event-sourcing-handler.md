@@ -45,3 +45,4 @@ public void on(OrderCreatedEvent event) {
 - Methods inside `@EventSourcingHandler` that call `event.getPayload()` / `event.getMetaData()` should be updated
   to `event.payload()` / `event.metaData()` — see [message-accessors pattern](../30-event-handlers/message-accessors.md).
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-eventsourcing.yml`) rewrites the import to `eventsourcing.annotation.EventSourcingHandler`.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.

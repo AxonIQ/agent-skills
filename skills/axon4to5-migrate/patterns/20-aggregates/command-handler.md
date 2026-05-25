@@ -71,3 +71,4 @@ grep -rn '@CommandHandler' --include='*.java' --include='*.kt' --include='*.scal
   On non-aggregate components (event handlers, services) `@CommandHandler` is typically not used — apply this
   pattern only when the handler is inside an `@EventSourced`/`@EventSourcedEntity` class.
 - **OpenRewrite status:** Partial — `ChangeType` (in `axon4-to-axon5-messaging.yml`) moves the import; `EventAppender` is added only on handlers that called `AggregateLifecycle.apply(...)` — AI adds the parameter on remaining aggregate handlers.
+- **Reference source:** `examples/java/af5/src/main/java/com/dddheroes/heroesofddd/armies/write/Army.java`.
