@@ -2,7 +2,7 @@
 
 Automatically generated — do not edit manually. Regenerate with:
 ```
-python3 scripts/generate_all_in_one.py
+make generate          # or: python3 scripts/generate_all_in_one.py
 ```
 
 Concrete before/after examples showing full file migrations. Consult when a pattern alone is insufficient.

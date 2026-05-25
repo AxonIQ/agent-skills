@@ -318,3 +318,4 @@ Blockers:    none / list here
 - **Flag blockers — never silently skip.** If a pattern has no AF5 equivalent (DeadlineHandler, SagaTestFixture, snapshotTriggerDefinition), comment out the code, add a `// TODO` note, and report it in the summary.
 - **Preserve architecture** — no DCB, no event storage engine swap, no new patterns.
 - **Do not auto-fix ambiguous cases.** When a compile error doesn't match a catalog pattern directly, ask the user before guessing.
+- **Never edit `patterns/ALL_IN_ONE.md`, `examples/ALL_EXAMPLES.md`, or the catalog block inside `patterns/README.md` by hand** — regenerate them with `make generate` (or `python3 scripts/generate_all_in_one.py`).

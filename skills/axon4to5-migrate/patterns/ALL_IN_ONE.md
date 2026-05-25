@@ -2,7 +2,7 @@
 
 Automatically generated — do not edit manually. Regenerate with:
 ```
-python3 scripts/generate_all_in_one.py
+make generate          # or: python3 scripts/generate_all_in_one.py
 ```
 
 - [dependencies](#dependencies)

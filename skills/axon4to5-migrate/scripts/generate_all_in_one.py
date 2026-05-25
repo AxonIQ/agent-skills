@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate ALL_IN_ONE.md (patterns) and ALL_EXAMPLES.md (examples)."""
+"""Generate ALL_IN_ONE.md (patterns), ALL_EXAMPLES.md (examples), and the
+catalog table inside patterns/README.md."""
 
 import os
 import re
@@ -11,6 +12,9 @@ PATTERNS_DIR = os.path.join(SKILL_DIR, "patterns")
 EXAMPLES_DIR = os.path.join(SKILL_DIR, "examples")
 OUTPUT_FILE = os.path.join(PATTERNS_DIR, "ALL_IN_ONE.md")
 EXAMPLES_OUTPUT = os.path.join(EXAMPLES_DIR, "ALL_EXAMPLES.md")
+README_FILE = os.path.join(PATTERNS_DIR, "README.md")
+CATALOG_START = "<!-- CATALOG:START -->"
+CATALOG_END = "<!-- CATALOG:END -->"
 IGNORED = {"ALL_IN_ONE.md", "ALL_EXAMPLES.md", "README.md"}
 
 
@@ -88,6 +92,84 @@ def make_toc(content):
     return "\n".join(lines)
 
 
+def humanize_category(dirname):
+    """`10-dependencies` → `10 — Dependencies`."""
+    m = re.match(r"^(\d+)[-_](.+)$", dirname)
+    if not m:
+        return dirname.replace("-", " ").replace("_", " ").capitalize()
+    prefix, rest = m.group(1), m.group(2)
+    label = rest.replace("-", " ").replace("_", " ")
+    # Capitalise each word for a nicer catalog (e.g. "Event Handlers").
+    label = " ".join(w.capitalize() for w in label.split())
+    return f"{prefix} — {label}"
+
+
+def extract_h1(filepath):
+    raw = open(filepath, encoding="utf-8").read()
+    m = re.search(r"^# (.+)", raw, re.MULTILINE)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def humanize_filename(filename):
+    base = filename[:-3] if filename.endswith(".md") else filename
+    return " ".join(w.capitalize() for w in base.replace("-", " ").replace("_", " ").split())
+
+
+def build_catalog_table():
+    """Build the catalog markdown table for all patterns/<cat>/<file>.md."""
+    rows = []
+    categories = sorted(
+        d for d in os.listdir(PATTERNS_DIR)
+        if os.path.isdir(os.path.join(PATTERNS_DIR, d))
+    )
+    for category in categories:
+        cat_dir = os.path.join(PATTERNS_DIR, category)
+        cat_label = humanize_category(category)
+        files = sorted(
+            f for f in os.listdir(cat_dir)
+            if f.endswith(".md") and f not in IGNORED and f.lower() != "readme.md"
+        )
+        for filename in files:
+            filepath = os.path.join(cat_dir, filename)
+            topic = extract_h1(filepath) or humanize_filename(filename)
+            link = f"[{filename}]({category}/{filename})"
+            rows.append(f"| {cat_label} | {link} | {topic} |")
+
+    header = "| Category | Pattern file | Topic |\n|---|---|---|"
+    return header + "\n" + "\n".join(rows) + "\n"
+
+
+def regenerate_catalog():
+    """Replace content between CATALOG:START / CATALOG:END markers in README.md.
+
+    Exits 0 with a warning if markers are missing (non-blocking).
+    """
+    if not os.path.exists(README_FILE):
+        print(f"⚠️  {README_FILE} not found; skipping catalog regeneration.")
+        return False
+    raw = open(README_FILE, encoding="utf-8").read()
+    if CATALOG_START not in raw or CATALOG_END not in raw:
+        print(
+            f"⚠️  Catalog markers not found in {README_FILE}; skipping catalog regeneration. "
+            f"Insert `{CATALOG_START}` and `{CATALOG_END}` around the catalog block to enable it."
+        )
+        return False
+    table = build_catalog_table()
+    pattern = re.compile(
+        re.escape(CATALOG_START) + r".*?" + re.escape(CATALOG_END),
+        re.DOTALL,
+    )
+    replacement = f"{CATALOG_START}\n\n{table}\n{CATALOG_END}"
+    new = pattern.sub(replacement, raw)
+    if new != raw:
+        with open(README_FILE, "w", encoding="utf-8") as f:
+            f.write(new)
+    print(f"✅ {README_FILE} catalog regenerated.")
+    return True
+
+
 def main():
     # Generate patterns/ALL_IN_ONE.md
     body = collect(PATTERNS_DIR, top_dir=PATTERNS_DIR).strip()
@@ -96,7 +178,7 @@ def main():
 
 Automatically generated — do not edit manually. Regenerate with:
 ```
-python3 scripts/generate_all_in_one.py
+make generate          # or: python3 scripts/generate_all_in_one.py
 ```
 
 {toc}
@@ -115,7 +197,7 @@ python3 scripts/generate_all_in_one.py
 
 Automatically generated — do not edit manually. Regenerate with:
 ```
-python3 scripts/generate_all_in_one.py
+make generate          # or: python3 scripts/generate_all_in_one.py
 ```
 
 Concrete before/after examples showing full file migrations. Consult when a pattern alone is insufficient.
@@ -127,6 +209,9 @@ Concrete before/after examples showing full file migrations. Consult when a patt
         with open(EXAMPLES_OUTPUT, "w", encoding="utf-8") as f:
             f.write(ex_output)
         print(f"✅ {EXAMPLES_OUTPUT} generated.")
+
+    # Regenerate the catalog table inside patterns/README.md (non-blocking).
+    regenerate_catalog()
 
 
 if __name__ == "__main__":
