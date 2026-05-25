@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-014 — Cross-link patterns ↔ examples/java/
+**Last completed:** IMP-018 — `make check-attribution` target
 **Next action:** Start IMP-015: Move OR coverage table out of SKILL.md
-**Current session commit:** IMP-001..013 committed; IMP-014 pending
+**Current session commit:** IMP-001..014 committed; IMP-018 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -38,7 +38,7 @@ session-count: 1
 | IMP-015 | Move OR coverage table out of SKILL.md | pending | The 32-row coverage table is now half of SKILL.md. Move it to `references/openrewrite-coverage.md`; SKILL.md keeps a 1-paragraph summary + link. Stays consistent with CLAUDE.md's "skills are LLM context, not docs". |
 | IMP-016 | Eval coverage for new patterns | pending | IMP-006 added 4 patterns + IMP-011 added 1. None have evals. Add eval entries under `evals/axon4to5-migrate/recipes/` for `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`, `command-gateway-top-level`. |
 | IMP-017 | Pattern Notes formatting consistency | pending | Different patterns mix bullet style, plain prose, and bold-prefix conventions in Notes. OpenRewrite status line placement also varies (last bullet vs separate trailing bullet). Pick one convention and apply across all 32 patterns. |
-| IMP-018 | `make check-no-forbidden-attribution` target | pending | The hard rule against external-tool attribution is currently enforced by hand. Add a `make` target that greps every file under `skills/axon4to5-migrate/` for forbidden names and fails CI if any hit appears. Wire into `make check`. |
+| IMP-018 | `make check-attribution` target | done | New `make check-attribution` target uses `scripts/forbidden-names.txt` as a regex list; wired into `make check` so CI catches regressions. |
 
 ## Session Log
 
@@ -58,3 +58,4 @@ session-count: 1
 - IMP-012 done: discovery pass — added IMP-013..IMP-018 to backlog (renumber duplicate examples; cross-link patterns to examples/java/; move OR coverage table to references/; eval coverage for new patterns; Notes formatting consistency; CI gate against forbidden attribution).
 - IMP-013 done: query-handlers examples renumbered into a single 01..10 sequence (`01-handler-…` through `10-caller-…`); H1 lines kept in sync.
 - IMP-014 done: 11 patterns now carry a `**Reference source:**` line pointing to the matching real-world `examples/java/af5/.../*.java` file.
+- IMP-018 done (out of sequence — small CI gate): `make check-attribution` target + `scripts/forbidden-names.txt` regex list; `make check` chains generate + attribution gate + staleness diff.
