@@ -9,10 +9,18 @@ make generate          # or: python3 scripts/generate_all_in_one.py
   - [Dependency Migration — Maven / Gradle](#dependency-migration--maven--gradle)
     - [AF4](#af4)
     - [AF5](#af5)
+  - [Serializer → Converter](#serializer--converter)
+    - [Code references](#code-references)
+    - [Config keys](#config-keys)
+    - [application.yaml](#applicationyaml)
+    - [application.yaml](#applicationyaml)
+    - [Find leftover class-name references after the package move](#find-leftover-class-name-references-after-the-package-move)
 - [aggregates](#aggregates)
   - [Aggregate Class Stereotype](#aggregate-class-stereotype)
   - [AggregateLifecycle.apply() → EventAppender.append()](#aggregatelifecycleapply--eventappenderappend)
   - [@AggregateMember → @EntityMember (Child Entities)](#aggregatemember--entitymember-child-entities)
+  - [Command Class Annotation](#command-class-annotation)
+    - [Command payloads referenced from @CommandHandler methods; @RoutingKey usages.](#command-payloads-referenced-from-commandhandler-methods-routingkey-usages)
   - [@CommandHandler — Import Move + EventAppender Parameter](#commandhandler--import-move--eventappender-parameter)
   - [@CreationPolicy Removal](#creationpolicy-removal)
   - [@EntityCreator — No-Arg Constructor Annotation](#entitycreator--no-arg-constructor-annotation)
@@ -27,6 +35,7 @@ make generate          # or: python3 scripts/generate_all_in_one.py
 - [event handlers](#event-handlers)
   - [In-Handler Command Dispatch — CommandGateway → CommandDispatcher](#in-handler-command-dispatch--commandgateway--commanddispatcher)
     - [Find event-handling classes that inject CommandGateway](#find-event-handling-classes-that-inject-commandgateway)
+  - [EventBus → EventSink](#eventbus--eventsink)
   - [@EventHandler, @DisallowReplay, @ResetHandler — Import Package Moves](#eventhandler-disallowreplay-resethandler--import-package-moves)
   - [Message Accessor Renames](#message-accessor-renames)
   - [Metadata Type Change](#metadata-type-change)
@@ -38,6 +47,9 @@ make generate          # or: python3 scripts/generate_all_in_one.py
 - [query handlers](#query-handlers)
   - [@QueryHandler — Import Package Move](#queryhandler--import-package-move)
   - [Named Query — @QueryHandler(queryName) → @Query Payload Record](#named-query--queryhandlerqueryname--query-payload-record)
+  - [QueryGateway — Drop ResponseTypes Wrappers](#querygateway--drop-responsetypes-wrappers)
+    - [Sites the recipe could not finish — 3-argument named queries](#sites-the-recipe-could-not-finish--3-argument-named-queries)
+    - [multipleInstancesOf sites — convert to queryMany](#multipleinstancesof-sites--convert-to-querymany)
   - [QueryUpdateEmitter — Constructor Field → Method Parameter](#queryupdateemitter--constructor-field--method-parameter)
 - [interceptors](#interceptors)
   - [MessageDispatchInterceptor — handle(List) → interceptOnDispatch](#messagedispatchinterceptor--handlelist--interceptondispatch)
@@ -142,6 +154,115 @@ axon:
   `implementation("io.axoniq.framework:axoniq-spring-boot-starter:…")`.
 - The `axon-test` artifact is replaced by `axon-spring-boot-starter-test` from the Spring extensions group.
 - **OpenRewrite status:** Partial — OR renames BOM (`Axon4ToAxon5Bom`), bumps versions, swaps starter to commercial (`axon4-to-axoniq5-spring.yml`), and renames the `axon.serializer` Spring property prefix; AI removes `console-framework-client-spring-boot-starter`.
+
+---
+
+### Serializer → Converter
+
+AF5 renames the serialization SPI from `Serializer` to `Converter` and moves the package from
+`org.axonframework.serialization` to `org.axonframework.conversion`. The Spring Boot property prefix moves
+accordingly: `axon.serializer.*` → `axon.converter.*`. The OpenRewrite recipe does the package rename only —
+concrete class names (`JacksonSerializer`, `XStreamSerializer`) are NOT auto-renamed and must be rewritten by AI.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.serialization.Serializer` | `org.axonframework.conversion.Converter` |
+| `org.axonframework.serialization.json.JacksonSerializer` | `org.axonframework.conversion.json.JacksonConverter` |
+| `org.axonframework.serialization.xml.XStreamSerializer` | *(no AF5 equivalent — replace with Jackson)* |
+| YAML key `axon.serializer.*` | `axon.converter.*` |
+
+##### Detection
+
+```bash
+#### Code references
+grep -rn '\bSerializer\b\|JacksonSerializer\|XStreamSerializer' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+
+#### Config keys
+grep -rn 'axon\.serializer' --include='*.yaml' --include='*.yml' --include='*.properties' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import org.axonframework.serialization.Serializer;
+import org.axonframework.serialization.json.JacksonSerializer;
+
+@Bean
+public Serializer serializer(ObjectMapper objectMapper) {
+    return JacksonSerializer.builder()
+            .objectMapper(objectMapper)
+            .build();
+}
+```
+
+```yaml
+#### application.yaml
+axon:
+  serializer:
+    general: jackson
+    events: jackson
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.conversion.Converter;
+import org.axonframework.conversion.json.JacksonConverter;
+
+@Bean
+public Converter converter(ObjectMapper objectMapper) {
+    return JacksonConverter.builder()
+            .objectMapper(objectMapper)
+            .build();
+}
+```
+
+```yaml
+#### application.yaml
+axon:
+  converter:
+    general: jackson
+    events: jackson
+```
+
+##### Notes
+
+- **`XStreamSerializer` has no AF5 replacement** — AF5 standardises on Jackson. Migrate XStream-encoded events
+  ahead of the upgrade, or keep an AF4 reader process alongside until the legacy stream is drained.
+- **`SerializerType.XSTREAM` / `JAVA` enum values** in `application.yaml` are intentionally left untouched by the
+  recipe — they have no `ConverterType` equivalent and would silently break event reading. Fix manually to
+  `jackson` (or remove if the default suffices).
+- **Bean name change is conventional, not mandatory.** Renaming the `@Bean` method `serializer` → `converter`
+  matches the new SPI but the framework binds by type, not name.
+
+##### Partial migration state (post-OpenRewrite)
+
+OpenRewrite's `axon4-to-axon5-conversion.yml` runs a single `ChangePackage` rule that rewrites
+`org.axonframework.serialization` → `org.axonframework.conversion` recursively. After the recipe:
+
+- Imports such as `org.axonframework.conversion.json.JacksonSerializer` are correct in terms of package but the
+  AF5 class is named `JacksonConverter` — the import will not resolve. AI renames the class references.
+- The `Serializer` interface name itself is also still present in code (the recipe moves only the package, not
+  the class name). Rewrite to `Converter`.
+- `application.yaml` keys are renamed by `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml`
+  (`axon.serializer` → `axon.converter`); nested child keys (`general`, `events`, `messages`) carry over
+  unchanged.
+
+```bash
+#### Find leftover class-name references after the package move
+grep -rn 'JacksonSerializer\|XStreamSerializer\|\bSerializer\b' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Notes (continued)
+
+- **OpenRewrite status:** Partial — `ChangePackage` in `axon4-to-axon5-conversion.yml` rewrites the package
+  prefix, and `ChangeSpringPropertyKey` in `axon4-to-axon5-extension-spring.yml` rewrites the YAML key prefix; AI
+  rewrites the concrete class names (`JacksonSerializer` → `JacksonConverter`, drop `XStreamSerializer`) and the
+  `SerializerType` enum values inside YAML.
 
 ---
 
@@ -399,6 +520,75 @@ public class OrderLine {
   internal id management before applying this pattern.
 - **`routingKey`** attribute carries over unchanged from `@AggregateMember`.
 - **OpenRewrite status:** Full — `ChangeType` (in `axon4-to-axon5-modelling.yml`) rewrites `AggregateMember` → `EntityMember` with `routingKey` preserved.
+
+---
+
+### Command Class Annotation
+
+AF5 requires every command payload type (record or class) that targets a `@CommandHandler` to carry the `@Command`
+annotation. AF4 had no class-level annotation on command payloads — the framework discovered them implicitly via
+handler signatures. AF5 makes the contract explicit and folds the AF4 `@RoutingKey` field into a `routingKey`
+attribute on `@Command`.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| *(no class annotation)* | `org.axonframework.messaging.commandhandling.annotation.Command` |
+| `org.axonframework.commandhandling.RoutingKey` (field annotation) | `@Command(routingKey = "fieldName")` (attribute on `@Command`) |
+
+##### Detection
+
+```bash
+#### Command payloads referenced from @CommandHandler methods; @RoutingKey usages.
+grep -rn '@RoutingKey\|@CommandHandler' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+// No class-level annotation. Optional @RoutingKey on a non-target field
+// when the routing identifier differs from @TargetAggregateIdentifier.
+public record ShipOrderCommand(
+    @TargetAggregateIdentifier String orderId,
+    @RoutingKey String warehouseId,
+    String address
+) { }
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.commandhandling.annotation.Command;
+
+@Command(routingKey = "warehouseId")
+public record ShipOrderCommand(
+    String orderId,
+    String warehouseId,
+    String address
+) { }
+```
+
+When the command had no `@RoutingKey`, just add `@Command`:
+
+```java
+@Command
+public record ShipOrderCommand(String orderId, String address) { }
+```
+
+##### Notes
+
+- **`@Command` is mandatory** — without it, AF5 cannot dispatch the payload through `CommandDispatcher` /
+  `CommandGateway`. The compiler will not catch this; the failure surfaces at runtime as "no handler for command".
+- **`routingKey` references the field by name (string)**. Multi-handler scenarios use this to map a single command
+  to several entities — the value of that field selects the receiving instance.
+- **`@TargetAggregateIdentifier` is removed entirely** (see `target-aggregate-identifier.md`) — the target id is
+  resolved by matching the command class to a `@Command`-annotated payload whose `idType` aligns with the entity's
+  `@EventSourced(idType = …)`. Do not re-add it as a `routingKey`.
+- Plain commands (no special routing) require only `@Command` with no attributes.
+- **OpenRewrite status:** Full — `AddCommandAnnotation` (in `axon4-to-axon5-eventsourcing.yml`) scans
+  `@CommandHandler` methods, adds `@Command` to their payload types, and migrates `@RoutingKey` field annotations
+  into the `routingKey` attribute on `@Command`.
 
 ---
 
@@ -1011,6 +1201,87 @@ commandDispatcher.send(cmd).resultAs(Void.class)   // returns CompletableFuture<
 
 ---
 
+### EventBus → EventSink
+
+AF4 exposed `EventBus` as the SPI for publishing events outside an aggregate (REST controllers, scheduled tasks,
+infrastructure bootstrappers). AF5 renames it to `EventSink` — the publish-only role is now in the type name. The
+method shape is unchanged: `publish(EventMessage…)` still exists.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.eventhandling.EventBus` | `org.axonframework.messaging.eventhandling.EventSink` |
+
+##### Detection
+
+```bash
+grep -rn '\bEventBus\b\|import.*eventhandling\.EventBus' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+import org.axonframework.eventhandling.EventBus;
+import org.axonframework.eventhandling.GenericEventMessage;
+
+@RestController
+public class OrderIngestController {
+
+    private final EventBus eventBus;
+
+    public OrderIngestController(EventBus eventBus) {
+        this.eventBus = eventBus;
+    }
+
+    @PostMapping("/orders/ingest")
+    public void ingest(@RequestBody OrderImported event) {
+        eventBus.publish(new GenericEventMessage<>(event));
+    }
+}
+```
+
+##### Axon Framework 5 Code
+
+```java
+import org.axonframework.messaging.eventhandling.EventSink;
+import org.axonframework.messaging.eventhandling.GenericEventMessage;
+
+@RestController
+public class OrderIngestController {
+
+    private final EventSink eventSink;
+
+    public OrderIngestController(EventSink eventSink) {
+        this.eventSink = eventSink;
+    }
+
+    @PostMapping("/orders/ingest")
+    public void ingest(@RequestBody OrderImported event) {
+        eventSink.publish(new GenericEventMessage<>(event));
+    }
+}
+```
+
+##### Notes
+
+- **Use `EventSink` from REST / CLI / scheduled tasks** — the top-level entry points that have no
+  `ProcessingContext`. Inside `@CommandHandler` methods on an aggregate, use the injected `EventAppender`
+  (see `aggregate-lifecycle.md`); never inject `EventSink` into an aggregate.
+- **Rename only — no body changes required.** `publish(...)` keeps the same overloads. Field name, constructor
+  parameter, and any local variables are conventionally renamed `eventBus` → `eventSink` for readability but the
+  compiler does not require it.
+- AF5 keeps `EventStore` (event-sourced storage) and `EventSink` (publish SPI) as distinct concerns. Code that
+  read from the store via `EventBus` was already going through `EventStore` — that path is unaffected by this
+  rename.
+- **OpenRewrite status:** Full — `ChangeType` rule in `axon4-to-axon5-messaging.yml` rewrites
+  `org.axonframework.messaging.eventhandling.EventBus` → `…EventSink` (after the upstream `ChangePackage` moves
+  `eventhandling` under `messaging.eventhandling`). The field/variable name change is cosmetic and not performed
+  by the recipe.
+
+---
+
 ### @EventHandler, @DisallowReplay, @ResetHandler — Import Package Moves
 
 These three event-handling annotations moved to new packages in AF5. Their semantics are unchanged.
@@ -1607,6 +1878,97 @@ public Iterable<BikeStatus> findAvailable(FindAvailableQuery query) {
 - No-param queries: `public record FindAvailableQuery() {}` — the record still needs to exist even with
   no fields.
 - **OpenRewrite status:** None — no OR rule rewrites `@QueryHandler(queryName = "…")` into a `@Query` payload record; AI introduces the record and updates the handler signature.
+
+---
+
+### QueryGateway — Drop ResponseTypes Wrappers
+
+AF4 typed the expected response of `queryGateway.query(...)` through the `ResponseTypes` SPI
+(`ResponseTypes.instanceOf(Foo.class)`, `ResponseTypes.multipleInstancesOf(Foo.class)`,
+`ResponseTypes.optionalInstanceOf(Foo.class)`). AF5 drops the `org.axonframework.messaging.responsetypes`
+package entirely. The gateway accepts `Class<R>` directly for single-instance responses, and exposes
+`queryMany(...)` for multi-instance responses.
+
+##### Import Mappings
+
+| AF4 | AF5 |
+|-----|-----|
+| `org.axonframework.messaging.responsetypes.ResponseTypes` | *(remove import — package is gone)* |
+| `org.axonframework.messaging.responsetypes.ResponseType` | *(remove)* |
+| `ResponseTypes.instanceOf(Foo.class)` | `Foo.class` |
+| `ResponseTypes.optionalInstanceOf(Foo.class)` | `Foo.class` (gateway still returns a `CompletableFuture`) |
+| `ResponseTypes.multipleInstancesOf(Foo.class)` | use `queryGateway.queryMany(query, Foo.class)` |
+
+##### Detection
+
+```bash
+grep -rn 'ResponseTypes\.\|responsetypes\|multipleInstancesOf\|instanceOf' \
+  --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Axon Framework 4 Code
+
+```java
+// Single-instance, named query, 3-argument form
+Future<Dwelling> result = queryGateway.query(
+        "findDwellingById",
+        new FindDwellingByIdQuery(id),
+        ResponseTypes.instanceOf(Dwelling.class));
+
+// Multi-instance — list of results
+Future<List<Dwelling>> all = queryGateway.query(
+        new FindAvailableDwellingsQuery(),
+        ResponseTypes.multipleInstancesOf(Dwelling.class));
+```
+
+##### Axon Framework 5 Code
+
+```java
+// Single-instance — 2-argument form, no name string
+CompletableFuture<Dwelling> result = queryGateway.query(
+        new FindDwellingByIdQuery(id),
+        Dwelling.class);
+
+// Multi-instance — explicit queryMany method
+CompletableFuture<List<Dwelling>> all = queryGateway.queryMany(
+        new FindAvailableDwellingsQuery(),
+        Dwelling.class);
+```
+
+##### Notes
+
+- **The query-name string is gone.** AF5 routes purely by the payload type. If the AF4 site passed a name that
+  differs from the payload's simple class name, annotate the payload record with `@Query(name = "…")` (see
+  `query-named.md`).
+- **`queryMany` is the only way to get a collection.** Calling `query(..., Class<R>)` with a list-shaped query
+  binds to a single-instance handler at runtime and fails.
+- **`CompletableFuture`, not `Future`.** AF4's return type widens to `CompletableFuture` so `.join()` /
+  `.thenApply(...)` chains work without casting.
+- **`ResponseType` field declarations** (e.g. cached `ResponseType<List<X>>` constants used across multiple
+  query sites) become `Class<X>` references — drop the wrapper entirely.
+
+##### Partial migration state (post-OpenRewrite)
+
+`Axon4ToAxon5QueryResponseTypes` in `axon4-to-axon5-messaging.yml` rewrites the **2-argument** typed-payload
+form `query(payload, ResponseTypes.instanceOf(Foo.class))` → `query(payload, Foo.class)` and prunes the
+`responsetypes` import when no references remain. The recipe deliberately leaves the **3-argument**
+`query(name, payload, ResponseTypes…)` shape alone — that case needs the payload to gain `@Query(name = "…")`
+(or to be renamed) before the wrapper can be removed safely. `RemoveUnusedImports` (composed in the same
+recipe) cleans up any orphaned `responsetypes.*` imports after manual rewrites.
+
+```bash
+#### Sites the recipe could not finish — 3-argument named queries
+grep -rn 'queryGateway\.query("' --include='*.java' --include='*.kt' --include='*.scala' .
+#### multipleInstancesOf sites — convert to queryMany
+grep -rn 'multipleInstancesOf' --include='*.java' --include='*.kt' --include='*.scala' .
+```
+
+##### Notes (continued)
+
+- **OpenRewrite status:** Partial — `Axon4ToAxon5QueryResponseTypes` (in `axon4-to-axon5-messaging.yml`)
+  rewrites the 2-argument `query(payload, ResponseTypes.instanceOf(...))` form; AI rewrites the 3-argument named
+  query form, converts `multipleInstancesOf` call sites to `queryMany`, and finishes any
+  `ResponseType<R>`-typed local/field declarations.
 
 ---
 

@@ -23,9 +23,11 @@ edit the pattern files themselves and re-run `make generate`.
 | Category | Pattern file | Topic |
 |---|---|---|
 | 10 — Dependencies | [maven-gradle-migration.md](10-dependencies/maven-gradle-migration.md) | Dependency Migration — Maven / Gradle |
+| 10 — Dependencies | [serializer-to-converter.md](10-dependencies/serializer-to-converter.md) | Serializer → Converter |
 | 20 — Aggregates | [aggregate-class.md](20-aggregates/aggregate-class.md) | Aggregate Class Stereotype |
 | 20 — Aggregates | [aggregate-lifecycle.md](20-aggregates/aggregate-lifecycle.md) | AggregateLifecycle.apply() → EventAppender.append() |
 | 20 — Aggregates | [aggregate-member.md](20-aggregates/aggregate-member.md) | @AggregateMember → @EntityMember (Child Entities) |
+| 20 — Aggregates | [command-annotation.md](20-aggregates/command-annotation.md) | Command Class Annotation |
 | 20 — Aggregates | [command-handler.md](20-aggregates/command-handler.md) | @CommandHandler — Import Move + EventAppender Parameter |
 | 20 — Aggregates | [creation-policy.md](20-aggregates/creation-policy.md) | @CreationPolicy Removal |
 | 20 — Aggregates | [entity-creator.md](20-aggregates/entity-creator.md) | @EntityCreator — No-Arg Constructor Annotation |
@@ -35,6 +37,7 @@ edit the pattern files themselves and re-run `make generate`.
 | 20 — Aggregates | [generic-domain-event-message.md](20-aggregates/generic-domain-event-message.md) | GenericDomainEventMessage Removal |
 | 20 — Aggregates | [target-aggregate-identifier.md](20-aggregates/target-aggregate-identifier.md) | @TargetAggregateIdentifier Removal |
 | 30 — Event Handlers | [command-dispatcher.md](30-event-handlers/command-dispatcher.md) | In-Handler Command Dispatch — CommandGateway → CommandDispatcher |
+| 30 — Event Handlers | [event-bus-to-sink.md](30-event-handlers/event-bus-to-sink.md) | EventBus → EventSink |
 | 30 — Event Handlers | [event-handler-annotation.md](30-event-handlers/event-handler-annotation.md) | @EventHandler, @DisallowReplay, @ResetHandler — Import Package Moves |
 | 30 — Event Handlers | [message-accessors.md](30-event-handlers/message-accessors.md) | Message Accessor Renames |
 | 30 — Event Handlers | [metadata-type.md](30-event-handlers/metadata-type.md) | Metadata Type Change |
@@ -43,6 +46,7 @@ edit the pattern files themselves and re-run `make generate`.
 | 30 — Event Handlers | [sequencing-policy.md](30-event-handlers/sequencing-policy.md) | Sequencing Policy Migration |
 | 40 — Query Handlers | [query-handler.md](40-query-handlers/query-handler.md) | @QueryHandler — Import Package Move |
 | 40 — Query Handlers | [query-named.md](40-query-handlers/query-named.md) | Named Query — @QueryHandler(queryName) → @Query Payload Record |
+| 40 — Query Handlers | [query-response-types.md](40-query-handlers/query-response-types.md) | QueryGateway — Drop ResponseTypes Wrappers |
 | 40 — Query Handlers | [query-update-emitter.md](40-query-handlers/query-update-emitter.md) | QueryUpdateEmitter — Constructor Field → Method Parameter |
 | 50 — Interceptors | [message-dispatch-interceptor.md](50-interceptors/message-dispatch-interceptor.md) | MessageDispatchInterceptor — handle(List) → interceptOnDispatch |
 | 50 — Interceptors | [message-handler-interceptor.md](50-interceptors/message-handler-interceptor.md) | MessageHandlerInterceptor — Handle Method Signature Migration |
