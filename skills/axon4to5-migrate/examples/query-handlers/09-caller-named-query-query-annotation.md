@@ -1,4 +1,4 @@
-# 04 — Named query: string dispatch → `@Query`-annotated payload class
+# 09 — Named query: string dispatch → `@Query`-annotated payload class
 
 **Why this case is interesting:** AF4's named-query overload `query("name", payload, ResponseType)` is removed in AF5. The correct migration is NOT to construct `GenericQueryMessage` — it is to move the name onto the payload class via `@Query(name = "…")`. When payload was a bare scalar, a new record must be introduced, which also requires a coupled handler-side parameter-type change.
 

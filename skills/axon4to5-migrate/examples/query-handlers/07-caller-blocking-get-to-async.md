@@ -1,4 +1,4 @@
-# 02 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained
+# 07 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained
 
 **Why this case is interesting:** AF4 code often calls `.get()` on the `CompletableFuture` returned by `queryGateway.query(...)`. AF5 still returns `CompletableFuture<R>`, so the preferred fix is to stop blocking entirely — change the method return type to `CompletableFuture<R>` and return the future directly. The `.orTimeout().join()` pattern is a fallback only when the method signature is truly constrained by a sync framework contract.
 

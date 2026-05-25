@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-012 — Discovery pass (added IMP-013..IMP-018)
-**Next action:** Start IMP-013: Renumber duplicate examples in query-handlers/
-**Current session commit:** IMP-001..011 committed; IMP-012 pending
+**Last completed:** IMP-013 — Renumber duplicate query-handlers examples
+**Next action:** Start IMP-014: Cross-link patterns ↔ examples/java/
+**Current session commit:** IMP-001..012 committed; IMP-013 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -33,7 +33,7 @@ session-count: 1
 | IMP-010 | Examples import audit | done | 3 examples fixed: MetaData→Metadata in projector-with-dispatch; MessagingConfigurer canonical path in 2 native-configurer examples. Zero forbidden-name. |
 | IMP-011 | Command-gateway top-level pattern | done | New `command-gateway-top-level.md` for REST/MCP/CLI dispatchers (keeps `CommandGateway`, .send().resultAs() shape). OR status: Partial. SKILL.md table + cross-ref in command-dispatcher.md updated. |
 | IMP-012 | Discovery pass | done | Added IMP-013..IMP-018 below from re-comparison. |
-| IMP-013 | Renumber duplicate examples in query-handlers/ | pending | Five pairs share numbers (01/01, 02/02, 03/03, 04/04, 05/05) — pick a single numbering scheme so the file index reads sanely. |
+| IMP-013 | Renumber duplicate examples in query-handlers/ | done | Renamed 10 files into a single sequential `01-handler-…05-handler-…06-caller-…10-caller-…` scheme; H1 numbers in 5 caller files updated to match. |
 | IMP-014 | Cross-link patterns ↔ examples/java/ | pending | The 12 Heroes Java files added in IMP-005 are not referenced from any pattern's Notes. Add a "See `examples/java/af5/.../<file>.java`" line where applicable (aggregate-class, command-handler, event-handler-annotation, command-gateway-top-level, test-fixture). |
 | IMP-015 | Move OR coverage table out of SKILL.md | pending | The 32-row coverage table is now half of SKILL.md. Move it to `references/openrewrite-coverage.md`; SKILL.md keeps a 1-paragraph summary + link. Stays consistent with CLAUDE.md's "skills are LLM context, not docs". |
 | IMP-016 | Eval coverage for new patterns | pending | IMP-006 added 4 patterns + IMP-011 added 1. None have evals. Add eval entries under `evals/axon4to5-migrate/recipes/` for `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`, `command-gateway-top-level`. |
@@ -56,3 +56,4 @@ session-count: 1
 - IMP-010 done: 3 example files fixed — `MetaData`→`Metadata`, `MessagingConfigurer` canonical path. Zero forbidden-attribution hits.
 - IMP-011 done: new `command-gateway-top-level.md` pattern for REST/MCP/CLI dispatchers (keeps `CommandGateway`, switches to `.send().resultAs(...)`); cross-ref from `command-dispatcher.md`; OR status: Partial.
 - IMP-012 done: discovery pass — added IMP-013..IMP-018 to backlog (renumber duplicate examples; cross-link patterns to examples/java/; move OR coverage table to references/; eval coverage for new patterns; Notes formatting consistency; CI gate against forbidden attribution).
+- IMP-013 done: query-handlers examples renumbered into a single 01..10 sequence (`01-handler-…` through `10-caller-…`); H1 lines kept in sync.

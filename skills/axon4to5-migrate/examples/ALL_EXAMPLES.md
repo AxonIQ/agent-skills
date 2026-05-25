@@ -46,16 +46,16 @@ Concrete before/after examples showing full file migrations. Consult when a patt
     - [What each file demonstrates](#what-each-file-demonstrates)
     - [AF4 ↔ AF5 pairs](#af4--af5-pairs)
 - [query handlers](#query-handlers)
-  - [01 — Spring REST controller: import-only change](#01--spring-rest-controller-import-only-change)
   - [01 — Simple @QueryHandler class: import-only swap](#01--simple-queryhandler-class-import-only-swap)
-  - [02 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained](#02--blocking-get-call-prefer-async-upgrade-fallback-to-ortimeoutjoin-when-constrained)
   - [02 — Named query removal: queryName attribute → payload record](#02--named-query-removal-queryname-attribute--payload-record)
   - [03 — QueryUpdateEmitter: constructor injection → method parameter](#03--queryupdateemitter-constructor-injection--method-parameter)
-  - [03 — ResponseType wrapper removal + `queryMany`](#03--responsetype-wrapper-removal--querymany)
-  - [04 — Named query: string dispatch → `@Query`-annotated payload class](#04--named-query-string-dispatch--query-annotated-payload-class)
   - [04 — @ProcessingGroup → @Namespace and @MetaDataValue → @MetadataValue](#04--processinggroup--namespace-and-metadatavalue--metadatavalue)
   - [05 — Rejected: handler class with `QueryGateway` field](#05--rejected-handler-class-with-querygateway-field)
-  - [05 — Rejected: class with no @QueryHandler](#05--rejected-class-with-no-queryhandler)
+  - [06 — Spring REST controller: import-only change](#06--spring-rest-controller-import-only-change)
+  - [07 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained](#07--blocking-get-call-prefer-async-upgrade-fallback-to-ortimeoutjoin-when-constrained)
+  - [08 — ResponseType wrapper removal + `queryMany`](#08--responsetype-wrapper-removal--querymany)
+  - [09 — Named query: string dispatch → `@Query`-annotated payload class](#09--named-query-string-dispatch--query-annotated-payload-class)
+  - [10 — Rejected: class with no @QueryHandler](#10--rejected-class-with-no-queryhandler)
 - [sagas](#sagas)
   - [Use case 01 — JPA state shape (Spring, no deadlines)](#use-case-01--jpa-state-shape-spring-no-deadlines)
   - [Use case 02 — DeadlineManager → Blocker with partial migration (comment out)](#use-case-02--deadlinemanager--blocker-with-partial-migration-comment-out)
@@ -3124,86 +3124,6 @@ Source: `.knowledge/repositories/axon-examples/{axon4,axon5}/heroes/`.
 
 ## query handlers
 
-### 01 — Spring REST controller: import-only change
-
-**Why this case is interesting:** The simplest AF4→AF5 path. The controller already uses the `Class<R>` overload of `query(...)` — AF5 kept this overload. Only the `QueryGateway` import package changes.
-
-**Apply-condition:** `$SOURCE` is a Spring `@RestController` AND all `query(...)` calls use `Class<R>` (no `ResponseType` wrapper, no named-query string).
-
-##### Before (AF4)
-
-```java
-package com.example.dwellings.api;
-
-import com.example.dwellings.read.DwellingReadModel;
-import org.axonframework.queryhandling.QueryGateway;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.concurrent.CompletableFuture;
-
-@RestController
-@RequestMapping("/dwellings")
-class DwellingRestController {
-
-    private final QueryGateway queryGateway;
-
-    DwellingRestController(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    @GetMapping("/{dwellingId}")
-    CompletableFuture<DwellingReadModel> getDwelling(@PathVariable String dwellingId) {
-        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
-    }
-}
-```
-
-##### After (AF5)
-
-```java
-package com.example.dwellings.api;
-
-import com.example.dwellings.read.DwellingReadModel;
-import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.concurrent.CompletableFuture;
-
-@RestController
-@RequestMapping("/dwellings")
-class DwellingRestController {
-
-    private final QueryGateway queryGateway;
-
-    DwellingRestController(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    @GetMapping("/{dwellingId}")
-    CompletableFuture<DwellingReadModel> getDwelling(@PathVariable String dwellingId) {
-        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
-    }
-}
-```
-
-##### What changed
-
-- `org.axonframework.queryhandling.QueryGateway` → `org.axonframework.messaging.queryhandling.gateway.QueryGateway`
-- Body, field, constructor, and method signature **unchanged**
-
-##### Caveats
-
-- If the AF4 call had used `ResponseTypes.instanceOf(DwellingReadModel.class)` instead of `DwellingReadModel.class`, the wrapper must be stripped — see use-case 03.
-- The controller returns `CompletableFuture<DwellingReadModel>` — Spring MVC serves async futures natively. No blocking concern here.
-
----
-
 ### 01 — Simple @QueryHandler class: import-only swap
 
 **Why this case is interesting:** Projection classes that already use typed query payload classes (no string `queryName`, no `QueryUpdateEmitter`) need only the `@QueryHandler` import package to change. Everything else — annotations, parameters, method bodies — stays byte-identical.
@@ -3274,131 +3194,6 @@ public class BikeStatusHandler {
 
 - `org.axonframework.queryhandling.QueryHandler` → `org.axonframework.messaging.queryhandling.annotation.QueryHandler`
 - Everything else: unchanged.
-
----
-
-### 02 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained
-
-**Why this case is interesting:** AF4 code often calls `.get()` on the `CompletableFuture` returned by `queryGateway.query(...)`. AF5 still returns `CompletableFuture<R>`, so the preferred fix is to stop blocking entirely — change the method return type to `CompletableFuture<R>` and return the future directly. The `.orTimeout().join()` pattern is a fallback only when the method signature is truly constrained by a sync framework contract.
-
-**Apply-condition:** `$SOURCE` has bare `.get()` or `.join()` without `.orTimeout(...)` on a `queryGateway.query(...)` result.
-
----
-
-##### Path A — Method can return `CompletableFuture<R>` (preferred)
-
-Use when the method is a plain service method, Spring MVC endpoint, or any caller whose signature is not locked to a sync return by an external framework contract.
-
-###### Before (AF4)
-
-```java
-package com.example.dwellings;
-
-import org.axonframework.queryhandling.QueryGateway;
-import org.springframework.stereotype.Component;
-
-@Component
-class DwellingsQueryService {
-
-    private final QueryGateway queryGateway;
-
-    DwellingsQueryService(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    DwellingReadModel getDwelling(String dwellingId) {
-        try {
-            return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class).get();
-        } catch (Exception e) {
-            throw new RuntimeException("Query failed", e);
-        }
-    }
-}
-```
-
-###### After (AF5 — preferred)
-
-```java
-package com.example.dwellings;
-
-import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
-import org.springframework.stereotype.Component;
-
-import java.util.concurrent.CompletableFuture;
-
-@Component
-class DwellingsQueryService {
-
-    private final QueryGateway queryGateway;
-
-    DwellingsQueryService(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    CompletableFuture<DwellingReadModel> getDwelling(String dwellingId) {
-        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
-    }
-}
-```
-
-###### What changed
-
-- AF4 import → AF5 import.
-- Method return type `DwellingReadModel` → `CompletableFuture<DwellingReadModel>`.
-- `import java.util.concurrent.CompletableFuture;` added.
-- Body simplified: return the future directly — no `.get()`, no try-catch.
-
----
-
-##### Path B — Method signature constrained to sync return (fallback)
-
-Use only when the method implements a sync contract that cannot be changed: a sync interface method, `@KafkaListener`, `@JmsListener`, MCP `SyncResourceSpecification` lambda, Camel route step, `CommandLineRunner.run(...)`, `@Scheduled void`, `main(String[])`.
-
-###### Before (AF4)
-
-```java
-// implements SomeSyncInterface { SomeResult fetchResult(String id); }
-@Override
-public SomeResult fetchResult(String id) {
-    try {
-        return queryGateway.query(new GetSomething(id), SomeResult.class).get();
-    } catch (Exception e) {
-        throw new RuntimeException(e);
-    }
-}
-```
-
-###### After (AF5 — sync-constrained fallback)
-
-```java
-import java.util.concurrent.TimeUnit;
-
-@Override
-public SomeResult fetchResult(String id) {
-    try {
-        return queryGateway.query(new GetSomething(id), SomeResult.class)
-                .orTimeout(30, TimeUnit.SECONDS)
-                .join();
-    } catch (Exception e) {
-        throw new RuntimeException(e);
-    }
-}
-```
-
-###### What changed
-
-- AF4 import → AF5 import.
-- `.get()` → `.orTimeout(30, TimeUnit.SECONDS).join()`.
-- `import java.util.concurrent.TimeUnit;` added.
-- The existing `catch (Exception e)` still catches `CompletionException` (unchecked, extends `RuntimeException`).
-
----
-
-##### Caveats
-
-- **Never use `.orTimeout().join()` when the method can go async.** It is a fallback for genuinely constrained callers, not a universal fix.
-- **30-second timeout is a default.** Shorten when the surrounding framework has a tighter SLA.
-- **Callers of the migrated method** (Path A) will need to handle `CompletableFuture<R>` — check that callers compile after the return type change.
 
 ---
 
@@ -3612,210 +3407,6 @@ public class BikeStatusSubscriptionProjection {
 
 ---
 
-### 03 — ResponseType wrapper removal + `queryMany`
-
-**Why this case is interesting:** AF4 required wrapping response types in `ResponseTypes.instanceOf(R.class)` / `multipleInstancesOf(R.class)`. AF5 removed this SPI entirely. The `multipleInstancesOf` case is a double change: remove wrapper AND rename method to `queryMany`.
-
-**Apply-condition:** `$SOURCE` uses `ResponseTypes.instanceOf(...)` / `multipleInstancesOf(...)` / `optionalInstanceOf(...)`.
-
-##### Before (AF4)
-
-```java
-package com.example.bikes.api;
-
-import com.example.bikes.query.BikeStatus;
-import org.axonframework.messaging.responsetypes.ResponseTypes;
-import org.axonframework.queryhandling.QueryGateway;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-@RestController
-@RequestMapping("/bikes")
-class BikeStatusController {
-
-    private final QueryGateway queryGateway;
-
-    BikeStatusController(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    @GetMapping("/{bikeId}")
-    CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
-        return queryGateway.query(
-                new FindBikeById(bikeId),
-                ResponseTypes.instanceOf(BikeStatus.class)
-        );
-    }
-
-    @GetMapping
-    CompletableFuture<List<BikeStatus>> findAll() {
-        return queryGateway.query(
-                new FindAllBikes(),
-                ResponseTypes.multipleInstancesOf(BikeStatus.class)
-        );
-    }
-}
-```
-
-##### After (AF5)
-
-```java
-package com.example.bikes.api;
-
-import com.example.bikes.query.BikeStatus;
-import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-@RestController
-@RequestMapping("/bikes")
-class BikeStatusController {
-
-    private final QueryGateway queryGateway;
-
-    BikeStatusController(QueryGateway queryGateway) {
-        this.queryGateway = queryGateway;
-    }
-
-    @GetMapping("/{bikeId}")
-    CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
-        return queryGateway.query(new FindBikeById(bikeId), BikeStatus.class);
-    }
-
-    @GetMapping
-    CompletableFuture<List<BikeStatus>> findAll() {
-        return queryGateway.queryMany(new FindAllBikes(), BikeStatus.class);
-    }
-}
-```
-
-##### What changed
-
-- AF4 import → AF5 import.
-- `import org.axonframework.messaging.responsetypes.ResponseTypes;` removed.
-- `ResponseTypes.instanceOf(BikeStatus.class)` → `BikeStatus.class`.
-- `query(..., ResponseTypes.multipleInstancesOf(BikeStatus.class))` → `queryMany(..., BikeStatus.class)`.
-- Method return types unchanged (`CompletableFuture<BikeStatus>`, `CompletableFuture<List<BikeStatus>>`).
-
-##### Caveats
-
-- `query(...)` is **always single-response** in AF5. Any AF4 site using `multipleInstancesOf` MUST use `queryMany(...)` — using `query(...)` with a `Class<R>` would compile but return only the first result.
-- `optionalInstanceOf(R.class)` → `query(payload, R.class)`. The future resolves to `null` if no result — callers must handle null.
-- Custom `ResponseType` subclass in the project → Blocker B2; do not attempt to strip mechanically.
-
----
-
-### 04 — Named query: string dispatch → `@Query`-annotated payload class
-
-**Why this case is interesting:** AF4's named-query overload `query("name", payload, ResponseType)` is removed in AF5. The correct migration is NOT to construct `GenericQueryMessage` — it is to move the name onto the payload class via `@Query(name = "…")`. When payload was a bare scalar, a new record must be introduced, which also requires a coupled handler-side parameter-type change.
-
-**Apply-condition:** `$SOURCE` has `queryGateway.query("name", payload, …)` or `queryGateway.queryMany("name", payload, …)` calls.
-
-##### Two sub-cases
-
-###### A — Payload class already exists (annotation-only)
-
-Payload classes (`FindOneBike`, `FindAllBikes`) already exist as dedicated records. Only `@Query` annotation added; handler signatures unchanged.
-
-**Before (AF4 dispatch):**
-```java
-import org.axonframework.messaging.responsetypes.ResponseTypes;
-import org.axonframework.queryhandling.QueryGateway;
-
-@GetMapping("/bikes")
-public CompletableFuture<List<BikeStatus>> findAll() {
-    return queryGateway.query("findAll", new FindAllBikes(), ResponseTypes.multipleInstancesOf(BikeStatus.class));
-}
-
-@GetMapping("/bikes/{bikeId}")
-public CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
-    return queryGateway.query("findOne", new FindOneBike(bikeId), BikeStatus.class);
-}
-```
-
-**Before (payload classes):**
-```java
-public record FindAllBikes() {}
-public record FindOneBike(String bikeId) {}
-```
-
-**After (AF5 dispatch):**
-```java
-import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
-
-@GetMapping("/bikes")
-public CompletableFuture<List<BikeStatus>> findAll() {
-    return queryGateway.queryMany(new FindAllBikes(), BikeStatus.class);
-}
-
-@GetMapping("/bikes/{bikeId}")
-public CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
-    return queryGateway.query(new FindOneBike(bikeId), BikeStatus.class);
-}
-```
-
-**After (payload classes):**
-```java
-import org.axonframework.messaging.queryhandling.annotation.Query;
-
-@Query(name = "findAll")
-public record FindAllBikes() {}
-
-@Query(name = "findOne")
-public record FindOneBike(String bikeId) {}
-```
-
-Handler-side `@QueryHandler(queryName = "findAll")` stays unchanged — routing matches via `@Query(name = "findAll")`.
-
-###### B — Bare scalar payload (introduce record + handler edit)
-
-**Before (AF4):**
-```java
-// dispatch
-queryGateway.query("getStatus", paymentId, PaymentStatus.class)
-
-// handler
-@QueryHandler(queryName = "getStatus")
-public PaymentStatus getStatus(String paymentId) { ... }
-```
-
-**After (AF5):**
-```java
-// new payload record
-import org.axonframework.messaging.queryhandling.annotation.Query;
-
-@Query(name = "getStatus")
-public record GetPaymentStatusQuery(String paymentId) {}
-
-// dispatch
-queryGateway.query(new GetPaymentStatusQuery(paymentId), PaymentStatus.class)
-
-// handler (coupled edit — in scope)
-@QueryHandler(queryName = "getStatus")
-public PaymentStatus getStatus(GetPaymentStatusQuery query) {
-    return ... query.paymentId() ...;
-}
-```
-
-##### Caveats
-
-- **`@Query.name()` must match AF4 string exactly.** The default is the simple class name; AF4 names almost never match. Always set `name` explicitly.
-- **`queryMany` for `multipleInstancesOf`.** The named-form `query("findAll", ...)` with `multipleInstancesOf` becomes `queryMany(new FindAllBikes(), R.class)`.
-- **Never construct `GenericQueryMessage` at dispatch sites** to "preserve" the name. This scatters routing keys across dispatch sites instead of centralising them on the payload class.
-- **Handler-side edit is in scope only when payload class changes** (scalar → record). When payload was already a dedicated class, only the `@Query` annotation is added — handlers unchanged.
-
----
-
 ### 04 — @ProcessingGroup → @Namespace and @MetaDataValue → @MetadataValue
 
 **Why this case is interesting:** Heroes-of-DDD and similar projects annotate query handler classes with `@ProcessingGroup` for grouping, and use `@MetaDataValue` for injecting metadata into handler method parameters. Both annotation names and packages changed in AF5.
@@ -3981,7 +3572,416 @@ Nothing — the recipe did not touch the file.
 
 ---
 
-### 05 — Rejected: class with no @QueryHandler
+### 06 — Spring REST controller: import-only change
+
+**Why this case is interesting:** The simplest AF4→AF5 path. The controller already uses the `Class<R>` overload of `query(...)` — AF5 kept this overload. Only the `QueryGateway` import package changes.
+
+**Apply-condition:** `$SOURCE` is a Spring `@RestController` AND all `query(...)` calls use `Class<R>` (no `ResponseType` wrapper, no named-query string).
+
+##### Before (AF4)
+
+```java
+package com.example.dwellings.api;
+
+import com.example.dwellings.read.DwellingReadModel;
+import org.axonframework.queryhandling.QueryGateway;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.CompletableFuture;
+
+@RestController
+@RequestMapping("/dwellings")
+class DwellingRestController {
+
+    private final QueryGateway queryGateway;
+
+    DwellingRestController(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    @GetMapping("/{dwellingId}")
+    CompletableFuture<DwellingReadModel> getDwelling(@PathVariable String dwellingId) {
+        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
+    }
+}
+```
+
+##### After (AF5)
+
+```java
+package com.example.dwellings.api;
+
+import com.example.dwellings.read.DwellingReadModel;
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.CompletableFuture;
+
+@RestController
+@RequestMapping("/dwellings")
+class DwellingRestController {
+
+    private final QueryGateway queryGateway;
+
+    DwellingRestController(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    @GetMapping("/{dwellingId}")
+    CompletableFuture<DwellingReadModel> getDwelling(@PathVariable String dwellingId) {
+        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
+    }
+}
+```
+
+##### What changed
+
+- `org.axonframework.queryhandling.QueryGateway` → `org.axonframework.messaging.queryhandling.gateway.QueryGateway`
+- Body, field, constructor, and method signature **unchanged**
+
+##### Caveats
+
+- If the AF4 call had used `ResponseTypes.instanceOf(DwellingReadModel.class)` instead of `DwellingReadModel.class`, the wrapper must be stripped — see use-case 03.
+- The controller returns `CompletableFuture<DwellingReadModel>` — Spring MVC serves async futures natively. No blocking concern here.
+
+---
+
+### 07 — Blocking `.get()` call: prefer async upgrade; fallback to `.orTimeout().join()` when constrained
+
+**Why this case is interesting:** AF4 code often calls `.get()` on the `CompletableFuture` returned by `queryGateway.query(...)`. AF5 still returns `CompletableFuture<R>`, so the preferred fix is to stop blocking entirely — change the method return type to `CompletableFuture<R>` and return the future directly. The `.orTimeout().join()` pattern is a fallback only when the method signature is truly constrained by a sync framework contract.
+
+**Apply-condition:** `$SOURCE` has bare `.get()` or `.join()` without `.orTimeout(...)` on a `queryGateway.query(...)` result.
+
+---
+
+##### Path A — Method can return `CompletableFuture<R>` (preferred)
+
+Use when the method is a plain service method, Spring MVC endpoint, or any caller whose signature is not locked to a sync return by an external framework contract.
+
+###### Before (AF4)
+
+```java
+package com.example.dwellings;
+
+import org.axonframework.queryhandling.QueryGateway;
+import org.springframework.stereotype.Component;
+
+@Component
+class DwellingsQueryService {
+
+    private final QueryGateway queryGateway;
+
+    DwellingsQueryService(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    DwellingReadModel getDwelling(String dwellingId) {
+        try {
+            return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class).get();
+        } catch (Exception e) {
+            throw new RuntimeException("Query failed", e);
+        }
+    }
+}
+```
+
+###### After (AF5 — preferred)
+
+```java
+package com.example.dwellings;
+
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.CompletableFuture;
+
+@Component
+class DwellingsQueryService {
+
+    private final QueryGateway queryGateway;
+
+    DwellingsQueryService(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    CompletableFuture<DwellingReadModel> getDwelling(String dwellingId) {
+        return queryGateway.query(new GetDwellingById(dwellingId), DwellingReadModel.class);
+    }
+}
+```
+
+###### What changed
+
+- AF4 import → AF5 import.
+- Method return type `DwellingReadModel` → `CompletableFuture<DwellingReadModel>`.
+- `import java.util.concurrent.CompletableFuture;` added.
+- Body simplified: return the future directly — no `.get()`, no try-catch.
+
+---
+
+##### Path B — Method signature constrained to sync return (fallback)
+
+Use only when the method implements a sync contract that cannot be changed: a sync interface method, `@KafkaListener`, `@JmsListener`, MCP `SyncResourceSpecification` lambda, Camel route step, `CommandLineRunner.run(...)`, `@Scheduled void`, `main(String[])`.
+
+###### Before (AF4)
+
+```java
+// implements SomeSyncInterface { SomeResult fetchResult(String id); }
+@Override
+public SomeResult fetchResult(String id) {
+    try {
+        return queryGateway.query(new GetSomething(id), SomeResult.class).get();
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+
+###### After (AF5 — sync-constrained fallback)
+
+```java
+import java.util.concurrent.TimeUnit;
+
+@Override
+public SomeResult fetchResult(String id) {
+    try {
+        return queryGateway.query(new GetSomething(id), SomeResult.class)
+                .orTimeout(30, TimeUnit.SECONDS)
+                .join();
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+
+###### What changed
+
+- AF4 import → AF5 import.
+- `.get()` → `.orTimeout(30, TimeUnit.SECONDS).join()`.
+- `import java.util.concurrent.TimeUnit;` added.
+- The existing `catch (Exception e)` still catches `CompletionException` (unchecked, extends `RuntimeException`).
+
+---
+
+##### Caveats
+
+- **Never use `.orTimeout().join()` when the method can go async.** It is a fallback for genuinely constrained callers, not a universal fix.
+- **30-second timeout is a default.** Shorten when the surrounding framework has a tighter SLA.
+- **Callers of the migrated method** (Path A) will need to handle `CompletableFuture<R>` — check that callers compile after the return type change.
+
+---
+
+### 08 — ResponseType wrapper removal + `queryMany`
+
+**Why this case is interesting:** AF4 required wrapping response types in `ResponseTypes.instanceOf(R.class)` / `multipleInstancesOf(R.class)`. AF5 removed this SPI entirely. The `multipleInstancesOf` case is a double change: remove wrapper AND rename method to `queryMany`.
+
+**Apply-condition:** `$SOURCE` uses `ResponseTypes.instanceOf(...)` / `multipleInstancesOf(...)` / `optionalInstanceOf(...)`.
+
+##### Before (AF4)
+
+```java
+package com.example.bikes.api;
+
+import com.example.bikes.query.BikeStatus;
+import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.queryhandling.QueryGateway;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+@RestController
+@RequestMapping("/bikes")
+class BikeStatusController {
+
+    private final QueryGateway queryGateway;
+
+    BikeStatusController(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    @GetMapping("/{bikeId}")
+    CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
+        return queryGateway.query(
+                new FindBikeById(bikeId),
+                ResponseTypes.instanceOf(BikeStatus.class)
+        );
+    }
+
+    @GetMapping
+    CompletableFuture<List<BikeStatus>> findAll() {
+        return queryGateway.query(
+                new FindAllBikes(),
+                ResponseTypes.multipleInstancesOf(BikeStatus.class)
+        );
+    }
+}
+```
+
+##### After (AF5)
+
+```java
+package com.example.bikes.api;
+
+import com.example.bikes.query.BikeStatus;
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+@RestController
+@RequestMapping("/bikes")
+class BikeStatusController {
+
+    private final QueryGateway queryGateway;
+
+    BikeStatusController(QueryGateway queryGateway) {
+        this.queryGateway = queryGateway;
+    }
+
+    @GetMapping("/{bikeId}")
+    CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
+        return queryGateway.query(new FindBikeById(bikeId), BikeStatus.class);
+    }
+
+    @GetMapping
+    CompletableFuture<List<BikeStatus>> findAll() {
+        return queryGateway.queryMany(new FindAllBikes(), BikeStatus.class);
+    }
+}
+```
+
+##### What changed
+
+- AF4 import → AF5 import.
+- `import org.axonframework.messaging.responsetypes.ResponseTypes;` removed.
+- `ResponseTypes.instanceOf(BikeStatus.class)` → `BikeStatus.class`.
+- `query(..., ResponseTypes.multipleInstancesOf(BikeStatus.class))` → `queryMany(..., BikeStatus.class)`.
+- Method return types unchanged (`CompletableFuture<BikeStatus>`, `CompletableFuture<List<BikeStatus>>`).
+
+##### Caveats
+
+- `query(...)` is **always single-response** in AF5. Any AF4 site using `multipleInstancesOf` MUST use `queryMany(...)` — using `query(...)` with a `Class<R>` would compile but return only the first result.
+- `optionalInstanceOf(R.class)` → `query(payload, R.class)`. The future resolves to `null` if no result — callers must handle null.
+- Custom `ResponseType` subclass in the project → Blocker B2; do not attempt to strip mechanically.
+
+---
+
+### 09 — Named query: string dispatch → `@Query`-annotated payload class
+
+**Why this case is interesting:** AF4's named-query overload `query("name", payload, ResponseType)` is removed in AF5. The correct migration is NOT to construct `GenericQueryMessage` — it is to move the name onto the payload class via `@Query(name = "…")`. When payload was a bare scalar, a new record must be introduced, which also requires a coupled handler-side parameter-type change.
+
+**Apply-condition:** `$SOURCE` has `queryGateway.query("name", payload, …)` or `queryGateway.queryMany("name", payload, …)` calls.
+
+##### Two sub-cases
+
+###### A — Payload class already exists (annotation-only)
+
+Payload classes (`FindOneBike`, `FindAllBikes`) already exist as dedicated records. Only `@Query` annotation added; handler signatures unchanged.
+
+**Before (AF4 dispatch):**
+```java
+import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.queryhandling.QueryGateway;
+
+@GetMapping("/bikes")
+public CompletableFuture<List<BikeStatus>> findAll() {
+    return queryGateway.query("findAll", new FindAllBikes(), ResponseTypes.multipleInstancesOf(BikeStatus.class));
+}
+
+@GetMapping("/bikes/{bikeId}")
+public CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
+    return queryGateway.query("findOne", new FindOneBike(bikeId), BikeStatus.class);
+}
+```
+
+**Before (payload classes):**
+```java
+public record FindAllBikes() {}
+public record FindOneBike(String bikeId) {}
+```
+
+**After (AF5 dispatch):**
+```java
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
+
+@GetMapping("/bikes")
+public CompletableFuture<List<BikeStatus>> findAll() {
+    return queryGateway.queryMany(new FindAllBikes(), BikeStatus.class);
+}
+
+@GetMapping("/bikes/{bikeId}")
+public CompletableFuture<BikeStatus> findOne(@PathVariable String bikeId) {
+    return queryGateway.query(new FindOneBike(bikeId), BikeStatus.class);
+}
+```
+
+**After (payload classes):**
+```java
+import org.axonframework.messaging.queryhandling.annotation.Query;
+
+@Query(name = "findAll")
+public record FindAllBikes() {}
+
+@Query(name = "findOne")
+public record FindOneBike(String bikeId) {}
+```
+
+Handler-side `@QueryHandler(queryName = "findAll")` stays unchanged — routing matches via `@Query(name = "findAll")`.
+
+###### B — Bare scalar payload (introduce record + handler edit)
+
+**Before (AF4):**
+```java
+// dispatch
+queryGateway.query("getStatus", paymentId, PaymentStatus.class)
+
+// handler
+@QueryHandler(queryName = "getStatus")
+public PaymentStatus getStatus(String paymentId) { ... }
+```
+
+**After (AF5):**
+```java
+// new payload record
+import org.axonframework.messaging.queryhandling.annotation.Query;
+
+@Query(name = "getStatus")
+public record GetPaymentStatusQuery(String paymentId) {}
+
+// dispatch
+queryGateway.query(new GetPaymentStatusQuery(paymentId), PaymentStatus.class)
+
+// handler (coupled edit — in scope)
+@QueryHandler(queryName = "getStatus")
+public PaymentStatus getStatus(GetPaymentStatusQuery query) {
+    return ... query.paymentId() ...;
+}
+```
+
+##### Caveats
+
+- **`@Query.name()` must match AF4 string exactly.** The default is the simple class name; AF4 names almost never match. Always set `name` explicitly.
+- **`queryMany` for `multipleInstancesOf`.** The named-form `query("findAll", ...)` with `multipleInstancesOf` becomes `queryMany(new FindAllBikes(), R.class)`.
+- **Never construct `GenericQueryMessage` at dispatch sites** to "preserve" the name. This scatters routing keys across dispatch sites instead of centralising them on the payload class.
+- **Handler-side edit is in scope only when payload class changes** (scalar → record). When payload was already a dedicated class, only the `@Query` annotation is added — handlers unchanged.
+
+---
+
+### 10 — Rejected: class with no @QueryHandler
 
 **Why this case is interesting:** A class that dispatches queries via `QueryGateway` but has no `@QueryHandler` method looks superficially related to query handling but falls outside the scope of this recipe. The correct recipe is query-gateway.
 

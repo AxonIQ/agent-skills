@@ -1,4 +1,4 @@
-# 03 — ResponseType wrapper removal + `queryMany`
+# 08 — ResponseType wrapper removal + `queryMany`
 
 **Why this case is interesting:** AF4 required wrapping response types in `ResponseTypes.instanceOf(R.class)` / `multipleInstancesOf(R.class)`. AF5 removed this SPI entirely. The `multipleInstancesOf` case is a double change: remove wrapper AND rename method to `queryMany`.
 

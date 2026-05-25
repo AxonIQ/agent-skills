@@ -1,4 +1,4 @@
-# 01 — Spring REST controller: import-only change
+# 06 — Spring REST controller: import-only change
 
 **Why this case is interesting:** The simplest AF4→AF5 path. The controller already uses the `Class<R>` overload of `query(...)` — AF5 kept this overload. Only the `QueryGateway` import package changes.
 

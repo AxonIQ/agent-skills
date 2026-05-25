@@ -1,4 +1,4 @@
-# 05 — Rejected: class with no @QueryHandler
+# 10 — Rejected: class with no @QueryHandler
 
 **Why this case is interesting:** A class that dispatches queries via `QueryGateway` but has no `@QueryHandler` method looks superficially related to query handling but falls outside the scope of this recipe. The correct recipe is query-gateway.
 
