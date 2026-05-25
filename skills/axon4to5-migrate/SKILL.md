@@ -77,6 +77,76 @@ Use `AskUserQuestion` to confirm before proceeding (or stop here if approach C).
 
 ---
 
+## Step 2.5: Initialise / resume progress tracking
+
+`<project-root>/.axon4to5-migration/progress.md` is the durable single source of truth for this migration. It survives across Claude Code sessions; without it a new session has no memory of pinned decisions or which files were already migrated.
+
+**On entry:** read `<project-root>/.axon4to5-migration/progress.md` FIRST. If it exists, honour the **Pinned Decisions** table and resume from the **RESUME HERE** block — do NOT re-ask Step 1 questions already answered there.
+
+**If it does not exist:** create it now using the schema below, filling Pinned Decisions from the Step 1 answers.
+
+**Update protocol:** after every file migrated, update the relevant Phase status row + the matching Per-phase items row with the commit SHA, then commit the code change **and** `progress.md` in the same commit.
+
+Schema:
+
+```markdown
+---
+last-updated: <ISO date>
+session-count: <N>
+---
+
+# Axon Framework 4 → 5 Migration — Progress
+
+## ▶︎ RESUME HERE
+
+- **Current phase:** <Step 3 phase 1..9 | Validate | Done>
+- **Next action:** <one sentence>
+- **Awaiting user input?** <yes/no — what for>
+- **Last commit:** <short SHA — message>
+
+## Pinned Decisions
+
+| Question | Answer | Source |
+|----------|--------|--------|
+| Configuration style | spring \| native | Step 1 Q2 |
+| Migration approach | A \| B \| C | Step 1 Q3 |
+| Commit cadence | one per file \| one per phase | <answered or default> |
+
+## Phase status
+
+| # | Phase | Status | Notes |
+|---|-------|--------|-------|
+| 1 | Dependencies | pending \| in-progress \| done \| skipped \| blocked | |
+| 2 | Event classes | … | |
+| 3 | Aggregates | … | |
+| 4 | Event handlers | … | |
+| 5 | Query handlers | … | |
+| 6 | Interceptors | … | |
+| 7 | Sagas | … | |
+| 8 | Event store | … | |
+| 9 | Tests | … | |
+| V | Validate | … | |
+
+## Per-phase items
+
+Per phase, list the FQ class names migrated, status, and commit SHA.
+
+### Phase 3 — Aggregates
+
+| Class | Status | Commit | Notes |
+|-------|--------|--------|-------|
+| com.example.OrderAggregate | done | abc1234 | |
+| com.example.PaymentAggregate | in-progress | — | EventAppender param being added |
+
+## Blockers
+
+(list any `🚧` items with the class name + reason — DeadlineHandler, SagaTestFixture, snapshotTriggerDefinition, etc.)
+```
+
+When a session is interrupted, the next session re-enters Step 2.5, then jumps directly to the **Next action** recorded in **RESUME HERE** — it does not re-run Step 1 questions.
+
+---
+
 ## Step 3: Execute migration
 
 ### Approach A — OpenRewrite + AI
@@ -357,3 +427,4 @@ Blockers:    none / list here
 - **Preserve architecture** — no DCB, no event storage engine swap, no new patterns.
 - **Do not auto-fix ambiguous cases.** When a compile error doesn't match a catalog pattern directly, ask the user before guessing.
 - **Never edit `patterns/ALL_IN_ONE.md`, `examples/ALL_EXAMPLES.md`, or the catalog block inside `patterns/README.md` by hand** — regenerate them with `make generate` (or `python3 scripts/generate_all_in_one.py`).
+- **Persist progress.** After every migrated file, update `<project-root>/.axon4to5-migration/progress.md` and commit it alongside the code change. A new session must be able to read `progress.md` alone and resume.

@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-006 — Pattern gap audit
-**Next action:** Start IMP-007: Durability in SKILL.md
-**Current session commit:** IMP-001..005 committed; IMP-006 pending
+**Last completed:** IMP-007 — Durability in SKILL.md
+**Next action:** Start IMP-008: Detection — post-OR greps
+**Current session commit:** IMP-001..006 committed; IMP-007 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -27,7 +27,7 @@ session-count: 1
 | IMP-004 | OpenRewrite coverage mapping | done | SKILL.md has 27-row coverage table; every pattern has OpenRewrite status line. 12 Full / 11 Partial / 4 None. Also reconciled aggregate-lifecycle.md + command-handler.md partial-state sections against ReplaceAggregateLifecycleApply evidence. |
 | IMP-005 | Real Java code examples | done | 12 Heroes Java files copied (6 AF4 + 6 AF5) covering aggregate/projector/REST/test; java/README.md pairs table; generator skips empty subtrees. |
 | IMP-006 | Pattern gap audit | done | 4 new patterns: serializer-to-converter, command-annotation, event-bus-to-sink, query-response-types. SKILL.md coverage table updated. |
-| IMP-007 | Durability in SKILL.md | pending | |
+| IMP-007 | Durability in SKILL.md | done | New Step 2.5 (~73 lines) adds `.axon4to5-migration/progress.md` schema; new behaviour rule mandates per-file progress commit. |
 | IMP-008 | Detection — post-OR greps | pending | |
 | IMP-009 | SKILL.md simplification | pending | |
 | IMP-010 | Examples import audit | pending | |
@@ -44,3 +44,4 @@ session-count: 1
 - IMP-004 done: SKILL.md gained "What OpenRewrite covers" sub-section (27-row table); every pattern Notes section ends with "OpenRewrite status:" tagged Full / Partial / None grounded in YAML rule names. Reconciled aggregate-lifecycle.md + command-handler.md partial sections (IMP-002 assumed OR didn't rewrite apply() — actually does via ReplaceAggregateLifecycleApply).
 - IMP-005 done: examples/java/{af4,af5}/ holds 12 real Heroes Java files (aggregate + projector + REST + test pair); java/README.md is a pairs table; generator now skips Java package subtrees without markdown.
 - IMP-006 done: 4 new patterns — `serializer-to-converter`, `command-annotation`, `event-bus-to-sink`, `query-response-types`; SKILL.md coverage table got 4 new rows.
+- IMP-007 done: SKILL.md Step 2.5 added — `.axon4to5-migration/progress.md` schema with RESUME HERE block, Pinned Decisions, Phase status table, per-phase items, Blockers; behaviour rule mandates per-file persist.
