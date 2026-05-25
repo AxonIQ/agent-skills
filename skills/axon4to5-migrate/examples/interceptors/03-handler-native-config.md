@@ -66,7 +66,7 @@ public class AuditCommandHandlerInterceptor implements MessageHandlerInterceptor
 **Registration site (Configurer file):**
 
 ```java
-import org.axonframework.messaging.core.config.MessagingConfigurer;
+import org.axonframework.messaging.core.configuration.MessagingConfigurer;
 
 MessagingConfigurer configurer = MessagingConfigurer.create();
 configurer.registerCommandHandlerInterceptor(config -> new AuditCommandHandlerInterceptor());
@@ -86,7 +86,7 @@ configurer.registerCommandHandlerInterceptor(config -> new AuditCommandHandlerIn
 - Receiver type: `Configurer` (AF4) → `MessagingConfigurer` (AF5)
 - Factory: `DefaultConfigurer.defaultConfiguration()` → `MessagingConfigurer.create()`
 - Method name **unchanged**: `registerCommandHandlerInterceptor(...)` stays the same
-- Import: `org.axonframework.config.Configurer` + `org.axonframework.config.DefaultConfigurer` removed; `org.axonframework.messaging.core.config.MessagingConfigurer` added
+- Import: `org.axonframework.config.Configurer` + `org.axonframework.config.DefaultConfigurer` removed; `org.axonframework.messaging.core.configuration.MessagingConfigurer` added
 
 ## Caveats
 

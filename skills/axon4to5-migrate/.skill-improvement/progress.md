@@ -5,9 +5,9 @@ session-count: 1
 
 ## RESUME HERE
 
-**Last completed:** IMP-009 — SKILL.md simplification
-**Next action:** Start IMP-010: Examples import audit
-**Current session commit:** IMP-001..008 committed; IMP-009 pending
+**Last completed:** IMP-010 — Examples import audit
+**Next action:** Start IMP-011: Command-gateway top-level pattern
+**Current session commit:** IMP-001..009 committed; IMP-010 pending
 **Blocked items:** none
 
 ## Pinned Decisions
@@ -30,7 +30,7 @@ session-count: 1
 | IMP-007 | Durability in SKILL.md | done | New Step 2.5 (~73 lines) adds `.axon4to5-migration/progress.md` schema; new behaviour rule mandates per-file progress commit. |
 | IMP-008 | Detection — post-OR greps | done | 13 Partial patterns now have dual-form Detection (Pre-migration AF4 / Post-OpenRewrite partial). |
 | IMP-009 | SKILL.md simplification | done | SKILL.md 430→297 lines (-31%); per-step verbatim import lists collapsed to pattern-file pointers + cross-phase couplings; description 186 chars. |
-| IMP-010 | Examples import audit | pending | |
+| IMP-010 | Examples import audit | done | 3 examples fixed: MetaData→Metadata in projector-with-dispatch; MessagingConfigurer canonical path in 2 native-configurer examples. Zero camunda. |
 | IMP-011 | Command-gateway top-level pattern | pending | |
 | IMP-012 | Discovery pass | pending | |
 
@@ -47,3 +47,4 @@ session-count: 1
 - IMP-007 done: SKILL.md Step 2.5 added — `.axon4to5-migration/progress.md` schema with RESUME HERE block, Pinned Decisions, Phase status table, per-phase items, Blockers; behaviour rule mandates per-file persist.
 - IMP-008 done: every Partial-tagged pattern's Detection section is dual-form (Pre-migration AF4 grep + Post-OpenRewrite partial-state grep). 13 patterns touched.
 - IMP-009 done: SKILL.md cut 31% (430→297 lines); verbatim AF4→AF5 enumerations replaced by pattern-file pointers + cross-phase coupling notes. description: 186 chars.
+- IMP-010 done: 3 example files fixed — `MetaData`→`Metadata`, `MessagingConfigurer` canonical path. Zero camunda hits.

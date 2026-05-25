@@ -37,7 +37,7 @@ public class Bootstrap {
 
 ```java
 import org.axonframework.eventsourcing.configuration.EventSourcingConfigurer;
-import org.axonframework.messaging.configuration.MessagingConfigurer;
+import org.axonframework.messaging.core.configuration.MessagingConfigurer;
 
 public class Bootstrap {
 
@@ -84,7 +84,7 @@ eventProcessing.subscribing(subscribing ->
 - **Processor registration**: AF4 `.registerPooledStreamingEventProcessor(name, eventStoreSupplier, customizer)` → AF5 `.pooledStreaming(ps -> ps.processor(name, module -> ...))`. The event-store wiring is implicit; no manual `eventStore` supplier needed.
 - **Handler registration**: AF4 `.registerEventHandler(cfg -> new MyProjector(cfg.getComponent(Repo.class)))` plus a separate `.assignHandlerTypesMatching(...)` → AF5 `module.eventHandlingComponents(components -> components.autodetected(cfg -> new MyProjector(...)))`. The matcher is implicit — `autodetected(...)` includes the component for the surrounding processor.
 - **Customisation**: AF4 `(config, builder) -> builder.batchSize(100)` (2 args) → AF5 `(cfg, conf) -> conf.batchSize(100)` (still 2 args but on a different builder type). Use `.notCustomized()` when there were no AF4 customisations.
-- **Module FQNs**: `org.axonframework.messaging.configuration.MessagingConfigurer`, `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`. The `EventProcessorModule` / `PooledStreamingEventProcessorModule` types are accessed through the fluent block; you rarely import them directly.
+- **Module FQNs**: `org.axonframework.messaging.core.configuration.MessagingConfigurer`, `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`. The `EventProcessorModule` / `PooledStreamingEventProcessorModule` types are accessed through the fluent block; you rarely import them directly.
 
 ## Caveats
 

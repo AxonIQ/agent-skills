@@ -1732,7 +1732,7 @@ import com.dddheroes.heroesofddd.creaturerecruitment.write.changeavailablecreatu
 import com.dddheroes.heroesofddd.shared.metadata.GameMetaData;
 import org.axonframework.messaging.commandhandling.gateway.CommandDispatcher;
 import org.axonframework.messaging.core.Message;
-import org.axonframework.messaging.core.MetaData;
+import org.axonframework.messaging.core.Metadata;
 import org.axonframework.messaging.core.annotation.MetadataValue;
 import org.axonframework.messaging.core.annotation.Namespace;
 import org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy;
@@ -1753,7 +1753,7 @@ public class WhenCreatureRecruitedThenAddToArmyProcessor {
     public CompletableFuture<? extends Message> on(CreatureRecruited event,
                                                    @MetadataValue(GameMetaData.GAME_ID_KEY) String gameId,
                                                    CommandDispatcher commandDispatcher) {
-        MetaData metadata = GameMetaData.with(gameId);
+        Metadata metadata = GameMetaData.with(gameId);
         return commandDispatcher.send(
                 AddCreatureToArmy.command(
                     event.toArmy(), event.creatureId(), event.quantity()
@@ -1795,7 +1795,7 @@ public class WhenCreatureRecruitedThenAddToArmyProcessor {
 - **AF5 `Message` is non-generic.** Declared as `public interface Message` (no type parameter). Anything that writes `Message<?>` in the wildcard position fails to compile against AF5. The correct shape is `CompletableFuture<? extends Message>`.
 - **`.thenApply(m -> m)` bridge** is often needed before `.exceptionallyCompose(...)` to widen `CompletableFuture<? extends Message>` to `CompletableFuture<Message>` (wildcard capture refuses `exceptionallyCompose`'s type bound otherwise).
 - **`CommandDispatcher` is bound to `ProcessingContext`**, NOT to a bean lifecycle. Do not keep a class-level field side-by-side with the parameter — that mixes two dispatch paths and confuses readers.
-- **Helper methods that build metadata (e.g. `GameMetaData.with(gameId)`) often return AF4 `org.axonframework.messaging.MetaData`.** If they don't get migrated to AF5 `org.axonframework.messaging.core.MetaData`, command dispatch fails at runtime (type-check passes due to similarity). Flag in Result NOTES; the helper migration is outside the strict event-processor recipe scope.
+- **Helper methods that build metadata (e.g. `GameMetaData.with(gameId)`) often return AF4 `org.axonframework.messaging.MetaData`.** If they don't get migrated to AF5 `org.axonframework.messaging.core.Metadata`, command dispatch fails at runtime (type-check passes due to similarity). Flag in Result NOTES; the helper migration is outside the strict event-processor recipe scope.
 - **`@DisallowReplay` semantics unchanged** — it still means "skip this handler during a reset/replay". Only the import location moves.
 
 ---
@@ -2056,7 +2056,7 @@ public class Bootstrap {
 
 ```java
 import org.axonframework.eventsourcing.configuration.EventSourcingConfigurer;
-import org.axonframework.messaging.configuration.MessagingConfigurer;
+import org.axonframework.messaging.core.configuration.MessagingConfigurer;
 
 public class Bootstrap {
 
@@ -2103,7 +2103,7 @@ eventProcessing.subscribing(subscribing ->
 - **Processor registration**: AF4 `.registerPooledStreamingEventProcessor(name, eventStoreSupplier, customizer)` → AF5 `.pooledStreaming(ps -> ps.processor(name, module -> ...))`. The event-store wiring is implicit; no manual `eventStore` supplier needed.
 - **Handler registration**: AF4 `.registerEventHandler(cfg -> new MyProjector(cfg.getComponent(Repo.class)))` plus a separate `.assignHandlerTypesMatching(...)` → AF5 `module.eventHandlingComponents(components -> components.autodetected(cfg -> new MyProjector(...)))`. The matcher is implicit — `autodetected(...)` includes the component for the surrounding processor.
 - **Customisation**: AF4 `(config, builder) -> builder.batchSize(100)` (2 args) → AF5 `(cfg, conf) -> conf.batchSize(100)` (still 2 args but on a different builder type). Use `.notCustomized()` when there were no AF4 customisations.
-- **Module FQNs**: `org.axonframework.messaging.configuration.MessagingConfigurer`, `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`. The `EventProcessorModule` / `PooledStreamingEventProcessorModule` types are accessed through the fluent block; you rarely import them directly.
+- **Module FQNs**: `org.axonframework.messaging.core.configuration.MessagingConfigurer`, `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`. The `EventProcessorModule` / `PooledStreamingEventProcessorModule` types are accessed through the fluent block; you rarely import them directly.
 
 ##### Caveats
 
@@ -3009,7 +3009,7 @@ public class AuditCommandHandlerInterceptor implements MessageHandlerInterceptor
 **Registration site (Configurer file):**
 
 ```java
-import org.axonframework.messaging.core.config.MessagingConfigurer;
+import org.axonframework.messaging.core.configuration.MessagingConfigurer;
 
 MessagingConfigurer configurer = MessagingConfigurer.create();
 configurer.registerCommandHandlerInterceptor(config -> new AuditCommandHandlerInterceptor());
@@ -3029,7 +3029,7 @@ configurer.registerCommandHandlerInterceptor(config -> new AuditCommandHandlerIn
 - Receiver type: `Configurer` (AF4) → `MessagingConfigurer` (AF5)
 - Factory: `DefaultConfigurer.defaultConfiguration()` → `MessagingConfigurer.create()`
 - Method name **unchanged**: `registerCommandHandlerInterceptor(...)` stays the same
-- Import: `org.axonframework.config.Configurer` + `org.axonframework.config.DefaultConfigurer` removed; `org.axonframework.messaging.core.config.MessagingConfigurer` added
+- Import: `org.axonframework.config.Configurer` + `org.axonframework.config.DefaultConfigurer` removed; `org.axonframework.messaging.core.configuration.MessagingConfigurer` added
 
 ##### Caveats
 

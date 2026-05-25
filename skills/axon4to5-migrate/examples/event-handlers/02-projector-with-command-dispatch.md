@@ -67,7 +67,7 @@ import com.dddheroes.heroesofddd.creaturerecruitment.write.changeavailablecreatu
 import com.dddheroes.heroesofddd.shared.metadata.GameMetaData;
 import org.axonframework.messaging.commandhandling.gateway.CommandDispatcher;
 import org.axonframework.messaging.core.Message;
-import org.axonframework.messaging.core.MetaData;
+import org.axonframework.messaging.core.Metadata;
 import org.axonframework.messaging.core.annotation.MetadataValue;
 import org.axonframework.messaging.core.annotation.Namespace;
 import org.axonframework.messaging.core.sequencing.MetadataSequencingPolicy;
@@ -88,7 +88,7 @@ public class WhenCreatureRecruitedThenAddToArmyProcessor {
     public CompletableFuture<? extends Message> on(CreatureRecruited event,
                                                    @MetadataValue(GameMetaData.GAME_ID_KEY) String gameId,
                                                    CommandDispatcher commandDispatcher) {
-        MetaData metadata = GameMetaData.with(gameId);
+        Metadata metadata = GameMetaData.with(gameId);
         return commandDispatcher.send(
                 AddCreatureToArmy.command(
                     event.toArmy(), event.creatureId(), event.quantity()
@@ -130,5 +130,5 @@ public class WhenCreatureRecruitedThenAddToArmyProcessor {
 - **AF5 `Message` is non-generic.** Declared as `public interface Message` (no type parameter). Anything that writes `Message<?>` in the wildcard position fails to compile against AF5. The correct shape is `CompletableFuture<? extends Message>`.
 - **`.thenApply(m -> m)` bridge** is often needed before `.exceptionallyCompose(...)` to widen `CompletableFuture<? extends Message>` to `CompletableFuture<Message>` (wildcard capture refuses `exceptionallyCompose`'s type bound otherwise).
 - **`CommandDispatcher` is bound to `ProcessingContext`**, NOT to a bean lifecycle. Do not keep a class-level field side-by-side with the parameter — that mixes two dispatch paths and confuses readers.
-- **Helper methods that build metadata (e.g. `GameMetaData.with(gameId)`) often return AF4 `org.axonframework.messaging.MetaData`.** If they don't get migrated to AF5 `org.axonframework.messaging.core.MetaData`, command dispatch fails at runtime (type-check passes due to similarity). Flag in Result NOTES; the helper migration is outside the strict event-processor recipe scope.
+- **Helper methods that build metadata (e.g. `GameMetaData.with(gameId)`) often return AF4 `org.axonframework.messaging.MetaData`.** If they don't get migrated to AF5 `org.axonframework.messaging.core.Metadata`, command dispatch fails at runtime (type-check passes due to similarity). Flag in Result NOTES; the helper migration is outside the strict event-processor recipe scope.
 - **`@DisallowReplay` semantics unchanged** — it still means "skip this handler during a reset/replay". Only the import location moves.
