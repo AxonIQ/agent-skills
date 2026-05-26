@@ -3,7 +3,7 @@
 //
 // Usage:
 //   gradle rewriteRun --init-script init.gradle \
-//     -Drewrite.activeRecipe=org.axonframework.migration.UpgradeAxon4ToAxoniq5
+//     -Drewrite.activeRecipe=io.axoniq.framework.migration.UpgradeAxon4ToAxoniq5
 //
 // Replace the recipe name with `org.axonframework.migration.UpgradeAxon4ToAxon5`
 // for the free path. Override the recipe artifact version with
@@ -24,7 +24,7 @@ initscript {
 rootProject {
     plugins.apply(org.openrewrite.gradle.RewritePlugin)
 
-    def axonMigrationVersion = System.getProperty("rewrite.axonMigrationVersion", "5.2.0-SNAPSHOT")
+    def axonMigrationVersion = System.getProperty("rewrite.axonMigrationVersion", "5.1.1")
 
     dependencies {
         rewrite("org.axonframework:axon-migration:${axonMigrationVersion}")

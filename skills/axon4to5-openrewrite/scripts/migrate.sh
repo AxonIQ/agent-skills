@@ -16,7 +16,7 @@ case "$framework" in
     recipe="org.axonframework.migration.UpgradeAxon4ToAxon5"
     ;;
   axoniq)
-    recipe="org.axonframework.migration.UpgradeAxon4ToAxoniq5"
+    recipe="io.axoniq.framework.migration.UpgradeAxon4ToAxoniq5"
     ;;
   *)
     echo "ERR: framework must be 'axon' or 'axoniq' (got: '$framework')" >&2
