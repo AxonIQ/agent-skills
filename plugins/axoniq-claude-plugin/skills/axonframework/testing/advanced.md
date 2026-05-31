@@ -183,6 +183,8 @@ fixture = AxonTestFixture.with(configurer, c -> c
 
 > By default (no `asIntegrationTest()`), the fixture disables the Axon Server and PostgreSQL configuration enhancers, so no external connection is attempted. Call `asIntegrationTest()` only when you genuinely want to exercise that infrastructure (see below). Field filters apply to `events`/`commands`/`resultMessagePayload`; richer comparisons belong in `matchers.md`.
 
+> The Spring Boot path is different — there the in-memory behaviour is keyed off the `axon.axonserver.enabled` property, which the commercial `io.axoniq.framework` connector does **not** honour. See the caveat under **Testing with Spring Boot** below.
+
 ---
 
 ## Integration testing
@@ -265,6 +267,8 @@ class EnrolmentSpringBootTest {
 ```
 
 The fixture's `Customization` is derived from the Spring environment: Axon Server is disabled unless `axon.axonserver.enabled=true`, so when the property is `false` **or absent** the fixture runs in-memory. Set it to `true` to keep Axon Server wired in (equivalent to `asIntegrationTest()`). Override the behaviour by declaring a `Customization` bean:
+
+> **Caveat with the commercial `io.axoniq.framework:axon-server-connector`.** `axon.axonserver.enabled=false` does **not** stop that connector from constructing the Axon Server event store and connecting — it registers its event store through a `ServiceLoader`-discovered `ServerConnectorConfigurationEnhancer`, which runs regardless of the flag. A `@AxonSpringBootTest(properties = "axon.axonserver.enabled=false")` test will then still try to reach Axon Server. To guarantee an in-memory run, disable the enhancer explicitly (`configurer.componentRegistry(r -> r.disableEnhancer(ServerConnectorConfigurationEnhancer.class))` in a test configurer, or via a `Customization` that does the same), or — simplest — keep the connector off the **test** classpath so the enhancer is never discovered. When neither is practical, test the changed code directly without the full Spring context: a JPA slice test (`@DataJpaTest`) for read-model projections and a plain `AxonTestFixture` test for the command side.
 
 ```java
 @AxonSpringBootTest

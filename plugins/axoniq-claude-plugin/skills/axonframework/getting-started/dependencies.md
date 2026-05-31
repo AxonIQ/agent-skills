@@ -147,7 +147,7 @@ This transitively imports `axon-framework-bom` at the matching version, so you d
 | `axoniq-distributed-messaging` | `io.axoniq.framework` | `DistributedCommandBus` and `DistributedQueryBus` for spreading message load across multiple application instances. |
 | `axoniq-event-streaming` | `io.axoniq.framework` | `MultiStreamableEventSource` — consumes events from multiple independent event stores simultaneously in a single event processor. |
 | `axoniq-dead-letter` | `io.axoniq.framework` | Dead-letter queue implementations: in-memory, JDBC, JPA, and PostgreSQL backends for event processors. |
-| `axon-server-connector` | `io.axoniq.framework` | Connector for Axon Server as the underlying message broker. |
+| `axon-server-connector` | `io.axoniq.framework` | Connector for Axon Server as the event store and message broker. Auto-detected on the classpath (connects to `localhost:8124` by default). Connection/disable config: see `configuration/spring-boot.md` and `configuration/plain-java.md`. |
 | `axoniq-spring-boot-autoconfigure` | `io.axoniq.framework` | Spring Boot auto-configuration for all AxonIQ Framework modules. |
 | `axoniq-spring-boot-starter` | `io.axoniq.framework` | Convenience starter: includes all AxonIQ Framework modules and the AF5 Spring Boot starter. |
 

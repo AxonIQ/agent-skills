@@ -317,6 +317,45 @@ With Spring Boot and `axoniq-postgresql` on the classpath, `PostgresqlAutoConfig
 
 AxonIQ Framework is free for non-production use; production deployments require a paid subscription.
 
+### Axon Server (via the connector)
+
+Add the Axon Server connector and the framework uses Axon Server as the event store and message broker instead of the in-memory engine:
+
+```xml
+<dependency>
+    <groupId>io.axoniq.framework</groupId>
+    <artifactId>axon-server-connector</artifactId>
+</dependency>
+```
+
+**Auto-detection**: the framework detects the connector on the classpath and wires it automatically — no configuration code is needed for the defaults. It connects to **`localhost:8124`** (gRPC) and uses the context **`default`**. The Axon Server dashboard is at `http://localhost:8024`.
+
+To point at a different server, context, or to pass an access token, register an `AxonServerConfiguration` component:
+
+```java
+import org.axonframework.axonserver.connector.AxonServerConfiguration;
+
+configurer.componentRegistry(r -> r.registerComponent(AxonServerConfiguration.class, c -> {
+    var axonServerConfig = new AxonServerConfiguration();
+    axonServerConfig.setServers("axonserver-1:8124,axonserver-2:8124"); // comma-separated host[:grpcPort] list; default localhost:8124
+    axonServerConfig.setContext("university");                          // default "default"
+    axonServerConfig.setToken("<access-token>");                        // only when access control is enabled
+    return axonServerConfig;
+}));
+```
+
+> **DCB requires a DCB-enabled context.** To use Dynamic Consistency Boundary features, the Axon Server context must be created as DCB-enabled — a plain context will not accept tag-based sourcing/append conditions.
+
+**Disabling the connector (e.g. to force the in-memory engine for a test or local run)** — setting it off via a property is unreliable with this connector; the connector registers its event store through a `ConfigurationEnhancer` discovered by the JVM `ServiceLoader`, so it initialises even when `axon.axonserver.enabled=false`. Disable the enhancer explicitly instead:
+
+```java
+import org.axonframework.axonserver.connector.ServerConnectorConfigurationEnhancer;
+
+configurer.componentRegistry(r -> r.disableEnhancer(ServerConnectorConfigurationEnhancer.class));
+```
+
+Alternatively, simply keep the connector off the classpath in test scope. See `testing/advanced.md` for the testing implications.
+
 ---
 
 ## Interceptors

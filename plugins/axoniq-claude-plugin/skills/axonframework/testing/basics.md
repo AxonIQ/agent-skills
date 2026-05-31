@@ -87,6 +87,8 @@ configurer.componentRegistry(cr -> cr.registerModule(
 
 By default the fixture **excludes** heavy infrastructure (such as the Axon Server connector), so a plain `AxonTestFixture.with(configurer)` will not try to connect to an Axon Server instance. To keep that infrastructure wired in — for an integration test — opt in with the customizer: `AxonTestFixture.with(configurer, Customization::asIntegrationTest)`. See `testing/advanced.md` for integration-test setup.
 
+> Under **Spring Boot** the in-memory toggle is the `axon.axonserver.enabled` property, which the commercial `io.axoniq.framework:axon-server-connector` does not honour — that connector connects regardless. See the caveat in `testing/advanced.md` before relying on `axon.axonserver.enabled=false`.
+
 ---
 
 ## Given — seeding prior state

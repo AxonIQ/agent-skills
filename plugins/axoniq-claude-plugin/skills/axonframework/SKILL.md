@@ -140,7 +140,7 @@ Read: skills/axonframework/commands/decision-models-dcb.md
 
 **Configuration**
 - Use **`configuration/plain-java.md`** when wiring up a plain Java application. Includes event store options (in-memory, PostgreSQL) and dead letter queue configuration.
-- Use **`configuration/spring-boot.md`** for a Spring Boot application — auto-detection, `@EventSourced`, `@Namespace`, `EventProcessorDefinition`, and `application.yml` processor properties.
+- Use **`configuration/spring-boot.md`** for a Spring Boot application — auto-detection, `@EventSourced`, `@Namespace`, `EventProcessorDefinition`, `application.yml` processor properties, and Axon Server connection properties (`axon.axonserver.servers`/`context`/`token`).
 
 **Testing**
 - Use **`testing/basics.md`** for the `AxonTestFixture` given-when-then basics.

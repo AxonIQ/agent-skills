@@ -246,6 +246,44 @@ All methods return `PooledStreamingEventProcessorConfiguration` for fluent chain
 
 ---
 
+## Connecting to Axon Server
+
+With the `io.axoniq.framework:axon-server-connector` dependency on the classpath, Spring Boot auto-detects it and uses Axon Server as the event store and message broker. With no properties set it connects to **`localhost:8124`** (gRPC) on context **`default`**; the dashboard is at `http://localhost:8024`.
+
+Configure the connection under the `axon.axonserver` prefix:
+
+```yaml
+axon:
+  axonserver:
+    enabled: true                              # default true when the connector is present
+    servers: axonserver-1:8124,axonserver-2:8124   # comma-separated host[:grpcPort] list; default localhost:8124
+    context: university                        # default "default"
+    token: ${AXONSERVER_TOKEN:}                # only when access control is enabled
+```
+
+As Spring relaxed-binding properties, these also bind from environment variables — e.g. `AXON_AXONSERVER_SERVERS`, `AXON_AXONSERVER_CONTEXT`, `AXON_AXONSERVER_TOKEN`. (Axon Server's *own* server-side settings use a different `axoniq.axonserver.*` / `AXONIQ_AXONSERVER_*` prefix — for example `AXONIQ_AXONSERVER_HOSTNAME` — and are unrelated to the client properties above.)
+
+Property-based connection configuration is still being rounded out across the 5.x line; if a property does not take effect on your version, configure the connection by declaring an `AxonServerConfiguration` bean, which always works:
+
+```java
+import org.axonframework.axonserver.connector.AxonServerConfiguration;
+
+@Bean
+AxonServerConfiguration axonServerConfiguration() {
+    var config = new AxonServerConfiguration();
+    config.setServers("axonserver-1:8124,axonserver-2:8124");
+    config.setContext("university");
+    config.setToken(System.getenv("AXONSERVER_TOKEN"));
+    return config;
+}
+```
+
+> **DCB requires a DCB-enabled context.** Dynamic Consistency Boundary features only work against an Axon Server context created as DCB-enabled; a plain context rejects tag-based sourcing/append conditions.
+
+> **`axon.axonserver.enabled=false` does not reliably keep the application off Axon Server with this connector.** The connector registers its event store through a `ServiceLoader`-discovered `ConfigurationEnhancer` (`ServerConnectorConfigurationEnhancer`) that still initialises and connects regardless of the flag. To guarantee the in-memory engine (e.g. in a test or local run), disable that enhancer or keep the connector off the test classpath — see `testing/advanced.md`.
+
+---
+
 ## `application.yml` processor properties
 
 `@ConfigurationProperties("axon.eventhandling")` binds processor settings by name. These are overridden by programmatic `EventProcessorDefinition.customized(...)` settings when both are present.

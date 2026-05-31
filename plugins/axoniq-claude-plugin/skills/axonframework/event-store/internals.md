@@ -174,9 +174,11 @@ subscribers after the engine commits, fulfilling its dual storage-and-distributi
 | `AggregateBasedJpaEventStorageEngine` | `eventsourcing` · `...eventstore.jpa` | Relational/JPA-backed persistence using an aggregate-based schema. |
 | `SnapshotCapableEventStorageEngine` | `eventsourcing` · `...eventstore` | A **decorator** adding snapshot sourcing to an engine that lacks it natively. |
 
-> A production AxonIQ Platform deployment uses Axon Server as the event store. The AF5
-> Axon Server connector wires that engine in automatically; it is not constructed by hand and
-> is not part of the `eventsourcing` module covered here.
+> A production AxonIQ Platform deployment uses Axon Server as the event store. The
+> `io.axoniq.framework:axon-server-connector` wires that engine in automatically; it is not
+> constructed by hand and is not part of the `eventsourcing` module covered here. For its
+> connection properties (`axon.axonserver.servers`/`context`/`token`, default `localhost:8124`)
+> and how to disable it, see `configuration/spring-boot.md` and `configuration/plain-java.md`.
 
 ### `InMemoryEventStorageEngine`
 
