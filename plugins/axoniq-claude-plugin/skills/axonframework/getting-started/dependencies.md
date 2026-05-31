@@ -68,7 +68,6 @@ Use individual modules when you are not using Spring Boot or when you need fine-
 | `axon-tracing-opentelemetry` | `org.axonframework.extensions.tracing` | OpenTelemetry tracing integration for distributed traces across command/event/query handlers |
 | `axon-metrics-micrometer` | `org.axonframework.extensions.metrics` | Micrometer metrics for message processing rates, latencies |
 | `axon-metrics-dropwizard` | `org.axonframework.extensions.metrics` | Dropwizard Metrics integration (alternative to Micrometer) |
-| `axon-server-connector` | `org.axonframework` | Connector for Axon Server (OSS version) as message broker |
 | `axon-update` | `org.axonframework` | Event upcasting utilities for schema evolution |
 
 ### Typical plain Java setup
@@ -148,7 +147,7 @@ This transitively imports `axon-framework-bom` at the matching version, so you d
 | `axoniq-distributed-messaging` | `io.axoniq.framework` | `DistributedCommandBus` and `DistributedQueryBus` for spreading message load across multiple application instances. |
 | `axoniq-event-streaming` | `io.axoniq.framework` | `MultiStreamableEventSource` — consumes events from multiple independent event stores simultaneously in a single event processor. |
 | `axoniq-dead-letter` | `io.axoniq.framework` | Dead-letter queue implementations: in-memory, JDBC, JPA, and PostgreSQL backends for event processors. |
-| `axoniq-server-connector` | `io.axoniq.framework` | Connector for Axon Server as the underlying message broker (alternative to the open-source `axon-server-connector`). |
+| `axon-server-connector` | `io.axoniq.framework` | Connector for Axon Server as the underlying message broker. |
 | `axoniq-spring-boot-autoconfigure` | `io.axoniq.framework` | Spring Boot auto-configuration for all AxonIQ Framework modules. |
 | `axoniq-spring-boot-starter` | `io.axoniq.framework` | Convenience starter: includes all AxonIQ Framework modules and the AF5 Spring Boot starter. |
 
