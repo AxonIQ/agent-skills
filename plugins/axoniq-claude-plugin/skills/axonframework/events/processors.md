@@ -263,7 +263,7 @@ Two instances of a same-named PSEP on different machines are one logical process
 
 ## Replay / reset
 
-> **Availability**: replay/reset is **not** in Axon Framework 5.0 — it is reintroduced in AF5.1. The API below is for reference.
+> **Availability**: replay/reset is available from **Axon Framework 5.1** onward (it was not present in 5.0).
 
 Replaying re-runs handlers by repositioning the token. The processor must be **inactive** during a reset, so the sequence is: shut down, reset, start. In a multi-node setup *every* node must shut down its instance first, or another node re-claims the released segments.
 

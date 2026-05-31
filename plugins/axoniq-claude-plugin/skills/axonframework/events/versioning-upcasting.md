@@ -2,7 +2,7 @@
 
 Events are stored indefinitely, so over the lifetime of an application their schema *will* change. This guide covers how to evolve event schemas safely. AF5's primary mechanism is **payload conversion at handling time** — see [events/handling-projections.md](handling-projections.md) for how handlers are written and [event-store/conversion-serialization.md](../event-store/conversion-serialization.md) for the conversion layer. For how events are persisted, see [event-store/primitives.md](../event-store/primitives.md).
 
-> **Read this first.** In Axon Framework 5.0 the classic *upcaster* mechanism is **not yet available**. It is scheduled to return in 5.2.0 ([AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597)) with APIs aligned to the new conversion architecture. For 5.0, do your versioning with **payload conversion at handling time**, which already covers the large majority of real-world schema changes. The upcasting section below is conceptual and forward-looking — do not write upcaster code against 5.0.
+> **Read this first.** Through Axon Framework 5.1 the classic *upcaster* mechanism is **not yet available**. It is scheduled to return in 5.2.0 ([AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597)) with APIs aligned to the new conversion architecture. On 5.0 and 5.1, do your versioning with **payload conversion at handling time**, which already covers the large majority of real-world schema changes. The upcasting section below is conceptual and forward-looking — do not write upcaster code against 5.0 or 5.1.
 
 ---
 
@@ -129,7 +129,7 @@ A few rules keep events evolvable regardless of mechanism:
 
 ---
 
-## Upcasting (concept — not available in 5.0)
+## Upcasting (concept — not available through 5.1)
 
 > **Status.** The upcaster API is **not present in Axon Framework 5.0**; it returns in 5.2.0. The description below is conceptual so you can plan migrations, but there is no supported upcaster class to extend or register in 5.0. Until then, model these scenarios with payload conversion, or stage them for the 5.2.0 upgrade.
 
@@ -156,7 +156,7 @@ When the API returns, expect abstractions along these lines (planned, names subj
 | Context-aware (single / multi) | Adds a built context carried across the stream to move fields between events |
 | Type-change upcaster | Dedicated to rewriting an event's qualified name/version |
 
-Registration is expected to be ordering-sensitive (each step bridges exactly one version), via the configuration API or, under Spring Boot, Spring's `@Order`. **Do not write this code against 5.0** — track [AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597).
+Registration is expected to be ordering-sensitive (each step bridges exactly one version), via the configuration API or, under Spring Boot, Spring's `@Order`. **Do not write this code against 5.0 or 5.1** — track [AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597).
 
 ---
 
@@ -169,4 +169,4 @@ Registration is expected to be ordering-sensitive (each step bridges exactly one
 | Rename/move the Java class, keep stored identity | Keep `@Event(name = ...)` stable — no transform needed |
 | Split, merge, or re-identify stored events; cross-event moves | Upcasting — **wait for 5.2.0**; stage the change until then |
 
-For the overwhelming majority of schema changes in AF5.0, payload conversion at handling time is the answer. Reserve upcasting for genuine stored-structure changes, and only once the mechanism ships.
+For the overwhelming majority of schema changes in AF5.0/5.1, payload conversion at handling time is the answer. Reserve upcasting for genuine stored-structure changes, and only once the mechanism ships.

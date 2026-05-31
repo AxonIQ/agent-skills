@@ -83,7 +83,7 @@ public record FindCourse(String courseId) {}
 public record FindCourseQuery(String courseId) {}
 ```
 
-> **`@Query(namespace=...)` vs processor assignment**: the `namespace` attribute controls the query message's `QualifiedName` for routing only — it is not used for event processor assignment. Do not confuse it with `@Namespace`, which does not exist in AF5.0.
+> **`@Query(namespace=...)` vs `@Namespace`**: the `namespace` attribute on `@Query` (and `@Command`/`@Event`) sets that single message's `QualifiedName` namespace. `@Namespace` is a *separate* annotation (`org.axonframework.messaging.core.annotation.Namespace`, since AF5.1) that declares the namespace for a whole type, package, or module at once — a catch-all for the per-type `namespace` attributes. On the event side, `@Namespace` also drives processor assignment via the `pooledStreamingMatching`/`subscribingMatching` selectors (see `configuration/spring-boot.md`).
 
 ---
 

@@ -121,9 +121,16 @@ class ProcessorConfig {
 }
 ```
 
-> **Note**: `@Namespace` is **not available in AF5.0**. Do not attempt to import `org.axonframework.messaging.core.annotation.Namespace` — that package does not exist. Use the package-based selector approach above, or configure processor assignment via `application.yml` (see below).
+> **Assigning by namespace with `@Namespace` (since AF5.1)**: annotate a handler type — or an entire package/module via `package-info.java` — with `@Namespace("orders")` (`org.axonframework.messaging.core.annotation.Namespace`) to declare its bounded context. You can then assign every handler in that namespace to a processor with `pooledStreamingMatching(name)` / `subscribingMatching(name)`, which match on the type's namespace via `EventHandlerSelector.matchesNamespaceOnType(name)`:
 
-The `pooledStreamingMatching(name)` / `subscribingMatching(name)` factory methods use `EventHandlerSelector.matchesNamespaceOnType(name)` internally — these require `@Namespace` to work and are therefore only useful when a future AF version adds that annotation. Use the manual selector approach for now.
+```java
+@Bean
+EventProcessorDefinition ordersProcessor() {
+    return EventProcessorDefinition.pooledStreamingMatching("orders").notCustomized();
+}
+```
+
+The manual package-/bean-name selector shown above remains available, and is the only option on AF5.0 (where `@Namespace` does not yet exist).
 
 ---
 

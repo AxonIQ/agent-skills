@@ -11,6 +11,8 @@ allowed-tools: Read, Glob, Grep, Edit, Write
 
 This skill covers everything needed to build an application with Axon Framework 5 (AF5) and its optional commercial extension, AxonIQ Framework. When working on a specific topic, use the Read tool to load the relevant guide file from the subdirectories listed in the routing table below.
 
+> **Target version:** this skill targets the **Axon Framework 5.1.x** line (latest stable `5.1.1`). API names and package locations follow the 5.1 layout. Version-specific feature availability is called out inline in the guides (for example: replay/reset from 5.1; event upcasting and handler timeouts are scheduled for 5.2). When advising a user, confirm their version in the build file if a feature's availability is borderline.
+
 ---
 
 ## Framework choices

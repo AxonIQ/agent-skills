@@ -10,10 +10,10 @@ Only Axon Framework 5.0 and later is covered here.
 
 | Framework | GroupId | Latest stable | Notes |
 |---|---|---|---|
-| Axon Framework (open source) | `org.axonframework` | `5.0.4` | Apache 2.0 license |
+| Axon Framework (open source) | `org.axonframework` | `5.1.1` | Apache 2.0 license |
 | AxonIQ Framework (commercial) | `io.axoniq.framework` | tracks AF5 version | Free for non-production; paid subscription for production |
 
-Both frameworks use the same version numbering line (e.g., `5.0.4` and `5.1.0`). AxonIQ Framework's BOM imports the matching AF5 BOM, so a single BOM import covers everything.
+Both frameworks use the same version numbering line (e.g., `5.1.0`, `5.1.1`). AxonIQ Framework's BOM imports the matching AF5 BOM, so a single BOM import covers everything.
 
 ---
 
@@ -29,7 +29,7 @@ Import the BOM in `dependencyManagement`. This sets all `org.axonframework` modu
     <dependency>
       <groupId>org.axonframework</groupId>
       <artifactId>axon-framework-bom</artifactId>
-      <version>5.0.4</version>
+      <version>5.1.1</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -130,7 +130,7 @@ AxonIQ Framework adds production infrastructure on top of AF5. Its BOM imports `
     <dependency>
       <groupId>io.axoniq.framework</groupId>
       <artifactId>axoniq-framework-bom</artifactId>
-      <version>5.0.4</version>
+      <version>5.1.1</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -202,10 +202,10 @@ axoniq-spring-boot-starter
 
 ```kotlin
 // BOM (Axon Framework only):
-implementation(platform("org.axonframework:axon-framework-bom:5.0.4"))
+implementation(platform("org.axonframework:axon-framework-bom:5.1.1"))
 
 // BOM (AxonIQ Framework, includes AF5 BOM):
-implementation(platform("io.axoniq.framework:axoniq-framework-bom:5.0.4"))
+implementation(platform("io.axoniq.framework:axoniq-framework-bom:5.1.1"))
 
 // Spring Boot:
 implementation("org.axonframework.extensions.spring:axon-spring-boot-starter")

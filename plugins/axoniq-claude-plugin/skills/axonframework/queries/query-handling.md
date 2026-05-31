@@ -52,11 +52,13 @@ List<CourseView> handle(FindAllCourses query,
 
 ## Dispatching queries
 
-Obtain `QueryGateway` from the framework configuration.
+Obtain `QueryGateway` (`org.axonframework.messaging.queryhandling.gateway.QueryGateway`) from the framework configuration. In Spring Boot it is auto-configured as a bean — inject it directly.
 
 ### Point query — one handler, one result
 
 ```java
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
+
 // Async
 CompletableFuture<CourseView> future = queryGateway.query(
         new GetCourseById(courseId), CourseView.class);
