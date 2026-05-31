@@ -24,13 +24,16 @@ Applied to a command payload class. Maps the class to a `CommandMessage` and dec
 | `routingKey` | `String` | `""` (no routing key) | Field name whose value is used to route the command in a distributed setup and to resolve the entity ID for `@InjectEntity`. Required when using `@InjectEntity` in the command handler. |
 
 ```java
-@Command(routingKey = "courseId")
+// Best practice: always set namespace explicitly.
+@Command(namespace = "com.university.faculty", routingKey = "courseId")
 public record EnrollStudent(String courseId, String studentId) {}
 
-// Override name and namespace to decouple from package/class name:
-@Command(namespace = "education", name = "EnrollStudent", version = "2", routingKey = "courseId")
+// Override name and version too, e.g. for schema evolution:
+@Command(namespace = "com.university.faculty", name = "EnrollStudent", version = "2", routingKey = "courseId")
 public record EnrollStudentV2(String courseId, String studentId, String preferredSeat) {}
 ```
+
+> **Best practice — always set `namespace` explicitly.** When omitted, the namespace defaults to the Java package of the class. That couples the message's wire identity to where the class physically lives, so moving or renaming the package silently changes the `QualifiedName` — breaking routing for in-flight commands and the mapping for already-stored events. Pin the namespace to a stable, hierarchical business name that does **not** track the Java package, using a reverse-DNS-style dotted form: `<company>.<application>.<domain>[.<subdomain>]` — e.g. `"com.university.faculty"` or `"com.university.faculty.enrolment"`. The same applies to `@Event` and `@Query`; to set one namespace for a whole package or module at once, use `@Namespace` (see the note under `@Query` below).
 
 ---
 
@@ -49,15 +52,16 @@ Applied to an event payload class. Maps the class to an `EventMessage` and decla
 | `version` | `String` | `"0"` (`MessageType.DEFAULT_VERSION`) | Schema version. Increment when the payload structure changes incompatibly. |
 
 ```java
-@Event
+// Best practice: set namespace explicitly so the wire identity does not track the package.
+@Event(namespace = "com.university.faculty")
 public record StudentEnrolled(String courseId, String studentId) {}
 
 // Stable wire name independent of Java class name or package:
-@Event(namespace = "education", name = "StudentEnrolled", version = "1")
+@Event(namespace = "com.university.faculty", name = "StudentEnrolled", version = "1")
 public record StudentEnrolledEvent(String courseId, String studentId, Instant enrolledAt) {}
 ```
 
-`@Event` is optional when the payload class name is stable. Omitting it means the framework derives the qualified name from the Java package and class name.
+`@Event` is optional, but recommended. Omitting it derives the qualified name from the Java package and class name — convenient, but it means moving or renaming the class/package changes the stored event's identity. Annotate events with at least an explicit `namespace` (and a stable `name`) so they can be refactored freely. See `events/versioning-upcasting.md`.
 
 ---
 
@@ -76,10 +80,11 @@ Applied to a query payload class. Maps the class to a `QueryMessage` and declare
 | `version` | `String` | `"0"` (`MessageType.DEFAULT_VERSION`) | Schema version. |
 
 ```java
-@Query
+// Best practice: set namespace explicitly.
+@Query(namespace = "com.university.faculty")
 public record FindCourse(String courseId) {}
 
-@Query(namespace = "education", name = "FindCourse")
+@Query(namespace = "com.university.faculty", name = "FindCourse")
 public record FindCourseQuery(String courseId) {}
 ```
 

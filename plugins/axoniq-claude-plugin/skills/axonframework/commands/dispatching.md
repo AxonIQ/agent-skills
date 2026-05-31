@@ -195,11 +195,13 @@ Commands are routed to exactly one handler. Two routing decisions matter:
 ```java
 import org.axonframework.messaging.commandhandling.annotation.Command;
 
-@Command(routingKey = "courseId")
+@Command(namespace = "com.university.faculty", routingKey = "courseId")
 public record EnrollStudent(String courseId, String studentId) {}
 ```
 
-The framework extracts the named property's value as the routing key. The name may match a field or an accessor — `courseId`, `getCourseId`, or `isCourseId` all resolve. (`@Command` also carries optional `namespace`, `name`, and `version` attributes that shape the command's `QualifiedName`.)
+The framework extracts the named property's value as the routing key. The name may match a field or an accessor — `courseId`, `getCourseId`, or `isCourseId` all resolve. (`@Command` also carries `name` and `version` attributes that, together with `namespace`, shape the command's `QualifiedName`.)
+
+> **Always set `namespace` explicitly.** It defaults to the Java package of the class, so moving or renaming the package silently changes the command's `QualifiedName` and breaks routing. Pin it to a stable, hierarchical business name in reverse-DNS-style dotted form, `<company>.<application>.<domain>[.<subdomain>]` (here `"com.university.faculty"`), independent of the Java package. See `foundations/annotations.md`.
 
 > In Axon 4 routing keys were declared with `@TargetAggregateIdentifier`. In Axon 5 that is replaced by the `routingKey` attribute on `@Command`. The routing key value's `toString()` must be consistent — an inconsistent one can split commands that should reach the same instance.
 

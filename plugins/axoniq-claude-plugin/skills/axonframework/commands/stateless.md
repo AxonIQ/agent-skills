@@ -81,11 +81,13 @@ For distributed routing and for `@InjectEntity` to resolve entity IDs, annotate 
 ```java
 import org.axonframework.messaging.commandhandling.annotation.Command;
 
-@Command(routingKey = "courseId")
+@Command(namespace = "com.university.faculty", routingKey = "courseId")
 public record EnrollStudent(String courseId, String studentId) {}
 ```
 
 The `routingKey` specifies which field the command bus uses to route the command to the correct node in a distributed setup, and which field `@InjectEntity` uses by default to identify the entity to load.
+
+> **Always set `namespace` explicitly.** When omitted, the command's namespace defaults to the Java package of the class, coupling its `QualifiedName` to where the class lives — moving or renaming the package then silently changes the command name and breaks routing. Pin it to a stable, hierarchical business name in reverse-DNS-style dotted form, `<company>.<application>.<domain>[.<subdomain>]` (here `"com.university.faculty"`), independent of the Java package. See `foundations/annotations.md`.
 
 ---
 

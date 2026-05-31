@@ -14,13 +14,15 @@ Every event type carries a `MessageType` — a fully qualified name plus a versi
 import org.axonframework.messaging.eventhandling.annotation.Event;
 
 @Event(
-    namespace = "university.faculty",  // defaults to the package name
-    name      = "CourseCreated",       // defaults to the simple class name
-    version   = "1.0.0"                // defaults to "0.0.1"
+    namespace = "com.university.faculty",  // best practice: set explicitly (else defaults to the package name)
+    name      = "CourseCreated",           // defaults to the simple class name
+    version   = "1.0.0"                    // defaults to "0.0.1"
 )
 public record CourseCreated(String courseId, String name, int capacity) {
 }
 ```
+
+> Set `namespace` explicitly rather than letting it default to the package. Use a stable, hierarchical reverse-DNS-style name — `<company>.<application>.<domain>[.<subdomain>]`, e.g. `"com.university.faculty"` — so the stored event identity stays fixed when the Java class is moved or its package renamed.
 
 | Attribute | Maps to | Default |
 |---|---|---|

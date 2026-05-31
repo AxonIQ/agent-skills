@@ -8,22 +8,22 @@ This guide covers the `Converter` layering, the Jackson/Avro/CBOR implementation
 
 ## Message type vs. Java class
 
-AF5 decouples a message's identity from its Java class. A message is identified by its `MessageType` — a `QualifiedName` (namespace + local name) plus a `version`. The namespace defaults to the package name; the local name defaults to the simple class name. Declare these with `@Event` (events) so the framework can map the serialized form back to a handler:
+AF5 decouples a message's identity from its Java class. A message is identified by its `MessageType` — a `QualifiedName` (namespace + local name) plus a `version`. The namespace defaults to the package name and the local name to the simple class name, but **set the namespace explicitly** so the stored identity does not track the Java package. Declare these with `@Event` (events) so the framework can map the serialized form back to a handler:
 
 ```java
 package com.university.events;
 
 import org.axonframework.messaging.eventhandling.annotation.Event;
 
-@Event(name = "StudentEnrolled", version = "1")
-// namespace defaults to "com.university.events"
-// fully qualified name: "com.university.events.StudentEnrolled"
+// Set namespace explicitly (reverse-DNS-style), independent of the Java package:
+@Event(namespace = "com.university.faculty", name = "StudentEnrolled", version = "1")
+// fully qualified name: "com.university.faculty.StudentEnrolled"
 public record StudentEnrolledEvent(String studentId, String courseId) {}
 ```
 
 Because identity is the `MessageType`, the same logical event can be deserialized into different Java classes in different services, as long as both declare the same qualified name and version. This reduces the need for upcasters and eases gradual migration.
 
-> The `@Event` annotation has only `namespace`, `name`, and `version` attributes. The fully qualified name is `namespace + "." + name`.
+> The `@Event` annotation has only `namespace`, `name`, and `version` attributes. The fully qualified name is `namespace + "." + name`. Were `namespace` omitted here it would default to the package `"com.university.events"` — moving the class to another package would then change the event's identity, which is exactly why it should be set explicitly.
 
 ---
 

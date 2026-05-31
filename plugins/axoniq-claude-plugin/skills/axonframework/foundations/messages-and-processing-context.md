@@ -83,7 +83,7 @@ The `MessageTypeResolver` decides the `MessageType` for a payload class. The def
 ```java
 import org.axonframework.messaging.eventhandling.annotation.Event;
 
-@Event(name = "StudentEnrolled", version = "1.0")
+@Event(namespace = "com.university.faculty", name = "StudentEnrolled", version = "1.0")
 public record StudentEnrolled(String studentId, String courseId) {}
 ```
 
@@ -96,7 +96,7 @@ public record StudentEnrolled(String studentId, String courseId) {}
 
 Each of `@Command`, `@Event`, `@Query` exposes the same three attributes:
 
-* `namespace` — bounded context (defaults to the package name).
+* `namespace` — bounded context (defaults to the package name). **Set this explicitly** — relying on the package default couples the message identity to where the class lives, so moving the class silently changes its `QualifiedName`. Use a stable, hierarchical reverse-DNS-style name: `<company>.<application>.<domain>[.<subdomain>]`, e.g. `"com.university.faculty"`.
 * `name` — business name (defaults to the simple class name).
 * `version` — message version (defaults to `0.0.1`).
 
@@ -107,7 +107,7 @@ The full qualified name is always `namespace + "." + name`. If you omit the anno
 `@Namespace` (`org.axonframework.messaging.core.annotation.Namespace`) acts as a fallback for the `namespace` attribute. It can sit on the class, an enclosing class, a `package-info.java`, or a `module-info.java`:
 
 ```java
-@Namespace("faculty.enrollment")
+@Namespace("com.university.faculty.enrolment")
 package io.axoniq.university.enrollment.api;
 
 import org.axonframework.messaging.core.annotation.Namespace;
@@ -115,7 +115,7 @@ import org.axonframework.messaging.core.annotation.Namespace;
 
 Resolution order for the namespace: `@Namespace` on the class → the `namespace` attribute on the message annotation → `@Namespace` on enclosing classes (inner to outer) → `@Namespace` on the package → `@Namespace` on the module → the package name of the class.
 
-> Aligning the namespace with a DDD bounded context (via package-level `@Namespace`) makes it explicit which context every message belongs to.
+> Aligning the namespace with a DDD bounded context (via package-level `@Namespace`) makes it explicit which context every message belongs to. Declaring it once per package/module with `@Namespace` is the easiest way to give every message a stable, explicit namespace without repeating the `namespace` attribute on each `@Command`/`@Event`/`@Query`.
 
 ---
 

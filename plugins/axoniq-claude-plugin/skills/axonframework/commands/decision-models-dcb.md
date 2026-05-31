@@ -99,12 +99,12 @@ Key rules:
 
 ### Step 3A — Declare routing and inject the model in the handler
 
-Annotate command records with `@Command(routingKey = "fieldName")` — this specifies which field is used for distributed routing and for resolving the entity ID when the handler uses `@InjectEntity`.
+Annotate command records with `@Command(namespace = "...", routingKey = "fieldName")`. The `routingKey` specifies which field is used for distributed routing and for resolving the entity ID when the handler uses `@InjectEntity`. Always set `namespace` explicitly to a stable, hierarchical business name in reverse-DNS-style dotted form (`<company>.<application>.<domain>[.<subdomain>]`) — when omitted it defaults to the Java package, so moving the class silently changes the command's `QualifiedName` and breaks routing (see `foundations/annotations.md`).
 
 ```java
 import org.axonframework.messaging.commandhandling.annotation.Command;
 
-@Command(routingKey = "courseId")
+@Command(namespace = "com.university.faculty", routingKey = "courseId")
 public record EnrollStudent(String courseId, String studentId) {}
 ```
 
@@ -141,7 +141,7 @@ The framework:
 When a single command needs state from multiple independent boundaries, use multiple `@InjectEntity` parameters with different `idProperty` values:
 
 ```java
-@Command(routingKey = "auctionId")
+@Command(namespace = "com.university.auctions", routingKey = "auctionId")
 public record PlaceBid(UUID auctionId, String bidderId, BigDecimal amount) {}
 
 @Component
