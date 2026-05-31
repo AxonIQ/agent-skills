@@ -264,7 +264,7 @@ void on(StudentEnrolled event, @Timestamp Instant enrolledAt) { ... }
 
 ## Entity Model Annotations
 
-These annotations appear on event-sourced entity classes and their members. They are used with the **command-centric DCB pattern** — see `command-decision-models/guide.md` for how they fit together.
+These annotations appear on event-sourced entity classes and their members. They are used with the **command-centric DCB pattern** — see `commands/decision-models-dcb.md` for how they fit together.
 
 ### `@EventSourcedEntity`
 

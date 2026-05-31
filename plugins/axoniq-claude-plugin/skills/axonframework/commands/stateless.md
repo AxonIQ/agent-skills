@@ -1,6 +1,6 @@
 # Command Handling in Axon Framework 5
 
-Command handlers process a command and produce zero or more events as a result. They are stateless by default — they do not read past events before deciding. If the handler needs to consult past state before making a decision, use the **`command-decision-models` guide** instead.
+Command handlers process a command and produce zero or more events as a result. They are stateless by default — they do not read past events before deciding. If the handler needs to consult past state before making a decision, use the **`commands/decision-models-dcb.md` guide** instead.
 
 ---
 
@@ -202,4 +202,4 @@ class CourseCommandHandler {
 
 ## When this guide does not apply
 
-If the command handler needs to **read past events** before deciding (e.g., "is this course already full?", "does this student already exist?"), use the **`command-decision-models` guide**. That pattern sources the relevant decision state from the event store before appending.
+If the command handler needs to **read past events** before deciding (e.g., "is this course already full?", "does this student already exist?"), use the **`commands/decision-models-dcb.md` guide**. That pattern sources the relevant decision state from the event store before appending.

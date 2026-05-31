@@ -1,7 +1,7 @@
 ---
 name: axonframework
 description: >
-  Building applications with Axon Framework 5 (AF5) and AxonIQ Framework. Covers all aspects of AF5 application development: writing command handlers (stateless and DCB/stateful), event handling and projections, query handling and subscription queries, event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), application configuration (plain Java and Spring Boot), message interceptors and cross-cutting concerns, testing with AxonTestFixture, dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or AxonIQ Framework application.
+  Building applications with Axon Framework 5 (AF5) and AxonIQ Framework. Covers all aspects of AF5 application development: command handlers (stateless and DCB/stateful), event-sourced entities (@EventSourcedEntity, @EntityCreator, @InjectEntity, entity hierarchies and polymorphism), dispatching commands (CommandGateway/CommandBus, routing keys); event handling and projections, event processors (subscribing and pooled streaming, tracking tokens, segments, replay/reset), publishing events (EventAppender, EventGateway), event versioning and upcasting; query handling and subscription queries; event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), event store internals (EventStore, EventStorageEngine), conversion and serialization (Converter, Jackson, Avro); messaging foundations (message anatomy, ProcessingContext/unit of work, correlation, Metadata), supported handler parameters, message annotations, exception handling (@ExceptionHandler) and handler timeouts, interceptors, handler customization (ParameterResolver, HandlerEnhancerDefinition, meta-annotations), identifier generation; application configuration (plain Java and Spring Boot), testing with AxonTestFixture (matchers, field filters, integration tests), dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or AxonIQ Framework application.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Edit, Write
@@ -62,44 +62,89 @@ The primary model for stateful command handling in AF5 is **DCB (Dynamic Consist
 
 ## Routing table
 
-When working on a topic, read the corresponding guide file. The guides contain full API reference, code examples, and patterns.
+When working on a topic, read the corresponding guide file. Guides are grouped into domain folders that mirror the AF5 reference guide. Each guide contains full API reference, code examples, and patterns.
 
-| Topic | Guide file | Framework |
-|---|---|---|
-| Maven dependencies | `dependencies/guide.md` | AF5 + AxonIQ Framework |
-| Stateless command handling | `command-handling/guide.md` | AF5 (open source) |
-| Stateful command handling (DCB) | `command-decision-models/guide.md` | AF5 (open source) |
-| Message annotations reference | `message-annotations/guide.md` | AF5 (open source) |
-| Event store API reference | `event-store-primitives/guide.md` | AF5 (open source) |
-| Event handling and projections | `event-handling/guide.md` | AF5 (open source) |
-| Query handling | `query-handling/guide.md` | AF5 (open source) |
-| Application configuration (plain Java) | `configuration/guide.md` | AF5 + AxonIQ Framework options |
-| Spring Boot configuration | `spring-configuration/guide.md` | AF5 Spring extension |
-| Interceptors | `interceptors/guide.md` | AF5 (open source) |
-| Testing | `testing/guide.md` | AF5 (open source) |
-| Distributed messaging | `distributed-messaging/guide.md` | AxonIQ Framework (commercial) |
-| Multi-source event streaming | `event-streaming/guide.md` | AxonIQ Framework (commercial) |
+| Domain | Topic | Guide file | Framework |
+|---|---|---|---|
+| getting-started | Maven dependencies / project setup | `getting-started/dependencies.md` | AF5 + AxonIQ Framework |
+| foundations | Message anatomy, processing context, correlation | `foundations/messages-and-processing-context.md` | AF5 (open source) |
+| foundations | Message annotations reference | `foundations/annotations.md` | AF5 (open source) |
+| foundations | Supported handler parameters reference | `foundations/supported-parameters.md` | AF5 (open source) |
+| foundations | Exception handling & handler timeouts | `foundations/exception-handling.md` | AF5 (open source) |
+| foundations | Interceptors | `foundations/interceptors.md` | AF5 (open source) |
+| foundations | Customizing handlers (parameter resolvers, enhancers, meta-annotations) | `foundations/handler-customization.md` | AF5 (open source) |
+| foundations | Identifier generation | `foundations/identifiers.md` | AF5 (open source) |
+| commands | Stateless command handling | `commands/stateless.md` | AF5 (open source) |
+| commands | Stateful command handling (DCB) | `commands/decision-models-dcb.md` | AF5 (open source) |
+| commands | Event-sourced entities (creator, hierarchies, polymorphism) | `commands/entities.md` | AF5 (open source) |
+| commands | Dispatching commands & command bus | `commands/dispatching.md` | AF5 (open source) |
+| events | Event handling and projections | `events/handling-projections.md` | AF5 (open source) |
+| events | Event processors (subscribing / pooled streaming) | `events/processors.md` | AF5 (open source) |
+| events | Publishing events | `events/publishing.md` | AF5 (open source) |
+| events | Event versioning & upcasting | `events/versioning-upcasting.md` | AF5 (open source) |
+| queries | Query handling | `queries/query-handling.md` | AF5 (open source) |
+| event-store | Event store API reference (sourcing / append conditions) | `event-store/primitives.md` | AF5 (open source) |
+| event-store | Event store internals (EventStore / EventStorageEngine) | `event-store/internals.md` | AF5 (open source) |
+| event-store | Conversion & serialization | `event-store/conversion-serialization.md` | AF5 (open source) |
+| configuration | Application configuration (plain Java) | `configuration/plain-java.md` | AF5 + AxonIQ Framework options |
+| configuration | Spring Boot configuration | `configuration/spring-boot.md` | AF5 Spring extension |
+| testing | Testing — basics | `testing/basics.md` | AF5 (open source) |
+| testing | Testing — advanced (time, integration, Spring) | `testing/advanced.md` | AF5 (open source) |
+| testing | Testing — matchers & field filters | `testing/matchers.md` | AF5 (open source) |
+| production-infra | Distributed messaging | `production-infra/distributed-messaging.md` | AxonIQ Framework (commercial) |
+| production-infra | Multi-source event streaming | `production-infra/multi-source-streaming.md` | AxonIQ Framework (commercial) |
 
 **To load a guide**: use the Read tool with the path relative to this file, e.g.:
 
 ```
-Read: skills/axonframework/command-decision-models/guide.md
+Read: skills/axonframework/commands/decision-models-dcb.md
 ```
 
 ---
 
 ## Quick orientation
 
-- Start with **`dependencies/guide.md`** when setting up a new project or adding a module — it covers all Maven/Gradle coordinates and versions.
-- Start with **`command-handling/guide.md`** for any command handler that does not need to read past state.
-- Start with **`command-decision-models/guide.md`** for any command handler that must validate against prior events. This is the more common case.
-- Use **`message-annotations/guide.md`** as a complete reference for any annotation's attributes (`@Command`, `@Event`, `@Query`, `@CommandHandler`, `@EventHandler`, `@QueryHandler`, `@InjectEntity`, `@EventSourcedEntity`, `@EventTag`, etc.).
-- Use **`event-store-primitives/guide.md`** alongside the DCB guide when you need exact API details for sourcing or append conditions.
-- Use **`event-handling/guide.md`** when building projections, reactions, or configuring event processors.
-- Use **`query-handling/guide.md`** when serving read requests or pushing live updates via subscription queries.
-- Use **`configuration/guide.md`** when wiring up a plain Java application or adding components to an existing one. Includes event store options (in-memory, PostgreSQL) and dead letter queue configuration.
-- Use **`spring-configuration/guide.md`** when working on a Spring Boot application. Covers what is auto-detected, `@EventSourced`, `@Namespace`, `EventProcessorDefinition`, and `application.yml` processor properties.
-- Use **`interceptors/guide.md`** when adding cross-cutting behaviour (validation, logging, retry, correlation propagation).
-- Use **`testing/guide.md`** when writing or debugging tests for any of the above.
-- Use **`distributed-messaging/guide.md`** when distributing command or query load across multiple application nodes (requires AxonIQ Framework).
-- Use **`event-streaming/guide.md`** when consuming events from multiple independent event stores simultaneously (requires AxonIQ Framework).
+**Getting started**
+- Start with **`getting-started/dependencies.md`** when setting up a new project or adding a module — it covers all Maven/Gradle coordinates and versions.
+
+**Commands**
+- Start with **`commands/stateless.md`** for any command handler that does not need to read past state.
+- Start with **`commands/decision-models-dcb.md`** for any command handler that must validate against prior events. This is the more common case.
+- Use **`commands/entities.md`** when modelling identity-scoped state with `@EventSourcedEntity` / `@InjectEntity`, entity hierarchies, or polymorphism (the identity-scoped specialization of DCB).
+- Use **`commands/dispatching.md`** for the `CommandGateway`/`CommandBus` API, routing keys, and command results.
+
+**Events**
+- Use **`events/handling-projections.md`** when building projections, reactions, replay control, sequencing, or a dead letter queue.
+- Use **`events/processors.md`** for the deep processor reference — subscribing vs pooled streaming, tracking tokens, segments, multi-node, reset.
+- Use **`events/publishing.md`** when publishing events via `EventAppender` (inside handlers) or `EventGateway` (outside).
+- Use **`events/versioning-upcasting.md`** when evolving event schemas (revisions; note upcasting is forward-looking — see the guide's caveat).
+
+**Queries**
+- Use **`queries/query-handling.md`** when serving read requests or pushing live updates via subscription queries.
+
+**Foundations** (messaging internals & cross-cutting)
+- Use **`foundations/messages-and-processing-context.md`** for message anatomy, `ProcessingContext`/unit-of-work lifecycle, and correlation.
+- Use **`foundations/annotations.md`** as a complete reference for any annotation's attributes (`@Command`, `@Event`, `@CommandHandler`, `@EventHandler`, `@InjectEntity`, `@EventSourcedEntity`, `@EventTag`, etc.).
+- Use **`foundations/supported-parameters.md`** to see what can be injected into a handler method.
+- Use **`foundations/exception-handling.md`** for `@ExceptionHandler`, execution-exception wrapping, and handler timeouts.
+- Use **`foundations/interceptors.md`** when adding cross-cutting behaviour (validation, logging, retry, correlation propagation).
+- Use **`foundations/handler-customization.md`** for custom `ParameterResolver`s, `HandlerEnhancerDefinition`s, and meta-annotations.
+- Use **`foundations/identifiers.md`** when customizing message/identifier generation.
+
+**Event store**
+- Use **`event-store/primitives.md`** alongside the DCB guide for exact sourcing/append condition APIs.
+- Use **`event-store/internals.md`** for the `EventStore`/`EventStorageEngine` layer and storage engines.
+- Use **`event-store/conversion-serialization.md`** for the `Converter` layer, Jackson/Avro/CBOR, and content types.
+
+**Configuration**
+- Use **`configuration/plain-java.md`** when wiring up a plain Java application. Includes event store options (in-memory, PostgreSQL) and dead letter queue configuration.
+- Use **`configuration/spring-boot.md`** for a Spring Boot application — auto-detection, `@EventSourced`, `@Namespace`, `EventProcessorDefinition`, and `application.yml` processor properties.
+
+**Testing**
+- Use **`testing/basics.md`** for the `AxonTestFixture` given-when-then basics.
+- Use **`testing/advanced.md`** for time control, integration tests, and Spring Boot test setup.
+- Use **`testing/matchers.md`** for the matcher API and field filters.
+
+**Production infrastructure (AxonIQ Framework, commercial)**
+- Use **`production-infra/distributed-messaging.md`** when distributing command or query load across multiple application nodes.
+- Use **`production-infra/multi-source-streaming.md`** when consuming events from multiple independent event stores simultaneously.

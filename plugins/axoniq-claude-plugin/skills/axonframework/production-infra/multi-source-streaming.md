@@ -49,7 +49,7 @@ MultiStreamableEventSource combined = MultiStreamableEventSource
         String bSource = b.context().getResource(MultiStreamableEventSource.SOURCE_ID_RESOURCE);
         if ("primary".equals(aSource) && !"primary".equals(bSource)) return -1;
         if (!"primary".equals(aSource) && "primary".equals(bSource)) return 1;
-        return a.message().getTimestamp().compareTo(b.message().getTimestamp());
+        return a.message().timestamp().compareTo(b.message().timestamp());
     });
 ```
 

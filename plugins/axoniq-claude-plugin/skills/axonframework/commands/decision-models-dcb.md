@@ -191,7 +191,7 @@ configurer.registerCommandHandlingModule(
         .autodetectedCommandHandlingComponent(c -> new EnrolmentCommandHandler())
 );
 
-fixture = AxonTestFixture.with(configurer, c -> c.disableAxonServer());
+fixture = AxonTestFixture.with(configurer);
 ```
 
 `EventSourcedEntityModule.autodetected(IdType.class, EntityType.class)` reads the `@EventSourcedEntity` annotation to configure sourcing criteria, entity factory, and ID resolver automatically.
@@ -332,6 +332,6 @@ Aggregates remain appropriate when:
 
 ## Relationship to other guides
 
-- **`command-handling`** — writing stateless handlers that don't read past state
-- **`event-store-primitives`** — reference for `SourcingCondition`, `AppendCondition`, `ConsistencyMarker`, and `EventCriteria` APIs used in Approach B
+- **`commands/stateless.md`** — writing stateless handlers that don't read past state
+- **`event-store/primitives.md`** — reference for `SourcingCondition`, `AppendCondition`, `ConsistencyMarker`, and `EventCriteria` APIs used in Approach B
 - **`testing`** — how to set up the fixture for command-centric stateful handlers

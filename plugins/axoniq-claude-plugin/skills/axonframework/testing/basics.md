@@ -27,7 +27,7 @@ class CourseCommandHandlerTest {
                 .commandHandlers()
                 .autodetectedCommandHandlingComponent(c -> new CourseCommandHandler())
         );
-        fixture = AxonTestFixture.with(configurer, c -> c.disableAxonServer());
+        fixture = AxonTestFixture.with(configurer);
     }
 
     @AfterEach
@@ -62,7 +62,7 @@ class EnrolmentCommandHandlerTest {
                 .autodetectedCommandHandlingComponent(c -> new EnrolmentCommandHandler())
         );
 
-        fixture = AxonTestFixture.with(configurer, c -> c.disableAxonServer());
+        fixture = AxonTestFixture.with(configurer);
     }
 
     @AfterEach
@@ -85,7 +85,7 @@ configurer.componentRegistry(cr -> cr.registerModule(
 
 `EventSourcedEntityModule.autodetected(IdType.class, EntityType.class)` reads the `@EventSourcedEntity` annotation to configure sourcing criteria, entity factory, and ID resolver automatically. The `IdType` must match the Java type of the routing-key field on commands targeting that entity.
 
-Always call `.disableAxonServer()` in the `AxonTestFixture.with(configurer, customization)` customizer to prevent the test from trying to connect to an Axon Server instance.
+By default the fixture **excludes** heavy infrastructure (such as the Axon Server connector), so a plain `AxonTestFixture.with(configurer)` will not try to connect to an Axon Server instance. To keep that infrastructure wired in — for an integration test — opt in with the customizer: `AxonTestFixture.with(configurer, Customization::asIntegrationTest)`. See `testing/advanced.md` for integration-test setup.
 
 ---
 
@@ -199,10 +199,10 @@ fixture.given()
 // Handler threw a specific exception type
 .then().exception(CourseFullException.class)
 
-// Exception type and message substring
+// Exception type and EXACT message (compared with String.equals, not a substring)
 .then().exception(CourseFullException.class, "course-1 is at capacity")
 
-// Custom assertion on the thrown exception
+// For substring / custom checks, use exceptionSatisfies
 .then().exceptionSatisfies(ex -> {
     assertThat(ex).isInstanceOf(CourseFullException.class);
     assertThat(ex.getMessage()).contains("course-1");
@@ -290,13 +290,15 @@ sequenceOf(
 listWithAnyOf(messageWithPayload(instanceOf(StudentEnrolled.class)))
 ```
 
-Pass a Hamcrest `Matcher` to `.eventsMatch(matcher)` or `.commandsMatch(matcher)`:
+`.eventsMatch(...)` and `.commandsMatch(...)` take a `Predicate<List<EventMessage>>` / `Predicate<List<CommandMessage>>` — **not** a Hamcrest `Matcher`. To assert with a Hamcrest matcher, use the `*Satisfy` form and apply the matcher inside it:
 
 ```java
-.then().eventsMatch(exactSequenceOf(
+.then().eventsSatisfy(events -> assertThat(events, exactSequenceOf(
     messageWithPayload(deepEquals(new StudentEnrolled("course-1", "student-A"))),
-    andNoMore()))
+    andNoMore())))
 ```
+
+See `testing/matchers.md` for the full matcher and field-filter reference.
 
 ---
 

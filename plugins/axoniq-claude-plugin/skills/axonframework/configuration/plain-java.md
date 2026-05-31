@@ -236,7 +236,7 @@ configurer.eventProcessing(ep -> ep
                     () -> new DeadLetterQueueConfiguration().enabled().clearOnReset(true)))));
 ```
 
-See the **`event-handling` guide** for full DLQ configuration details including JDBC and JPA backends.
+See the **`events/handling-projections.md` guide** for full DLQ configuration details including JDBC and JPA backends.
 
 ---
 

@@ -1,6 +1,6 @@
 # Event Store Primitives — AF5 Reference
 
-This is the API reference for the low-level event store primitives used in DCB command decision models. For the pattern and reasoning, see the **`command-decision-models` guide**.
+This is the API reference for the low-level event store primitives used in DCB command decision models. For the pattern and reasoning, see the **`commands/decision-models-dcb.md` guide**.
 
 ---
 
