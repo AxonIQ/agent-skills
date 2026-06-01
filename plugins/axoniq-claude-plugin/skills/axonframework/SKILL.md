@@ -13,6 +13,8 @@ This skill covers everything needed to build an application with Axon Framework 
 
 > **Target version:** this skill targets the **Axon Framework 5.1.x** line (latest stable `5.1.1`). API names and package locations follow the 5.1 layout. Version-specific feature availability is called out inline in the guides (for example: replay/reset from 5.1; event upcasting and handler timeouts are scheduled for 5.2). When advising a user, confirm their version in the build file if a feature's availability is borderline.
 
+> **Investigating an API not covered here:** the published Javadoc at **https://apidocs.axoniq.io/** is the reference for any class, method, or package this skill's guides don't document. The docs are versioned by minor line: for a version `x.y.z`, the URL contains the `x.y` segment — e.g. `https://apidocs.axoniq.io/5.1/` for the 5.1.x line. Match the segment to the user's version (check the build file). It covers both the open-source `org.axonframework` packages and the commercial `io.axoniq.framework` packages — browse by package, e.g. `https://apidocs.axoniq.io/5.1/org/axonframework/.../package-summary.html`.
+
 ---
 
 ## Framework choices
