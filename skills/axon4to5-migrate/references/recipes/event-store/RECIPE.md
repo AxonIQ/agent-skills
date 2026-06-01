@@ -47,7 +47,7 @@ Options (in addition to three defaults):
 
 **B3 — Custom `EventStorageEngine` subclass**
 
-Project subclasses `JpaEventStorageEngine` / `AbstractEventStorageEngine` / `BatchingEventStorageEngine` / `AxonServerEventStore`. Detection: `grep -RnE 'extends\s+(JpaEventStorageEngine|JdbcEventStorageEngine|AbstractEventStorageEngine|BatchingEventStorageEngine|AxonServerEventStore)\b' src`.
+Project subclasses `JpaEventStorageEngine` / `AbstractEventStorageEngine` / `BatchingEventStorageEngine` / `AxonServerEventStore`. Detection: `grep -RnE '(extends|:)\s+(JpaEventStorageEngine|JdbcEventStorageEngine|AbstractEventStorageEngine|BatchingEventStorageEngine|AxonServerEventStore)\b' src` (Java `extends`, Kotlin `:`).
 
 Options (in addition to three defaults):
 - `surface-and-defer` *(Recommended)* — open follow-up; recipe exits without swap.

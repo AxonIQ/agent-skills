@@ -109,7 +109,7 @@ public class Game {
 }
 ```
 
-Configurer wiring (typically in `*Configuration.java`, `*Application.java`, or `*Bootstrap.java`):
+Configurer wiring (typically in `*Configuration`, `*Application`, or `*Bootstrap`; `.java` or `.kt`):
 
 ```java
 EventSourcingConfigurer.create()
@@ -135,4 +135,4 @@ EventSourcingConfigurer.create()
 - Mixing the two annotations is a classic mistake: do NOT emit `@EventSourced` under `configuration=native`. `@EventSourced` is the Spring stereotype; the framework Configurer only picks up `@EventSourcedEntity`.
 - The `idType` first parameter of `EventSourcedEntityModule.autodetected(...)` must match the `idType` on `@EventSourcedEntity`. Mismatch → "no entity registered for id type X" at runtime, not at compile time.
 - If the AF4 bootstrap also called `withSubtypes(...)`, you're in polymorphic territory — use case 06.
-- If the AF4 bootstrap cannot be located (no `*Configuration.java` / `*Application.java` / `*Bootstrap.java`), emit Blocker `configurer-file-not-found` rather than guessing.
+- If the AF4 bootstrap cannot be located (no `*Configuration` / `*Application` / `*Bootstrap` in `.java` or `.kt`), emit Blocker `configurer-file-not-found` rather than guessing.

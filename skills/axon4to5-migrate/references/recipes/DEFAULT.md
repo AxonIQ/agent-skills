@@ -2,6 +2,16 @@
 
 Orchestrator-side defaults applied to every recipe under `references/recipes/`. Recipes may augment but cannot override. Loaded implicitly by FLOW.md — recipes do not link to this file.
 
+## Source file conventions
+
+Applies to **every** discovery, `# Scope`, `# Applicable`, and `# Blocker` grep/glob in every recipe.
+
+- **Language is `.java` OR `.kt`.** JVM projects are routinely mixed. A recipe's `# Use cases` show Java shapes, but the same Axon annotations/imports apply verbatim to Kotlin — never skip a `.kt` file because the examples are Java.
+- **Source directory is NOT a language signal.** Kotlin files frequently live under `src/main/java/` (and vice-versa). In a mixed project anything is possible. NEVER scope a scan to `src/main/kotlin/` or filter candidates by directory.
+- **Key on Axon annotations / content, not path or extension.** When globbing, cover both extensions (`**/*.{java,kt}`); when grepping by annotation (`@Aggregate`, `@Saga`, `@ProcessingGroup`, `@QueryHandler`, …) let the annotation be the filter — match across all source roots regardless of where the file sits.
+- **Filename-pattern globs are heuristics, not gates.** `*Configuration.java`, `<target>Test`, etc. are hints; extend them to `.kt` (`*Configuration.{java,kt}`, `extends|:` for Kotlin supertypes) and never reject a real match for failing the `.java` shape.
+- **Don't over-narrow.** Broadening a grep to catch a missed file must not tighten it for other concepts — keep annotation matches as wide as before. A file missed this way is an `other:gradle-kt-under-java`-class learning.
+
 ## Toolbox baseline
 
 Always in effect; no recipe needs to list it explicitly:

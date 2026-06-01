@@ -45,10 +45,12 @@ Surface check before Research. Cheap reads only.
 
 Decision rule (top-down; first match wins):
 
+The class-declaration checks below match the supertype regardless of language: Java `implements MessageDispatchInterceptor<…>` and Kotlin `: MessageDispatchInterceptor<…>` both qualify. Grep the interface name, not the keyword.
+
 1. **`@MessageHandlerInterceptor` annotation on any method** (not interface impl) → continue to Research to emit Blocker B1.
-2. **`implements MessageDispatchInterceptor<…>`** in class declaration → continue; `variant=dispatch`.
-3. **`implements MessageHandlerInterceptor<…>`** in class declaration → continue; `variant=handler`.
-4. **Both** implements clauses present → continue; `variant=both`.
+2. **`MessageDispatchInterceptor<…>`** in class declaration (Java `implements`, Kotlin `:`) → continue; `variant=dispatch`.
+3. **`MessageHandlerInterceptor<…>`** in class declaration (Java `implements`, Kotlin `:`) → continue; `variant=handler`.
+4. **Both** supertype clauses present → continue; `variant=both`.
 5. **Handler class** — annotated `@CommandHandler` / `@EventHandler` / `@QueryHandler` with no interceptor interface → **Rejected** (route to handler recipe).
 6. **None of the above** → **Rejected**.
 
@@ -101,9 +103,9 @@ Use `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-name` 
 
 *Apply-condition:* always.
 
-Grep `$SOURCE`:
-- `implements MessageDispatchInterceptor` → `variant=dispatch`
-- `implements MessageHandlerInterceptor` → `variant=handler`
+Grep `$SOURCE` for the supertype name (matches Java `implements` and Kotlin `:` alike):
+- `MessageDispatchInterceptor` in the class declaration → `variant=dispatch`
+- `MessageHandlerInterceptor` in the class declaration → `variant=handler`
 - both → `variant=both`
 - `@MessageHandlerInterceptor` on a method → emit Blocker B1 (stop here)
 

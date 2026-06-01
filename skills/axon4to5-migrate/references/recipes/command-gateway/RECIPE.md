@@ -20,7 +20,7 @@ argument-hint: $SOURCE
 
 - `$SOURCE` class itself.
 - Surrounding method return types that need upgrading to `CompletableFuture<R>` when the controller can serve futures async.
-- **CommandBus config-reader companions** — during Research: `grep -RlnE 'config\.commandBus\(\)|findComponent\(CommandBus' --include='*.java' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
+- **CommandBus config-reader companions** — during Research: `grep -RlnE 'config\.commandBus\(\)|findComponent\(CommandBus' --include='*.java' --include='*.kt' <project>/src`. Any class injecting AF4 `Configuration` and calling these is a companion config-reader; add to scope.
 
 Scope grows during FLOW.md Research; never shrinks. External helpers (e.g. `XxxMetaData.with(...)` returning AF4 `MetaData`) are NOT in scope — flag as follow-up.
 
@@ -43,7 +43,7 @@ Decision rule (top-down; first match wins):
 
 ### B1 — Direct `CommandCallback` SPI implementation
 
-Class itself **implements** `org.axonframework.commandhandling.CommandCallback<C, R>` — a reusable SPI implementation, NOT an inline lambda passed to `.send(cmd, callback)`. AF4's `CommandCallback` SPI is removed in AF5. The recipe cannot safely infer the error semantics from the class body alone. Detect: `grep -n 'implements.*CommandCallback' <class file>`.
+Class itself **implements** `org.axonframework.commandhandling.CommandCallback<C, R>` — a reusable SPI implementation, NOT an inline lambda passed to `.send(cmd, callback)`. AF4's `CommandCallback` SPI is removed in AF5. The recipe cannot safely infer the error semantics from the class body alone. Detect: `grep -nE '(implements|:).*CommandCallback' <class file>` (Java `implements`, Kotlin `:`).
 
 Inline lambdas passed to `send(cmd, callback)` at call sites ARE rewritten by the Toolbox Step 2 table to `.onSuccess(...).onError(...)` — they do NOT trigger this blocker.
 
