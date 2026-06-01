@@ -259,11 +259,11 @@ return BLOCKER
 > **Notes:** AF5 removed the Saga SPI — no canonical migration path. `PaymentSaga` only correlates events (`bikeId`) and dispatches commands; no `@DeadlineHandler` / `DeadlineManager` detected. Recommend a stateful-rewrite (mechanical, fully automatable). Choose a strategy before the recipe applies any edits.
 >
 > **Learnings:**
-> ## YYYY-MM-DD — Saga strategy is a caller decision (no AF5 Saga SPI)
+> ## YYYY-MM-DD — `PaymentSaga` is a clean correlation-only saga (no deadlines)
 > **Trigger:** blocker
 > **Where:** `com.example.paymentsaga.PaymentSaga`
-> **Surprise:** AF5 has no Saga SPI; the recipe cannot pick the AF5 shape unilaterally.
-> **Resolution:** Halted with strategy Options; recommended `stateful-rewrite` (no deadlines). No edits applied yet.
+> **Surprise:** Project-specific shape: single association key (`bikeId`), no `DeadlineManager`/`@DeadlineHandler`, pure command dispatch — so the strategy decision is low-risk here, unlike a deadline-bearing saga. (The B0 decision itself is expected; this records what *this* saga looked like.)
+> **Resolution:** Recommended `stateful-rewrite`; no edits applied until the caller picks.
 >
 > **Options:**
 > - [ ] **stateful-rewrite** *(Recommended)* — rebuild as `@Component @DisallowReplay` event handler backed by a new JPA `PaymentState` entity + repository; in-handler dispatch via `CommandDispatcher`.
@@ -284,10 +284,10 @@ return BLOCKER
 > **Notes:** AF5 removed the Saga SPI — no canonical migration path. `PaymentSagaWithDeadline` injects `DeadlineManager` and has `@DeadlineHandler(deadlineName = "cancelPayment")`. AF5 has no scheduler equivalent; the timeout replacement (interval, mechanism, error handling) is a project decision. Recommend `skip` (defer) — or `stateful-rewrite` if you accept that the deadline code is commented out with TODOs for a follow-up `@Scheduled` poller you design.
 >
 > **Learnings:**
-> ## YYYY-MM-DD — Deadline-bearing saga has no automatic AF5 path
+> ## YYYY-MM-DD — `PaymentSagaWithDeadline` carries a 30s `cancelPayment` timeout
 > **Trigger:** blocker
 > **Where:** `com.example.paymentsaga.PaymentSagaWithDeadline:12`
-> **Surprise:** AF5 removed both the Saga SPI and `DeadlineManager`; the timeout replacement cannot be auto-designed.
+> **Surprise:** Project-specific shape: a `@DeadlineHandler(deadlineName = "cancelPayment")` with a 30s `deadlineManager.schedule(...)` drives compensation. That timeout has business meaning, so the AF5 replacement (poller interval, cancellation on confirm) is a real design call the caller must own — which is why the recommendation flips to `skip` here.
 > **Resolution:** Halted with strategy Options; recommended `skip`. No edits applied yet.
 >
 > **Options:**

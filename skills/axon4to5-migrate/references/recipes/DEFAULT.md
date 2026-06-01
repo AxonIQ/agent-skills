@@ -35,6 +35,13 @@ The result block carries a required free-text `NOTES` field and a required `LEAR
 
 **Governing rule (the principle):** write a learning for **any surprise, discovery, or deviation that would help a later item or recipe run more smoothly.** Learnings are forward-looking aids: future runs read them (recipes consult `# Gotchas`; the orchestrator reads `learnings.md` on surprise). If you learned something the recipe docs did not already tell you, the next run should inherit it. *That* is the test — not a fixed checklist.
 
+**Learnings are mostly project-specific.** A learning's *value* is the fact about *this codebase / this migration run* — an unforeseen import path, a module layout that forced a deviation from the `# Use cases`, a behavioural difference the docs missed, a retry the docs didn't predict, **how a blocker was actually resolved here**. The single test: *would a future run, on a different project, learn something the skill docs didn't already tell it?*
+
+- **General framework knowledge is NOT a learning** ("AF5 renamed `getPayload()` to `payload()`", "AF5 has no Saga SPI"). That belongs in the recipe docs (`# Gotchas`) or the migration-paths catalog — if you find a gap there, propose an edit; do not smuggle framework facts into a per-run learning.
+- **Recording a recipe-defined / expected blocker as a learning is fine** — the floor below still asks for a `blocker` entry. But make the entry about the *project-specific* angle (what this codebase actually did, how you resolved it here), not a restatement of the framework fact the recipe already documents.
+
+When in doubt, ask: "is this about *this project*, or about *the framework*?" The former is the learning; the latter is a docs edit.
+
 A learning is **not only a record of what failed**. It is just as valuable — often more — when the migration **succeeded despite a difficulty**: something was problematic, you found the way through, and you record both the problem **and how you solved it**. That is exactly the feedback that lets the recipe (and its `# Gotchas`) absorb the difficulty so the next iteration runs smoother. Put the solution in the entry's `**Resolution:**`; treat the entry as feedback aimed at improving the recipe, not just a diary of trouble.
 
 **Mandatory floor (non-exhaustive).** Each named case below is an objective condition; whenever one holds, a learning is **required** — never hand-wave it as "trivial". The list is a **floor, not a ceiling**: a surprise matching none of them but meeting the governing rule above is *equally* required, recorded under `other:<short-tag>`.
@@ -46,7 +53,7 @@ A learning is **not only a record of what failed**. It is just as valuable — o
 | `api-shape` | an import path, class name, or method signature differed from what the recipe docs predicted. |
 | `project-shape` | project annotations / deps / module layout forced a deviation from the recipe's `# Use cases` or `# Toolbox`. |
 | `investigation` | a step needed external investigation (`javap` on a jar, grep to find a package, context7 MCP). |
-| `blocker` | a blocker was detected (regardless of how it was resolved). |
+| `blocker` | a blocker was detected (regardless of how it was resolved). Keep the entry's value project-specific — what this codebase did and how it was resolved here — rather than restating the framework fact the recipe already documents. |
 | `secondary-module` | a microservices / secondary module had a different shape needing separate handling. |
 | `no-test-coverage` | Success Criterion "tests green" was not-applicable (zero `AggregateTestFixture` tests in scope). |
 | `other:<tag>` | any other surprise / discovery meeting the governing rule (e.g. `other:gradle-kt-under-java`). |
@@ -63,7 +70,7 @@ The `**Learnings:**` field is **always present** — silence is never allowed. I
 ### Per-outcome anchors
 
 - **Success ✅** — NOTES: which Success Criteria passed and whether retries were used. LEARNINGS: one entry per fired trigger (e.g. a test expectation had to flip, the AF5 shape differed from the AF4 mental model); a first-Apply idempotent green run → `none — <why>`.
-- **Blocker 🚧** — NOTES: name the unresolved item plus its location; caller must resolve before re-running. LEARNINGS: always a `blocker` entry; add any further surprises hit while researching scope. OPTIONS: required — see § Blocker OPTIONS baselines below.
+- **Blocker 🚧** — NOTES: name the unresolved item plus its location; caller must resolve before re-running. LEARNINGS: always a `blocker` entry (an expected, recipe-defined blocker is fine to record); keep its value project-specific — what this codebase did, how it was resolved here — not a restatement of the framework fact the recipe already documents. Add any further surprises hit while researching scope. OPTIONS: required — see § Blocker OPTIONS baselines below.
 - **Rejected ⏭️** — NOTES: which `# Applicable` predicate failed and the observed fact that caused it. LEARNINGS: an entry only if rejection itself was a surprise (e.g. `$SOURCE` looked like an aggregate but turned out to be a projector); a routine rejection → `none — <why>`.
 - **Failure ❌** — NOTES: failing `# Success Criteria` items + the last error **verbatim** (compiler / test / exception tail — do not paraphrase). LEARNINGS: effectively always present — `retry` and `compile-error` almost always fired, and the next iteration needs the hypothesis.
 
