@@ -166,7 +166,7 @@ Say **"return SUCCESS"**, then emit the result block. **Notes** + **Learnings** 
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. **Notes** + **Options** are required (Options: the three baselines from `DEFAULT.md` plus any recipe-specific extensions). **Learnings** always includes a `blocker` entry.
+Say **"return BLOCKER"**, then emit the result block. **Notes** + **Options** are required (Options: the three baselines from `DEFAULT.md` plus any recipe-specific extensions). **Learnings** always includes a `blocker` entry (an expected, recipe-defined blocker is fine to record) — keep its value project-specific, not a restatement of framework knowledge (see `DEFAULT.md § Learning Triggers`).
 
 <example>
 return BLOCKER
