@@ -125,7 +125,7 @@ public record RedemptionCompletedEvent(@EventTag(key = "GiftCard") String cardId
 - Every `@CommandHandler` on the child takes `EventAppender` parameter; bodies use `appender.append(...)`.
 - Events keep exactly **one** `@EventTag` — keyed to the ROOT (`"GiftCard"`), never to the child. Children don't have their own event stream without DCB.
 
-## Blocker B2 — `Map<K, V>` form
+## Blocker B1 — `Map<K, V>` form
 
 If the AF4 source has `@AggregateMember Map<Key, Child>`:
 
@@ -134,7 +134,7 @@ If the AF4 source has `@AggregateMember Map<Key, Child>`:
 private Map<String, Transaction> transactionsById = new HashMap<>();
 ```
 
-The recipe emits Blocker B2. The migration path documented in [multi-entity-migration.adoc](../../../docs/paths/aggregates/multi-entity-migration.adoc) ("Maps are not supported"): rewrite the field as `List<Value>` and manage id lookups internally OR via a custom resolver.
+The recipe emits Blocker B1. The migration path documented in [multi-entity-migration.adoc](../../../docs/paths/aggregates/multi-entity-migration.adoc) ("Maps are not supported"): rewrite the field as `List<Value>` and manage id lookups internally OR via a custom resolver.
 
 The rewrite is **not mechanical inside the recipe scope** because it touches:
 
@@ -156,7 +156,7 @@ return BLOCKER
 > **Source:** `com.example.inventory.Inventory`
 > **Recipe:** axon4to5-aggregate
 >
-> **Notes:** Blocker B2 (Map-typed @AggregateMember) fired at `Inventory.java:24` — `@AggregateMember private Map<String, StockItem> items`. AF5 `@EntityMember` supports `List<Value>` only (see [multi-entity-migration.adoc](../../../docs/paths/aggregates/multi-entity-migration.adoc) § "Maps are not supported"). Migration path: rewrite as `List<StockItem>` + internal id lookup (or custom resolver). The rewrite touches the parent's `@EventSourcingHandler` bodies (map put/remove → list ops), command-handler reads (`map.get(key)` → list scan), and every reader/projection that observed the map shape — all outside this recipe's scope.
+> **Notes:** Blocker B1 (Map-typed @AggregateMember) fired at `Inventory.java:24` — `@AggregateMember private Map<String, StockItem> items`. AF5 `@EntityMember` supports `List<Value>` only (see [multi-entity-migration.adoc](../../../docs/paths/aggregates/multi-entity-migration.adoc) § "Maps are not supported"). Migration path: rewrite as `List<StockItem>` + internal id lookup (or custom resolver). The rewrite touches the parent's `@EventSourcingHandler` bodies (map put/remove → list ops), command-handler reads (`map.get(key)` → list scan), and every reader/projection that observed the map shape — all outside this recipe's scope.
 >
 > **Options:**
 > - [ ] **skip** — leave `Inventory` in its current partial state; queue moves on.
