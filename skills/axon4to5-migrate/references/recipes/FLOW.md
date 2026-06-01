@@ -57,16 +57,19 @@ Each recipe **MUST** emit **exactly one** result block, formatted as markdown, b
 
 **Notes:** <short summary — why this result, what to look at next. Do NOT enumerate changed files; git diff covers that.>
 
-**Learnings:** (optional — omit on trivial runs)
-- <bullet>
-- <bullet>
+**Learnings:** (always present — one dated entry per fired trigger, OR `none — <one-clause why>`)
+## YYYY-MM-DD — <one-line headline>
+**Trigger:** <tag from § Learning Triggers, or other:<short-tag>>
+**Where:** `<fqn>` | `<file:line>` | `<module>` | project-wide
+**Surprise:** <what was unexpected>
+**Resolution:** <what was done>
 
 **Options:** (required when Result = Blocker; otherwise omit)
 - [ ] **<id>** — <short description>
 - [ ] **<id>** — <short description>
 ```
 
-**Learnings is optional** and exists for the non-trivial cases: a step that needed a retry, an assumption that turned out wrong, a project-specific shape the recipe had to discover. Trivial green runs do not need Learnings — leave the field out. When present, keep bullets short and scannable; reference `file:line` whenever possible.
+**`Learnings` is always present — silence is never allowed.** Write one complete dated entry for every `§ Learning Triggers` tag that fired this run (see `DEFAULT.md § Learning Triggers` — the canonical list and the governing rule: *capture any surprise that helps the next recipe run more smoothly*). The executor authors the prose — it witnessed the surprise; the orchestrator stamps the date and, on commit, the sha. On a genuinely clean run write `**Learnings:** none — <one-clause why>` — an explicit, auditable assertion that zero triggers fired, which the orchestrator may challenge. Each entry's `**Trigger:**` field carries its tag, so no separate tag-list is needed.
 
 **Options is required on Blocker outcomes.** The recipe must enumerate every continuation path it considers viable from the current partial state. Three options are **always** available (defined in `references/recipes/DEFAULT.md`):
 
@@ -78,13 +81,15 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 
 **Notes baseline** per-outcome guidance lives in `references/recipes/DEFAULT.md` (§ Result Notes / Learnings baselines) and always applies. Recipes may augment via their own `# Result` subsections when they have recipe-specific facts to record; they cannot override the baseline.
 
-### Example — ✅ Success (trivial — no Learnings)
+### Example — ✅ Success (clean run — explicit `none`)
 
 > **Result:** ✅ Success
 > **Source:** `com.dddheroes.heroesofddd.creaturerecruitment.write.calendar.Calendar`
 > **Recipe:** axon4to5-aggregate
 >
 > **Notes:** All Success Criteria match on first Apply. OpenRewrite Phase 1 had already produced the correct AF5 shape; this recipe only verified.
+>
+> **Learnings:** none — first-Apply idempotent green run, nothing surprised the recipe.
 
 ### Example — ✅ Success (with Learnings — surprises encountered)
 
@@ -95,8 +100,16 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > **Notes:** All Success Criteria match. Isolated test green; one test expectation updated for the AF5 entity-creator semantics.
 >
 > **Learnings:**
-> - Test expectation flip surprised the recipe: AF4 threw `AggregateNotFoundException` for a missing aggregate, but AF5 with no-arg `@EntityCreator` materialises an empty entity and runs the instance handler — so the domain rule (`Can remove only present creatures`) fires instead. Documented gotcha in `creation-policy-decision.md`; expected test outcome had to be rewritten before the criterion passed.
-> - Stranded comment in source (`// performance downside in comparison to constructor`) originally referred to `CREATE_IF_MISSING`'s cost on every command. Still loosely accurate (instance handler re-loads the aggregate), so left in place — but the original referent is gone.
+> ## 2026-06-01 — AF5 no-arg `@EntityCreator` materialises an empty entity instead of throwing
+> **Trigger:** api-shape
+> **Where:** `creaturerecruitment.write.army.ArmyTest:expectException`
+> **Surprise:** AF4 threw `AggregateNotFoundException` for a missing aggregate; AF5 with a no-arg `@EntityCreator` materialises an empty entity and runs the instance handler, so the domain rule (`Can remove only present creatures`) fires instead.
+> **Resolution:** Rewrote the test expectation to assert the domain-rule failure; documented the gotcha in `creation-policy-decision.md`. Criterion then passed.
+> ## 2026-06-01 — Stranded comment after `CREATE_IF_MISSING` removal
+> **Trigger:** other:stranded-comment
+> **Where:** `creaturerecruitment.write.army.Army:1`
+> **Surprise:** `// performance downside in comparison to constructor` referred to `CREATE_IF_MISSING`'s per-command cost, which no longer exists.
+> **Resolution:** Left in place — still loosely accurate (instance handler re-loads the aggregate) — but the original referent is gone; next reader should not trust it.
 
 ### Example — 🚧 Blocker
 
@@ -107,9 +120,11 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > **Notes:** Caller must decide before re-running. OpenRewrite Phase 1 already dropped the snapshotting attribute and left a `// TODO #LLM: reconfigure snapshot trigger`. AF5's `@EventSourced` does not yet expose a snapshotting API.
 >
 > **Learnings:**
-> - AF4 `@Aggregate(snapshotTriggerDefinition = "...")` has no AF5 equivalent yet — per `not-supported.md` B1 this needs an explicit decision from the caller. The recipe cannot pick one.
-> - Existing snapshot rows in storage are NOT touched — data migration is out of scope of this skill, the caller owns that decision.
-> - The `public` field declarations on `Dwelling.java` (`public DwellingId dwellingId; // needs to be public for snapshotting`) become unnecessary once snapshotting is dropped — can be tightened to `private` during stabilization, not by this recipe.
+> ## 2026-06-01 — AF4 `@Aggregate(snapshotTriggerDefinition)` has no AF5 equivalent yet
+> **Trigger:** blocker
+> **Where:** `creaturerecruitment.write.dwelling.Dwelling`
+> **Surprise:** AF5 `@EventSourced` exposes no snapshotting API — per `not-supported.md` B1 this needs an explicit caller decision; the recipe cannot pick one.
+> **Resolution:** Halted with Options (below). Existing snapshot rows are NOT touched — data migration is the caller's. Side note for stabilization: the `public DwellingId dwellingId;` fields (`// needs to be public for snapshotting`) can be tightened to `private` once snapshotting is dropped — not by this recipe.
 >
 > **Options:**
 > - [ ] **skip** — leave `Dwelling` in its current partial state (annotation already dropped, TODO comment present); queue moves on.
@@ -122,12 +137,14 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > **Source:** `com.dddheroes.heroesofddd.creaturerecruitment.read.DwellingReadModelProjector`
 > **Recipe:** axon4to5-aggregate
 >
-> **Notes:** Not an aggregate — this is a read-side projector. Recipe did not apply any edits. Route to the event-processor recipe instead.
+> **Notes:** Not an aggregate — this is a read-side projector (`@ProcessingGroup`, not `@Aggregate`); Applicable predicate failed on the first surface check. Recipe did not apply any edits. Route to the event-processor recipe instead.
 >
 > **Learnings:**
-> - Class is annotated `@ProcessingGroup` (not `@Aggregate`) — Applicable predicate failed on the very first surface check.
-> - For projectors in this codebase, the migration is mostly OpenRewrite output (`@ProcessingGroup` → `@Namespace`, `@EventHandler` / `@ResetHandler` / `@MetadataValue` imports). The only manual step is moving the AF4 `axon.eventhandling.processors.<group>.sequencing-policy` YAML key onto the class as `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)`.
-> - The shared bean `gameIdSequencingPolicy` is referenced by 4 other processor groups in YAML — do not delete it; the write-configuration recipe handles bean cleanup once all groups have been annotated.
+> ## 2026-06-01 — Projector migration is mostly OpenRewrite + one manual sequencing-policy move
+> **Trigger:** other:projector-migration-path
+> **Where:** `creaturerecruitment.read.DwellingReadModelProjector`
+> **Surprise:** For projectors in this codebase the migration is almost entirely OpenRewrite output (`@ProcessingGroup` → `@Namespace`; `@EventHandler` / `@ResetHandler` / `@MetadataValue` imports). The one manual step is moving the AF4 `axon.eventhandling.processors.<group>.sequencing-policy` YAML key onto the class.
+> **Resolution:** Annotate with `@SequencingPolicy(type = MetadataSequencingPolicy.class, parameters = GameMetaData.GAME_ID_KEY)` in the event-processor recipe. Do NOT delete the shared `gameIdSequencingPolicy` bean — 4 other processor groups reference it in YAML; the write-configuration recipe cleans it up once all groups are annotated.
 
 ### Example — ❌ Failure
 
@@ -138,15 +155,23 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > **Notes:** Retry budget exhausted (2 Applies). Compilation OK on both attempts. Failing Success Criterion: isolated test — last error verbatim: `Wanted but not invoked: commandGateway.send(IncreaseAvailableCreatures.command(...), ...); Actually, there were zero interactions with this mock.`
 >
 > **Learnings:**
-> - AF5 `CommandGateway.send(...)` returns a `CommandResult` whose `getResultMessage()` is a `CompletableFuture<? extends Message>` — the AF4 try/catch around `send(...).getResultMessage()` never catches anything because the failure surfaces on the future, not in the try-block. This is a real behavioural regression, not just a test issue: AF4 automations that compensated via try/catch silently stop compensating under AF5.
-> - Suspected fix shape (not applied — outside this recipe's scope): rewrite to `.exceptionallyCompose(error -> commandDispatcher.send(IncreaseAvailableCreatures.command(...), metadata).getResultMessage())`. Will likely need a `.thenApply(m -> m)` bridge to widen `CompletableFuture<? extends Message>` to `CompletableFuture<Message>` (wildcard capture refuses `exceptionallyCompose`'s type bound otherwise).
-> - AF5 `org.axonframework.messaging.core.Message` is **NOT generic** — declared as `public interface Message` (verified via `javap` against `axon-messaging-5.1.1-SNAPSHOT.jar`). Any recipe pseudocode using `CompletableFuture<? extends Message<?>>` is wrong; the correct shape is `CompletableFuture<? extends Message>`.
-> - This `$SOURCE` is a processor, not an aggregate — Applicable should arguably have rejected it earlier. The aggregate recipe is the wrong tool for try/catch → reactive-compensation refactoring; caller should re-route to the event-processor recipe and re-invoke.
+> ## 2026-06-01 — AF5 `CommandGateway.send` surfaces failures on the future, not in try/catch
+> **Trigger:** api-shape
+> **Where:** `creaturerecruitment.process.WhenCreatureRecruitedThenAddToArmyProcessor`
+> **Surprise:** `send(...)` returns a `CommandResult` whose `getResultMessage()` is a `CompletableFuture<? extends Message>`. The AF4 try/catch around `send(...).getResultMessage()` never catches — a real behavioural regression: AF4 automations that compensated via try/catch silently stop compensating under AF5.
+> **Resolution:** Not fixed (outside this recipe's scope; wrong recipe — this is a processor, route to event-processor). Suspected shape: `.exceptionallyCompose(error -> commandDispatcher.send(...).getResultMessage())`, likely needing a `.thenApply(m -> m)` bridge to widen `CompletableFuture<? extends Message>` to `CompletableFuture<Message>`.
+> ## 2026-06-01 — AF5 `Message` is NOT generic
+> **Trigger:** investigation
+> **Where:** `axon-messaging-5.1.1-SNAPSHOT.jar` (`org.axonframework.messaging.core.Message`)
+> **Surprise:** Declared `public interface Message` — non-generic. Verified via `javap`. Any recipe pseudocode using `CompletableFuture<? extends Message<?>>` will not compile.
+> **Resolution:** Correct shape is `CompletableFuture<? extends Message>`. Flag recipe docs that still show the generic form.
 
 ## MUST / MUST NOT
 
 MUST:
 - Emit exactly one Result block (schema per § Result) before returning. No exceptions.
+- Emit a `**Learnings:**` field on every Result: one complete dated entry per fired `DEFAULT.md § Learning Triggers` tag, or `none — <one-clause why>` on a clean run. Never leave it silently empty.
+- Author the Learnings prose yourself — you witnessed the run. When dispatched as a subagent, return the entries in the Result block; do NOT write `learnings.md` (the orchestrator persists it).
 - Emit ✅ Success (not ⏭️ Rejected) when `$SOURCE` is already migrated and Success Criteria pass without edits — that is an idempotent Success, not a Rejected outcome. ⏭️ Rejected is reserved for when the `# Applicable` predicate fails (wrong recipe for this source type).
 - Emit `**Options:**` when Result = 🚧 Blocker.
 

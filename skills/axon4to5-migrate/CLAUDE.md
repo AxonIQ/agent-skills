@@ -79,7 +79,9 @@ You are executing eval <N> of axon4to5-migrate. Skill: <path-to-skill>. You ARE 
    scratch (cite imports, annotation names, parameter signatures verbatim).
 6. Write the Result block to <workspace>/.../outputs/result.md.
    Required: `**Result:** ✅ Success | 🚧 Blocker | ⏭️ Rejected | ❌ Failure`,
-   `**Recipe:** axon4to5-<recipe>`, `**Notes:** …`.
+   `**Recipe:** axon4to5-<recipe>`, `**Notes:** …`, and a `**Learnings:**` field — a dated entry per
+   fired trigger (tags per DEFAULT.md § Learning Triggers) or `none — <why>` on a clean run. You ARE
+   the orchestrator here, so write those entries directly into result.md.
 ```
 
 Tips:

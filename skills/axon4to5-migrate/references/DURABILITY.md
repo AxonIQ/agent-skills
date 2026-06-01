@@ -71,31 +71,28 @@ Status ∈ `pending`, `in-progress`, `done`, `blocked`, `skipped`, `rejected`, `
 ## `learnings.md` schema
 
 ```
-## YYYY-MM-DD — <headline>
-**Context:** ...
-**Surprise:** ...
-**Resolution:** ... (commit <sha>?)
+## YYYY-MM-DD — <one-line headline>
+**Recipe:** axon4to5-<component>      (or `—` for orchestrator / debug-loop learnings not bound to a recipe)
+**Trigger:** <tag from DEFAULT.md § Learning Triggers, or other:<short-tag>>
+**Where:** `<fqn>` | `<file:line>` | `<module>` | project-wide      (best-effort location — NEVER blank)
+**Surprise:** what was unexpected.
+**Resolution:** what was done. Commit `<sha>` if applicable.
 ```
+
+`Where` is best-effort and degrades gracefully (FQN → `file:line` → module → `project-wide`) so an exact source is never required, but it is never left blank. One entry per fired trigger.
 
 **MUST `Read learnings.md` when:** surprised, unexpected result, blocker, or ≥2 consecutive failures on the same item. Prior entries often pre-explain the current problem. Skip on routine resume.
 
 ## Proactive Learnings
 
-`learnings.md` capture is **orthogonal to the Result block**. The `on:learning` hook (§ Hooks) fires when a recipe includes a `**Learnings:**` section in its Result — but that is not the only path. The orchestrator MUST also write to `learnings.md` proactively, on its own initiative, whenever any of the following occur during a recipe run or between runs:
+The trigger set is the canonical **`DEFAULT.md § Learning Triggers`** (the governing rule: *capture any surprise that helps the next recipe run more smoothly*, plus the mandatory floor of named tags). The orchestrator is the single writer to `learnings.md`. Two persist paths, **both always fire** — capture is never gated on a run being "non-trivial":
 
-- An import path, class name, or method signature differed from what the recipe documentation predicted (had to discover the correct form by reading jars, grepping, or trial-compile).
-- A compile error occurred that was not expected from the recipe's documented migration steps.
-- A retry was consumed (2nd Apply attempt used).
-- A blocker was detected, regardless of how it was resolved.
-- The project's shape (annotations, dependencies, module layout) required a deviation from the recipe's use cases or toolbox steps.
-- Any step required external investigation (reading jars with `javap`, grepping to discover correct packages, consulting MCP docs, etc.).
-- A microservices or secondary module had a different shape than the primary module and required separate handling.
+- **(a) Returned by the executor.** Every Result block carries a `**Learnings:**` field — either dated entries or an explicit `none — <why>`. Persist each entry; `none` persists nothing. **Validate:** a Result with neither entries nor an explicit `none` → inline run: orchestrator writes the missing learning itself before committing; subagent run: re-request it. Append verbatim — do NOT re-author or summarize the subagent's prose; only stamp the date and (on commit) the sha.
+- **(b) Witnessed inline by the orchestrator.** Surprises that occur outside a recipe run — debug-loop compile errors, between-run discoveries, the secondary-module pre-compile scan — have no Result block. The orchestrator authors and writes these directly, on its own initiative, the moment the surprise is understood.
 
-**How to write:** Append a dated entry to `learnings.md` using the schema (§ `learnings.md` schema). Do NOT wait for the Result block — write as soon as the surprise is understood and resolved. Fold into the next item commit (`on:item-success` stages `learnings.md` when dirty).
+**How to write:** Append a dated entry per the schema (§ `learnings.md` schema). Fold into the next item commit (`on:item-success` stages `learnings.md` when dirty).
 
-**Debug-loop mandatory rule:** After EVERY compile attempt (during any Apply → compile → fix cycle) that produces an error not predicted by the recipe's documented steps, write a `learnings.md` entry for that error **before taking any further action** — before the next edit, before the next compile, before calling the next tool. "Not predicted" means: the error references a class, method, package, or API shape not mentioned in the recipe's Toolbox or Gotchas. Do not batch multiple novel errors into one entry after the fact; write each as it is understood. This rule is non-negotiable and applies even if the session ends before the item is complete.
-
-**Deciding on your own:** The agent does not need a signal from the user, a blocker resolution, or a Result block to trigger this. If the migration surprised you — write it down.
+**Debug-loop mandatory rule (path b):** After EVERY compile attempt (during any Apply → compile → fix cycle) that produces an error not predicted by the recipe's documented steps (the `compile-error` trigger), write a `learnings.md` entry for that error **before taking any further action** — before the next edit, before the next compile, before calling the next tool. "Not predicted" means the error references a class, method, package, or API shape not in the recipe's `# Toolbox` or `# Gotchas`. Do not batch multiple novel errors into one entry after the fact; write each as it is understood. Non-negotiable, even if the session ends before the item completes.
 
 ## Hooks
 
@@ -112,7 +109,7 @@ Every hook that mutates `progress.md` commits the change in the same op. Code-be
 | `on:item-result` | After FLOW.md `## Result` emitted for non-success outcomes | Status per outcome emoji; update notes col; commit `progress.md` only. | `chore(af5): record <status> for <SimpleClassName>` |
 | `on:item-success` | Result=✅ + Verify ok | Stage code paths + `progress.md` (+ `learnings.md` if dirty). Subject uses `<SimpleClassName>` (last `.`-delimited segment of FQN) and the recipe's `title` field from its RECIPE.md frontmatter (lowercased). | `refactor(af5): migrate <recipe-title> <SimpleClassName> to AF5` |
 | `on:caller-decision` | After BLOCKER_RESOLUTION choice applied | Append to decisions log. | `chore(af5): record decision <chosen> for <SimpleClassName>` |
-| `on:learning` | Recipe emits `**Learnings:**` block | Append dated entry to `learnings.md`; fold into next commit. | — |
+| `on:learning` | Every Result block (always) + orchestrator-witnessed inline surprises | Read the Result's `**Learnings:**` field; append each dated entry to `learnings.md` (verbatim for subagent-returned; orchestrator-authored for inline). An explicit `none` appends nothing; a silently empty field is an error (§ Proactive Learnings). Fold into next commit. | — |
 | `on:session-end` | At Render report | Refresh `▶︎ RESUME HERE` **only if pointer changed**. Fold into last item commit when possible; emit standalone only when session ends with no new item commits. | `chore(af5): update resume pointer` |
 
 `on:item-result` + `on:item-success` MUST coalesce into one `refactor(af5)` commit (never two commits for one item).
@@ -165,7 +162,7 @@ MUST:
 - `Read learnings.md` on surprise, blocker, or repeated failure.
 - reuse the orchestrator's existing AskUserQuestion path for caller prompts.
 - emit Result block per FLOW.md § Result before recipe execution returns to the orchestrator; missing Result = record `failed` status and surface as error.
-- write a proactive learning to `learnings.md` whenever a surprise, discovery, or deviation from recipe docs occurs (see § Proactive Learnings), independent of the Result block's optional `**Learnings:**` field.
+- persist each dated entry in every Result's `**Learnings:**` field (an explicit `none` is a clean-run claim, nothing to persist), and write a learning for every surprise the orchestrator witnesses inline (see § Proactive Learnings). A silently empty `**Learnings:**` is an error; never gate capture on a run being "non-trivial".
 
 MUST NOT:
 - identify the caller (user / subagent / auto) — `BLOCKER_RESOLUTION.md`'s concern.
@@ -208,11 +205,9 @@ sequenceDiagram
         S->>D: on:item-start
         D->>F: status in-progress (memory only, no commit)
         S->>R: execute recipe
-        R-->>S: RESULT (+ Learnings?)
-        alt has Learnings
-            S->>D: on:learning
-            D->>F: append learnings.md (folded into next commit)
-        end
+        R-->>S: RESULT (+ authored Learnings entries, or explicit none)
+        S->>D: on:learning
+        D->>F: append each entry to learnings.md (folded into next commit)
         alt Result = ✅
             S->>S: Verify
             S->>D: on:item-result + on:item-success (coalesced)

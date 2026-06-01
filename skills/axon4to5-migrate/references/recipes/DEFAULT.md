@@ -10,7 +10,7 @@ Always in effect; no recipe needs to list it explicitly:
 
 ## Result NOTES / LEARNINGS baselines
 
-The result block has one required free-text field (`NOTES`) and one optional free-text field (`LEARNINGS`); see FLOW.md § Result. The recipe's own `# Result` subsections, if present, append recipe-specific facts on top of the baseline below.
+The result block carries a required free-text `NOTES` field and a required `LEARNINGS` section — one dated entry per fired trigger, or an explicit `none` on a clean run; see FLOW.md § Result. The recipe's own `# Result` subsections, if present, append recipe-specific facts on top of the baseline below.
 
 ### NOTES — always present, keep it a summary
 
@@ -19,25 +19,43 @@ The result block has one required free-text field (`NOTES`) and one optional fre
 - **Do NOT enumerate files changed** — `git diff` is authoritative; duplicating it is noise.
 - Mention retries only if non-trivial (e.g., "succeeded on retry after extending scope").
 
-### LEARNINGS — optional, surprise-driven
+### Learning Triggers
 
-Include LEARNINGS only when the run was **not** straightforward. Trivial green runs do not need this field — omit it.
+**This is the canonical list. FLOW.md, DURABILITY.md, and the recipe template reference it by name — do not restate it elsewhere.**
 
-Reasons to include LEARNINGS:
+**Governing rule (the principle):** write a learning for **any surprise, discovery, or deviation that would help a later item or recipe run more smoothly.** Learnings are forward-looking aids: future runs read them (recipes consult `# Gotchas`; the orchestrator reads `learnings.md` on surprise). If you learned something the recipe docs did not already tell you, the next run should inherit it. *That* is the test — not a fixed checklist.
 
-- **Didn't work first try** — a step needed a retry, a Plan had to be adjusted after a failed Apply, scope had to be extended after Research stabilised.
-- **Framework behaviour differed from the recipe's pseudocode** — e.g. a type signature that wouldn't compile as written, an API that returns a different shape than the recipe assumed.
-- **Project-specific quirk forced a decision** — custom bean, naming convention, configuration shape the recipe had to discover and adapt to.
-- **Suspected cause for failure** (Failure outcome only) — best current hypothesis even if unconfirmed, so the next iteration starts from there.
+A learning is **not only a record of what failed**. It is just as valuable — often more — when the migration **succeeded despite a difficulty**: something was problematic, you found the way through, and you record both the problem **and how you solved it**. That is exactly the feedback that lets the recipe (and its `# Gotchas`) absorb the difficulty so the next iteration runs smoother. Put the solution in the entry's `**Resolution:**`; treat the entry as feedback aimed at improving the recipe, not just a diary of trouble.
 
-Short, scannable bullets. Reference `file:line` whenever possible.
+**Mandatory floor (non-exhaustive).** Each named case below is an objective condition; whenever one holds, a learning is **required** — never hand-wave it as "trivial". The list is a **floor, not a ceiling**: a surprise matching none of them but meeting the governing rule above is *equally* required, recorded under `other:<short-tag>`.
+
+| tag | always a learning when… |
+|-----|-------------------------|
+| `retry` | a 2nd Apply attempt was consumed (FLOW.md retry budget used). |
+| `compile-error` | a compile error occurred that this recipe's `# Toolbox` / `# Gotchas` did **not** predict. |
+| `api-shape` | an import path, class name, or method signature differed from what the recipe docs predicted. |
+| `project-shape` | project annotations / deps / module layout forced a deviation from the recipe's `# Use cases` or `# Toolbox`. |
+| `investigation` | a step needed external investigation (`javap` on a jar, grep to find a package, context7 MCP). |
+| `blocker` | a blocker was detected (regardless of how it was resolved). |
+| `secondary-module` | a microservices / secondary module had a different shape needing separate handling. |
+| `no-test-coverage` | Success Criterion "tests green" was not-applicable (zero `AggregateTestFixture` tests in scope). |
+| `other:<tag>` | any other surprise / discovery meeting the governing rule (e.g. `other:gradle-kt-under-java`). |
+
+### LEARNINGS — one entry per fired trigger; explicit `none` otherwise
+
+The `**Learnings:**` field is **always present** — silence is never allowed. Its value is one of:
+
+- **One complete dated entry per fired trigger** — see FLOW.md § Result for the in-block shape and DURABILITY.md § `learnings.md` schema for the persisted shape. Each entry's `**Trigger:**` field names its tag, so the taxonomy lives in the entries themselves. Short, scannable, `file:line` whenever possible.
+- **`none — <one-clause why>`** — only on a genuinely clean run (zero triggers fired). This is a deliberate, auditable claim ("nothing worth telling the next recipe"); the orchestrator may challenge it.
+
+**Validation (orchestrator-side).** A Result with neither entries nor an explicit `none` is an error: inline → orchestrator writes the missing learning itself before committing; subagent → re-request it.
 
 ### Per-outcome anchors
 
-- **Success ✅** — NOTES: which Success Criteria passed and whether retries were used. LEARNINGS (optional): record only if the recipe was surprised — e.g. a test expectation had to flip, the AF5 shape differed from the AF4 mental model.
-- **Blocker 🚧** — NOTES: name the unresolved item plus its location; caller must resolve before re-running. LEARNINGS (optional): anything beyond the blocker itself that surprised the recipe while researching scope. OPTIONS: required — see § Blocker OPTIONS baselines below.
-- **Rejected ⏭️** — NOTES: which `# Applicable` predicate failed and the observed fact that caused it. LEARNINGS (optional): only if rejection itself was unexpected (e.g. `$SOURCE` looked like an aggregate at first glance but turned out to be a projector after closer inspection).
-- **Failure ❌** — NOTES: failing `# Success Criteria` items + the last error **verbatim** (compiler / test / exception tail — do not paraphrase). LEARNINGS: nearly always present here — failure means something didn't work, and the next iteration needs the hypothesis.
+- **Success ✅** — NOTES: which Success Criteria passed and whether retries were used. LEARNINGS: one entry per fired trigger (e.g. a test expectation had to flip, the AF5 shape differed from the AF4 mental model); a first-Apply idempotent green run → `none — <why>`.
+- **Blocker 🚧** — NOTES: name the unresolved item plus its location; caller must resolve before re-running. LEARNINGS: always a `blocker` entry; add any further surprises hit while researching scope. OPTIONS: required — see § Blocker OPTIONS baselines below.
+- **Rejected ⏭️** — NOTES: which `# Applicable` predicate failed and the observed fact that caused it. LEARNINGS: an entry only if rejection itself was a surprise (e.g. `$SOURCE` looked like an aggregate but turned out to be a projector); a routine rejection → `none — <why>`.
+- **Failure ❌** — NOTES: failing `# Success Criteria` items + the last error **verbatim** (compiler / test / exception tail — do not paraphrase). LEARNINGS: effectively always present — `retry` and `compile-error` almost always fired, and the next iteration needs the hypothesis.
 
 ## Success Criteria baseline
 
