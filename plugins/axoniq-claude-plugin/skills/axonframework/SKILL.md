@@ -70,6 +70,7 @@ When working on a topic, read the corresponding guide file. Guides are grouped i
 |---|---|---|---|
 | getting-started | Maven dependencies / project setup | `getting-started/dependencies.md` | AF5 + AxonIQ Framework |
 | foundations | Message anatomy, processing context, correlation | `foundations/messages-and-processing-context.md` | AF5 (open source) |
+| foundations | MessageStream API (entries, factories, reduce/consume, transform) | `foundations/message-streams.md` | AF5 (open source) |
 | foundations | Message annotations reference | `foundations/annotations.md` | AF5 (open source) |
 | foundations | Supported handler parameters reference | `foundations/supported-parameters.md` | AF5 (open source) |
 | foundations | Exception handling & handler timeouts | `foundations/exception-handling.md` | AF5 (open source) |
@@ -126,6 +127,7 @@ Read: skills/axonframework/commands/decision-models-dcb.md
 
 **Foundations** (messaging internals & cross-cutting)
 - Use **`foundations/messages-and-processing-context.md`** for message anatomy, `ProcessingContext`/unit-of-work lifecycle, and correlation.
+- Use **`foundations/message-streams.md`** for the `MessageStream` API — the `Entry` wrapper, factory methods, `reduce`/imperative consumption, and transforms. Read it whenever you source events, write a low-level handler/interceptor, or consume a `MessageStream<?>`.
 - Use **`foundations/annotations.md`** as a complete reference for any annotation's attributes (`@Command`, `@Event`, `@CommandHandler`, `@EventHandler`, `@InjectEntity`, `@EventSourcedEntity`, `@EventTag`, etc.).
 - Use **`foundations/supported-parameters.md`** to see what can be injected into a handler method.
 - Use **`foundations/exception-handling.md`** for `@ExceptionHandler`, execution-exception wrapping, and handler timeouts.

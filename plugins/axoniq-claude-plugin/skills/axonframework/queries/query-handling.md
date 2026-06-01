@@ -113,7 +113,20 @@ Flux.from(updates)
     .subscribe();
 ```
 
-The first emission is the current query result. Subsequent emissions are updates pushed by the server via `QueryUpdateEmitter`.
+The first emission is the current query result. Subsequent emissions are updates pushed by the server via `QueryUpdateEmitter`. (`subscriptionQuery` is the bare `Publisher<R>` form — there is no `SubscriptionQueryResult` wrapper in AF5; the initial result and updates arrive on the same stream.)
+
+`subscriptionQuery` has overloads that add a `mapper` and an `int updateBufferSize` to bound the backpressure buffer (default `Queues.SMALL_BUFFER_SIZE`). The mapper is a `Function<QueryResponseMessage, R>` — it receives the raw response *message* (not the payload), so you can read metadata as well as the payload:
+
+```java
+import org.axonframework.messaging.queryhandling.QueryResponseMessage;
+
+Publisher<CourseStatsDto> updates = queryGateway.subscriptionQuery(
+        new GetCourseStats(courseId), CourseStatsDto.class,
+        (QueryResponseMessage response) -> toDto(response.payload()),   // Function<QueryResponseMessage, R>
+        256);                                                           // updateBufferSize
+```
+
+For a native `Flux` API (rather than wrapping with `Flux.from(...)`), use the **axon-reactor** extension's `ReactorQueryGateway`.
 
 ### Publisher side — pushing updates from an event handler
 

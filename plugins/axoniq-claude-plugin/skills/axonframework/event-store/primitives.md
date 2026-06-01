@@ -33,6 +33,8 @@ ConsistencyMarker appendPosition()
 
 `appendPosition()` advances every time you fully consume a sourced stream. It reflects "I have read up to here" and is used by the transaction to detect concurrent writes at commit.
 
+> `source(...)` hands back a `MessageStream<? extends EventMessage>`. Consume it by folding with `reduce` over its `Entry` items (`entry.message()` gives the `EventMessage`) — see `foundations/message-streams.md` for the full stream API. It is **not** a `Flux`.
+
 ---
 
 ## SourcingCondition
@@ -161,11 +163,17 @@ ConsistencyMarker combined = markerA.upperBound(markerB);
 
 When not using `EventStoreTransaction`, extract the marker manually from the terminal stream entry:
 
+`MessageStream` has no `collect`; fold the stream with `reduce` (see `foundations/message-streams.md`). The `ConsistencyMarker` rides on the terminal entry's resources, so you can capture it directly during the fold:
+
 ```java
-List<Entry<EventMessage>> entries = stream.collect(Collectors.toList())
-                                          .orTimeout(30, TimeUnit.SECONDS).join();
-Entry<EventMessage> terminal = entries.getLast();                        // TerminalEventMessage
-ConsistencyMarker marker = terminal.getResource(ConsistencyMarker.RESOURCE_KEY);
+ConsistencyMarker marker = stream
+        .reduce((ConsistencyMarker) null,
+                // only the terminal entry carries the marker; preceding entries return null
+                (last, entry) -> {
+                    ConsistencyMarker m = entry.getResource(ConsistencyMarker.RESOURCE_KEY);
+                    return m != null ? m : last;
+                })
+        .orTimeout(30, TimeUnit.SECONDS).join();
 ```
 
 The terminal entry always has `TerminalEventMessage.INSTANCE` as its message and a non-null `ConsistencyMarker` in its resources. All preceding entries have a null marker.
