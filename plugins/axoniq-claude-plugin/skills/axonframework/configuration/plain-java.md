@@ -292,9 +292,9 @@ var eventStore     = config.getComponent(EventStore.class);
 
 `EventSourcingConfigurer` defaults to **`InMemoryEventStorageEngine`** — convenient for testing and local development, not suitable for production.
 
-### PostgreSQL (AxonIQ Framework — commercial)
+### PostgreSQL (Axoniq Framework — commercial)
 
-The AxonIQ Framework PostgreSQL connector provides a production-grade `EventStorageEngine` with optimised DCB tag indexing. Add the dependency:
+The Axoniq Framework PostgreSQL connector provides a production-grade `EventStorageEngine` with optimised DCB tag indexing. Add the dependency:
 
 ```xml
 <dependency>
@@ -315,7 +315,7 @@ configurer.registerEventStorageEngine(
 
 With Spring Boot and `axoniq-postgresql` on the classpath, `PostgresqlAutoConfiguration` wires this automatically. Configure the datasource via standard Spring Boot datasource properties.
 
-AxonIQ Framework is free for non-production use; production deployments require a paid subscription.
+Axoniq Framework is free for non-production use; production deployments require a paid subscription.
 
 ### Axon Server (via the connector)
 

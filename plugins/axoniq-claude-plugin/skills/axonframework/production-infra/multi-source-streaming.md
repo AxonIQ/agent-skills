@@ -1,6 +1,6 @@
-# Multi-Source Event Streaming — AxonIQ Framework
+# Multi-Source Event Streaming — Axoniq Framework
 
-> **Requires AxonIQ Framework** (`io.axoniq.framework`) — commercial license, free for non-production use.
+> **Requires Axoniq Framework** (`io.axoniq.framework`) — commercial license, free for non-production use.
 > This is NOT part of Axon Framework 5 open source. If the user wants to stay on open source only, each `PooledStreamingEventProcessor` can only consume from a single event source.
 
 `MultiStreamableEventSource` lets a `PooledStreamingEventProcessor` consume events from **multiple independent event sources simultaneously** — merging them into a single ordered stream. Typical use cases:

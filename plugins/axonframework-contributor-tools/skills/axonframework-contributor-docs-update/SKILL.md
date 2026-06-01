@@ -185,7 +185,7 @@ Optional note for important nuances.
 **Product names** — exact casing required:
 - Axon Framework, Axon Server, Axoniq Platform
 - Spring, Spring Boot, GitHub, Gradle, PostgreSQL, Kafka, Testcontainers
-- Do not use AxonIQ Console or AxonIQ Cloud — these products are retired
+- Do not use Axoniq Console or Axoniq Cloud — these products are retired
 
 **Code examples:**
 - Always show **both** Spring Boot and plain Java styles (use `[tabs]` blocks with Spring first)

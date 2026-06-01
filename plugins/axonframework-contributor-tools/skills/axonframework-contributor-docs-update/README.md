@@ -73,7 +73,7 @@ Or with a target:
 | AF5 term | entity | aggregate |
 | Code examples | both Spring Boot + plain Java | Spring Boot only |
 | changes-to-process.md | always check and update | skip |
-| Product name | Axoniq Platform | AxonIQ Console, AxonIQ Cloud (retired) |
+| Product name | Axoniq Platform | Axoniq Console, Axoniq Cloud (retired) |
 
 ## File Structure
 

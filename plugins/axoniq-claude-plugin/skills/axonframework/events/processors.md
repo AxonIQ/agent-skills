@@ -253,11 +253,11 @@ class SegmentService {
 }
 ```
 
-> For fair balancing, split the **largest** segment and merge the **smallest**. AxonIQ Platform or Axon Server pick the right segment for you and support automatic scaling; prefer them over the raw API.
+> For fair balancing, split the **largest** segment and merge the **smallest**. Axoniq Platform or Axon Server pick the right segment for you and support automatic scaling; prefer them over the raw API.
 
 ### Multi-node processing
 
-Two instances of a same-named PSEP on different machines are one logical processor; their threads compete for the same segments. Each instance writes a `nodeId` (the JVM name by default, configurable on the `TokenStore`) into the token when it claims a segment. Balance the load via AxonIQ Platform / the Axon Server dashboard, or by calling `releaseSegment(int)` / `releaseSegment(int, long, TimeUnit)` on the processor.
+Two instances of a same-named PSEP on different machines are one logical processor; their threads compete for the same segments. Each instance writes a `nodeId` (the JVM name by default, configurable on the `TokenStore`) into the token when it claims a segment. Balance the load via Axoniq Platform / the Axon Server dashboard, or by calling `releaseSegment(int)` / `releaseSegment(int, long, TimeUnit)` on the processor.
 
 ---
 

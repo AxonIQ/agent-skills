@@ -1,7 +1,7 @@
 ---
 name: axonframework
 description: >
-  Building applications with Axon Framework 5 (AF5) and AxonIQ Framework. Covers all aspects of AF5 application development: command handlers (stateless and DCB/stateful), event-sourced entities (@EventSourcedEntity, @EntityCreator, @InjectEntity, entity hierarchies and polymorphism), dispatching commands (CommandGateway/CommandBus, routing keys); event handling and projections, event processors (subscribing and pooled streaming, tracking tokens, segments, replay/reset), publishing events (EventAppender, EventGateway), event versioning and upcasting; query handling and subscription queries; event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), event store internals (EventStore, EventStorageEngine), conversion and serialization (Converter, Jackson, Avro); messaging foundations (message anatomy, ProcessingContext/unit of work, correlation, Metadata), supported handler parameters, message annotations, exception handling (@ExceptionHandler) and handler timeouts, interceptors, handler customization (ParameterResolver, HandlerEnhancerDefinition, meta-annotations), identifier generation; application configuration (plain Java and Spring Boot), testing with AxonTestFixture (matchers, field filters, integration tests), dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or AxonIQ Framework application.
+  Building applications with Axon Framework 5 (AF5) and Axoniq Framework. Covers all aspects of AF5 application development: command handlers (stateless and DCB/stateful), event-sourced entities (@EventSourcedEntity, @EntityCreator, @InjectEntity, entity hierarchies and polymorphism), dispatching commands (CommandGateway/CommandBus, routing keys); event handling and projections, event processors (subscribing and pooled streaming, tracking tokens, segments, replay/reset), publishing events (EventAppender, EventGateway), event versioning and upcasting; query handling and subscription queries; event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), event store internals (EventStore, EventStorageEngine), conversion and serialization (Converter, Jackson, Avro); messaging foundations (message anatomy, ProcessingContext/unit of work, correlation, Metadata), supported handler parameters, message annotations, exception handling (@ExceptionHandler) and handler timeouts, interceptors, handler customization (ParameterResolver, HandlerEnhancerDefinition, meta-annotations), identifier generation; application configuration (plain Java and Spring Boot), testing with AxonTestFixture (matchers, field filters, integration tests), dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or Axoniq Framework application.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Edit, Write
@@ -9,7 +9,7 @@ allowed-tools: Read, Glob, Grep, Edit, Write
 
 # Axon Framework 5 — Application Developer Guide
 
-This skill covers everything needed to build an application with Axon Framework 5 (AF5) and its optional commercial extension, AxonIQ Framework. When working on a specific topic, use the Read tool to load the relevant guide file from the subdirectories listed in the routing table below.
+This skill covers everything needed to build an application with Axon Framework 5 (AF5) and its optional commercial extension, Axoniq Framework. When working on a specific topic, use the Read tool to load the relevant guide file from the subdirectories listed in the routing table below.
 
 > **Target version:** this skill targets the **Axon Framework 5.1.x** line (latest stable `5.1.1`). API names and package locations follow the 5.1 layout. Version-specific feature availability is called out inline in the guides (for example: replay/reset from 5.1; event upcasting and handler timeouts are scheduled for 5.2). When advising a user, confirm their version in the build file if a feature's availability is borderline.
 
@@ -19,28 +19,28 @@ This skill covers everything needed to build an application with Axon Framework 
 
 **Axon Framework 5** (`org.axonframework`, Apache 2.0) is fully open source and provides the complete core feature set: command handling, DCB decision models, event sourcing, event handling, query handling, interceptors, dead letter queue (in-memory, JDBC, JPA), Spring Boot integration, and testing utilities. It is the default choice.
 
-**AxonIQ Framework** (`io.axoniq.framework`, commercial license) is an optional extension layer that adds production infrastructure features on top of AF5:
+**Axoniq Framework** (`io.axoniq.framework`, commercial license) is an optional extension layer that adds production infrastructure features on top of AF5:
 - **PostgreSQL event store** — a production-grade `EventStorageEngine` backed by PostgreSQL with optimised DCB tag indexing
 - **Distributed messaging** — `DistributedCommandBus` and `DistributedQueryBus` for spreading load across multiple application instances
 - **Multi-source event streaming** — `MultiStreamableEventSource` for consuming events from multiple independent event stores simultaneously
 
-AxonIQ Framework is free for non-production use; production deployments require a paid subscription. Users who prefer to stay on open-source only can cover all core use cases with AF5 alone — AxonIQ Framework features should only be suggested when the user asks for them or their use case clearly requires them.
+Axoniq Framework is free for non-production use; production deployments require a paid subscription. Users who prefer to stay on open-source only can cover all core use cases with AF5 alone — Axoniq Framework features should only be suggested when the user asks for them or their use case clearly requires them.
 
 ## Detecting which frameworks the user has
 
-Before suggesting AxonIQ Framework features, check the project's build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) for the groupId prefixes:
+Before suggesting Axoniq Framework features, check the project's build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) for the groupId prefixes:
 
 | GroupId prefix | Framework | Notes |
 |---|---|---|
 | `org.axonframework` | Axon Framework 5 (open source) | Always present in AF5 projects |
-| `io.axoniq.framework` | AxonIQ Framework (commercial) | Only present if user explicitly added it |
-| `io.axoniq` (other) | Other AxonIQ commercial products | e.g. Axon Server connector, Inspector |
+| `io.axoniq.framework` | Axoniq Framework (commercial) | Only present if user explicitly added it |
+| `io.axoniq` (other) | Other Axoniq commercial products | e.g. Axon Server connector, Inspector |
 
 **If the build file contains only `org.axonframework` dependencies**: the user is on Axon Framework only. Give AF5-only advice. Do not suggest `io.axoniq.framework` modules unless the user asks.
 
-**If the build file contains `io.axoniq.framework` dependencies**: AxonIQ Framework is available. It is safe to reference its APIs (`PostgresqlEventStorageEngine`, `DistributedCommandBus`, `MultiStreamableEventSource`, etc.).
+**If the build file contains `io.axoniq.framework` dependencies**: Axoniq Framework is available. It is safe to reference its APIs (`PostgresqlEventStorageEngine`, `DistributedCommandBus`, `MultiStreamableEventSource`, etc.).
 
-When no build file is visible and the question is ambiguous, default to AF5 open-source advice and note that AxonIQ Framework provides commercial alternatives where relevant.
+When no build file is visible and the question is ambiguous, default to AF5 open-source advice and note that Axoniq Framework provides commercial alternatives where relevant.
 
 ---
 
@@ -68,7 +68,7 @@ When working on a topic, read the corresponding guide file. Guides are grouped i
 
 | Domain | Topic | Guide file | Framework |
 |---|---|---|---|
-| getting-started | Maven dependencies / project setup | `getting-started/dependencies.md` | AF5 + AxonIQ Framework |
+| getting-started | Maven dependencies / project setup | `getting-started/dependencies.md` | AF5 + Axoniq Framework |
 | foundations | Message anatomy, processing context, correlation | `foundations/messages-and-processing-context.md` | AF5 (open source) |
 | foundations | MessageStream API (entries, factories, reduce/consume, transform) | `foundations/message-streams.md` | AF5 (open source) |
 | foundations | Message annotations reference | `foundations/annotations.md` | AF5 (open source) |
@@ -89,13 +89,13 @@ When working on a topic, read the corresponding guide file. Guides are grouped i
 | event-store | Event store API reference (sourcing / append conditions) | `event-store/primitives.md` | AF5 (open source) |
 | event-store | Event store internals (EventStore / EventStorageEngine) | `event-store/internals.md` | AF5 (open source) |
 | event-store | Conversion & serialization | `event-store/conversion-serialization.md` | AF5 (open source) |
-| configuration | Application configuration (plain Java) | `configuration/plain-java.md` | AF5 + AxonIQ Framework options |
+| configuration | Application configuration (plain Java) | `configuration/plain-java.md` | AF5 + Axoniq Framework options |
 | configuration | Spring Boot configuration | `configuration/spring-boot.md` | AF5 Spring extension |
 | testing | Testing — basics | `testing/basics.md` | AF5 (open source) |
 | testing | Testing — advanced (time, integration, Spring) | `testing/advanced.md` | AF5 (open source) |
 | testing | Testing — matchers & field filters | `testing/matchers.md` | AF5 (open source) |
-| production-infra | Distributed messaging | `production-infra/distributed-messaging.md` | AxonIQ Framework (commercial) |
-| production-infra | Multi-source event streaming | `production-infra/multi-source-streaming.md` | AxonIQ Framework (commercial) |
+| production-infra | Distributed messaging | `production-infra/distributed-messaging.md` | Axoniq Framework (commercial) |
+| production-infra | Multi-source event streaming | `production-infra/multi-source-streaming.md` | Axoniq Framework (commercial) |
 
 **To load a guide**: use the Read tool with the path relative to this file, e.g.:
 
@@ -149,6 +149,6 @@ Read: skills/axonframework/commands/decision-models-dcb.md
 - Use **`testing/advanced.md`** for time control, integration tests, and Spring Boot test setup.
 - Use **`testing/matchers.md`** for the matcher API and field filters.
 
-**Production infrastructure (AxonIQ Framework, commercial)**
+**Production infrastructure (Axoniq Framework, commercial)**
 - Use **`production-infra/distributed-messaging.md`** when distributing command or query load across multiple application nodes.
 - Use **`production-infra/multi-source-streaming.md`** when consuming events from multiple independent event stores simultaneously.

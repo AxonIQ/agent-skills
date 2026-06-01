@@ -1,9 +1,9 @@
-# Distributed Messaging — AxonIQ Framework
+# Distributed Messaging — Axoniq Framework
 
-> **Requires AxonIQ Framework** (`io.axoniq.framework`) — commercial license, free for non-production use.
+> **Requires Axoniq Framework** (`io.axoniq.framework`) — commercial license, free for non-production use.
 > This is NOT part of Axon Framework 5 open source. If the user wants to stay on open source only, there is no built-in distributed command/query bus in AF5 — each application node runs its own local bus.
 
-The AxonIQ Framework provides `DistributedCommandBus` and `DistributedQueryBus` for spreading load across multiple instances of an application. Each instance runs a **local segment** of the bus; a **connector** routes messages between segments.
+The Axoniq Framework provides `DistributedCommandBus` and `DistributedQueryBus` for spreading load across multiple instances of an application. Each instance runs a **local segment** of the bus; a **connector** routes messages between segments.
 
 ---
 
@@ -104,7 +104,7 @@ DistributedQueryBusConfiguration config = DistributedQueryBusConfiguration.DEFAU
 
 ---
 
-## Spring Boot (AxonIQ Framework auto-configuration)
+## Spring Boot (Axoniq Framework auto-configuration)
 
 When `axoniq-distributed-messaging` and a connector are on the classpath, Spring Boot auto-configuration registers the distributed buses automatically. The local `CommandBus`/`QueryBus` beans are decorated with their distributed counterparts. Declare the connector bean to activate:
 

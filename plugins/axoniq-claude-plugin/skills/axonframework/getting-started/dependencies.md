@@ -11,9 +11,9 @@ Only Axon Framework 5.0 and later is covered here.
 | Framework | GroupId | Latest stable | Notes |
 |---|---|---|---|
 | Axon Framework (open source) | `org.axonframework` | `5.1.1` | Apache 2.0 license |
-| AxonIQ Framework (commercial) | `io.axoniq.framework` | tracks AF5 version | Free for non-production; paid subscription for production |
+| Axoniq Framework (commercial) | `io.axoniq.framework` | tracks AF5 version | Free for non-production; paid subscription for production |
 
-Both frameworks use the same version numbering line (e.g., `5.1.0`, `5.1.1`). AxonIQ Framework's BOM imports the matching AF5 BOM, so a single BOM import covers everything.
+Both frameworks use the same version numbering line (e.g., `5.1.0`, `5.1.1`). Axoniq Framework's BOM imports the matching AF5 BOM, so a single BOM import covers everything.
 
 ---
 
@@ -117,9 +117,9 @@ Use individual modules when you are not using Spring Boot or when you need fine-
 
 ---
 
-## AxonIQ Framework (commercial)
+## Axoniq Framework (commercial)
 
-AxonIQ Framework adds production infrastructure on top of AF5. Its BOM imports `axon-framework-bom`, so a single BOM covers both.
+Axoniq Framework adds production infrastructure on top of AF5. Its BOM imports `axon-framework-bom`, so a single BOM covers both.
 
 ### Using the BOM
 
@@ -148,10 +148,10 @@ This transitively imports `axon-framework-bom` at the matching version, so you d
 | `axoniq-event-streaming` | `io.axoniq.framework` | `MultiStreamableEventSource` — consumes events from multiple independent event stores simultaneously in a single event processor. |
 | `axoniq-dead-letter` | `io.axoniq.framework` | Dead-letter queue implementations: in-memory, JDBC, JPA, and PostgreSQL backends for event processors. |
 | `axon-server-connector` | `io.axoniq.framework` | Connector for Axon Server as the event store and message broker. Auto-detected on the classpath (connects to `localhost:8124` by default). Connection/disable config: see `configuration/spring-boot.md` and `configuration/plain-java.md`. |
-| `axoniq-spring-boot-autoconfigure` | `io.axoniq.framework` | Spring Boot auto-configuration for all AxonIQ Framework modules. |
-| `axoniq-spring-boot-starter` | `io.axoniq.framework` | Convenience starter: includes all AxonIQ Framework modules and the AF5 Spring Boot starter. |
+| `axoniq-spring-boot-autoconfigure` | `io.axoniq.framework` | Spring Boot auto-configuration for all Axoniq Framework modules. |
+| `axoniq-spring-boot-starter` | `io.axoniq.framework` | Convenience starter: includes all Axoniq Framework modules and the AF5 Spring Boot starter. |
 
-### Typical AxonIQ Framework setup (Spring Boot)
+### Typical Axoniq Framework setup (Spring Boot)
 
 ```xml
 <dependency>
@@ -203,7 +203,7 @@ axoniq-spring-boot-starter
 // BOM (Axon Framework only):
 implementation(platform("org.axonframework:axon-framework-bom:5.1.1"))
 
-// BOM (AxonIQ Framework, includes AF5 BOM):
+// BOM (Axoniq Framework, includes AF5 BOM):
 implementation(platform("io.axoniq.framework:axoniq-framework-bom:5.1.1"))
 
 // Spring Boot:
