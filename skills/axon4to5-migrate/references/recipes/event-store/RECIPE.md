@@ -8,7 +8,23 @@ argument-hint: $SOURCE
 
 # Event Store
 
-> One-shot bean swap. AF4 used `EmbeddedEventStore` + `JpaEventStorageEngine` / `JdbcEventStorageEngine` / `AxonServerEventStore`. AF5 collapses to a single `EventStorageEngine` registration of an `AggregateBased*` type. **This recipe is MANDATORY** — "the starter auto-configures it" is never a valid skip: the AF5 starter registers DCB-flat `AxonServerEventStorageEngine` (not aggregate-keyed) by default; without an explicit `AggregateBased*` bean the project starts cleanly then fails at first command/replay against legacy data.
+> One-shot bean swap. AF4 used `EmbeddedEventStore` + `JpaEventStorageEngine` / `JdbcEventStorageEngine` / `AxonServerEventStore`. AF5 collapses to a single `EventStorageEngine` registration of an `AggregateBased*` type. **Always strip the AF4 wiring.** Whether an explicit `AggregateBased*` bean must REPLACE it depends on what AF5 actually auto-registers — which is governed by whether the **Axon Server connector enhancer is active**, NOT by the backend label alone.
+>
+> The connector's `AxonServerConfigurationEnhancer` is `ServiceLoader`-registered, so it is **active whenever `axon-server-connector` is on the classpath** — UNLESS Spring disables it. In Spring Boot, `AxonServerAutoConfiguration` registers a `disableAxonServerConfigurationEnhancer` bean (gated `@ConditionalOnProperty("axon.axonserver.enabled", havingValue="false")`) that calls `registry.disableEnhancer(AxonServerConfigurationEnhancer.class)`.
+>
+> Two **independent** decisions follow (`configuration=spring`):
+>
+> 1. **Explicit `@Bean EventStorageEngine`?** Needed when the AF5 default would be the *wrong engine* — i.e. the connector enhancer is **ACTIVE** (connector on classpath AND `axon.axonserver.enabled` ≠ `false`), or the backend is Axon Server. When the enhancer is **INACTIVE** (connector absent, OR `axon.axonserver.enabled=false`), `JpaEventStoreAutoConfiguration` registers `AggregateBasedJpaEventStorageEngine` itself → no bean.
+> 2. **`@EntityScan` over framework packages? (JPA backend only.)** Needed whenever `axon-server-connector` is on the classpath **at all** — enabled, disabled, or overridden by an explicit `@Bean`. Skip ONLY when the connector is entirely absent — then the pure-JPA auto-config chain registers the framework entities via `@RegisterDefaultEntities` (`DefaultEntityRegistrar` → `AutoConfigurationPackages.register`).
+>
+> | Backend / state | Default engine actually registered | `@Bean` needed? | `@EntityScan` needed? |
+> |---|---|---|---|
+> | Axon Server backend (enabled) | DCB-flat `AxonServerEventStorageEngine` — **wrong for legacy data** | **YES** | — (not JPA) |
+> | JPA, connector on classpath, `axon.axonserver.enabled` ≠ `false` | connector wins the `registerIfNotPresent` race → DCB-flat AS engine | **YES** | **YES** |
+> | JPA, connector on classpath, `axon.axonserver.enabled=false` (AS disabled, want JPA) | AS enhancer disabled → JPA auto-config → `AggregateBasedJpaEventStorageEngine` | **NO** | **YES** |
+> | JPA, connector **absent** | JPA auto-config → `AggregateBasedJpaEventStorageEngine` (+ entities) | **NO** | **NO** |
+>
+> "The starter auto-configures it" fully skips the recipe's *additions* only in the last row. Otherwise the engine default is wrong (rows 1–2) and/or the framework JPA entities go unscanned without `@EntityScan` (rows 2–3).
 >
 > 🚨 **SQL / DDL / data migration is OUT OF SCOPE.** AF5 JPA tables differ from AF4 (`domain_event_entry` → `aggregate_event_entry`). Recipe swaps Java code only and flags the schema-change requirement in Notes.
 
@@ -85,12 +101,13 @@ Extends DEFAULT.md baseline. Success criteria split by `configuration` input.
 ### Common — both configurations
 
 1. **No AF4 engine references** as live (uncommented) code: none of `EmbeddedEventStore`, `JpaEventStorageEngine`, `JdbcEventStorageEngine`, `AxonServerEventStore` (type names or imports).
-2. **Single `EventStorageEngine` registration** — exactly one bean / `registerEventStorageEngine` call; duplicate registrations cause startup failure.
+2. **At most one explicit `EventStorageEngine` registration** — duplicate registrations cause startup failure. Zero explicit registrations is the *correct* state for `configuration=spring` + JPA backend + connector absent (auto-config registers it); see Path A item 4.
 
 ### configuration=spring (Path A)
 
-3. Explicit `@Bean EventStorageEngine` (or `@Bean EventStorageEngine`-typed method) present in `$SOURCE`, returning an `AggregateBasedJpaEventStorageEngine` OR `AggregateBasedAxonServerEventStorageEngine` instance.
-4. **JPA backend only:** `@EntityScan(basePackages = {..., "org.axonframework", "io.axoniq.framework"})` present on the Spring Boot main class (or any `@Configuration`). Partial `@EntityScan` covering only the app package is a mismatch — it silently drops `AggregateEventEntry` / `TokenEntry` / `DeadLetterEntry`.
+3. **`@Bean EventStorageEngine` required when the connector enhancer is ACTIVE or backend is Axon Server** — i.e. Axon Server backend, OR JPA backend with `axon-server-connector` on the classpath AND `axon.axonserver.enabled` ≠ `false`. Explicit `@Bean` present in `$SOURCE`, returning `AggregateBasedAxonServerEventStorageEngine` (AS) or `AggregateBasedJpaEventStorageEngine` (JPA).
+4. **NO `@Bean` required when the enhancer is INACTIVE for a JPA backend** — connector absent, OR `axon.axonserver.enabled=false`: `JpaEventStoreAutoConfiguration` registers `AggregateBasedJpaEventStorageEngine` itself. A redundant explicit bean is harmless but not required.
+5. **`@EntityScan` required for a JPA backend whenever `axon-server-connector` is on the classpath at all** — enabled, disabled, or `@Bean`-overridden. Skip ONLY when the connector is entirely absent (pure-JPA auto-config registers the entities via `@RegisterDefaultEntities`). `@EntityScan(basePackages = {..., "org.axonframework", "io.axoniq.framework"})` on the Spring Boot main class (or any `@Configuration`). Partial `@EntityScan` covering only the app package silently drops `AggregateEventEntry` / `TokenEntry` / `DeadLetterEntry`.
 
 ### configuration=native (Path B)
 
@@ -170,11 +187,32 @@ Ask user to confirm backend if ambiguous (`AskUserQuestion`, default = inferred)
 
 *Apply-condition:* `configuration=spring`.
 
-> ⚠️ **Never rely on auto-config alone.** When `axon-server-connector` is on the classpath (always after Phase 1 OpenRewrite), `AxonServerConfigurationEnhancer` (ServiceLoader, `order=MIN_VALUE+10`) outraces `JpaEventStoreAutoConfiguration` (order≈`MAX_VALUE-600`) and registers DCB-flat `AxonServerEventStorageEngine`. `axon.axonserver.enabled=false` does NOT stop the ServiceLoader enhancer. An explicit Spring `@Bean EventStorageEngine` wins because `SpringComponentRegistry.hasComponent(ALL)` checks the Spring `BeanFactory` — both enhancers find the slot occupied and skip.
+**Delete** any AF4 `@Bean EventStore` / `@Bean EventStorageEngine` / `@Bean EmbeddedEventStore` first (two beans of `EventStorageEngine` = startup failure). This always happens, regardless of backend.
 
-**Delete** any AF4 `@Bean EventStore` / `@Bean EventStorageEngine` / `@Bean EmbeddedEventStore` (two beans of `EventStorageEngine` = startup failure).
+Then decide whether to ADD a replacement bean — determine whether the **Axon Server connector enhancer is active** (header table). Active = connector on classpath AND `axon.axonserver.enabled` is not `false`:
 
-**JPA backend — add:**
+```bash
+# connector on classpath?
+grep -RnE 'axon-server-connector|axoniq-spring-boot-starter' pom.xml */pom.xml build.gradle* settings.gradle* 2>/dev/null
+# axoniq-spring-boot-starter pulls axon-server-connector transitively unless an explicit <exclusion> removes it.
+
+# is it disabled in Spring config?
+grep -rn 'axon\.axonserver\.enabled' src/main/resources/ 2>/dev/null
+```
+
+#### JPA backend, connector ABSENT → add NOTHING
+
+`JpaEventStoreAutoConfiguration` (gated `@ConditionalOnBean({EntityManagerFactory, PlatformTransactionManager})` + `@ConditionalOnMissingBean({EventStore, EventStorageEngine})`) registers `AggregateBasedJpaEventStorageEngine` via a `ConfigurationEnhancer` **and** registers the framework JPA entities via `@RegisterDefaultEntities`. After deleting the AF4 beans, **do not add a `@Bean` and do not add `@EntityScan`** — either one suppresses the auto-config that is already doing the right thing. Skip to Step 5 (schema flag).
+
+#### JPA backend, connector ON classpath but `axon.axonserver.enabled=false` → no `@Bean`, but ADD `@EntityScan`
+
+AS is disabled and the user wants the JPA event store (or another non-AS store). `AxonServerAutoConfiguration`'s `disableAxonServerConfigurationEnhancer` bean takes the connector enhancer out of the race, so `JpaEventStoreAutoConfiguration` registers `AggregateBasedJpaEventStorageEngine` itself — **no explicit `@Bean` needed.** BUT because `axon-server-connector` is on the classpath, the framework JPA entities are NOT registered cleanly by the auto-config chain — **you MUST add `@EntityScan` (Step 4)** covering the framework packages. Then skip to Step 5 (schema flag).
+
+#### JPA backend, enhancer ACTIVE (connector on classpath AND `axon.axonserver.enabled` ≠ `false`) → add explicit `AggregateBasedJpaEventStorageEngine`
+
+> ⚠️ The connector's `AxonServerConfigurationEnhancer` (`order = Integer.MIN_VALUE + 10`) runs before `JpaEventStoreAutoConfiguration`'s enhancer (`order = EventSourcingConfigurationDefaults.ENHANCER_ORDER − 500`) and wins the `registerIfNotPresent(EventStorageEngine, SearchScope.ALL)` race with DCB-flat `AxonServerEventStorageEngine`. (When `axon.axonserver.enabled=false` the enhancer is disabled and you'd be in the INACTIVE case above instead.) An explicit Spring `@Bean EventStorageEngine` wins regardless because `SpringComponentRegistry.hasComponent(ALL)` checks the Spring `BeanFactory` — both enhancers find the slot occupied and skip; this is the robust choice when you want JPA while keeping the connector enabled for command/query routing. Adding the bean also requires `@EntityScan` (Step 4), because it suppresses the auto-config's `@RegisterDefaultEntities`.
+
+Add:
 
 ```java
 @Configuration
@@ -205,7 +243,11 @@ import java.util.function.UnaryOperator;
 
 Use `UnaryOperator.identity()` unless AF4 explicitly tuned `batchSize` / `gapTimeout` / `persistenceExceptionResolver`.
 
-**Axon Server backend — add:**
+#### Axon Server backend → add explicit `AggregateBasedAxonServerEventStorageEngine` (ALWAYS)
+
+> ⚠️ The connector auto-registers only the DCB-flat `AxonServerEventStorageEngine`. The aggregate-based variant is never auto-registered — the explicit `@Bean` is mandatory to preserve legacy aggregate routing. No `@EntityScan` (not a JPA backend).
+
+Add:
 
 ```java
 @Bean
@@ -259,11 +301,15 @@ configurer.registerEventStorageEngine(config -> {
 
 Imports: `io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager`, `io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine`, `org.axonframework.eventsourcing.configuration.EventSourcingConfigurer`, `org.axonframework.messaging.eventhandling.conversion.EventConverter`.
 
-### Step 4 — `@EntityScan` (JPA backend + configuration=spring only)
+### Step 4 — `@EntityScan` (JPA backend + `axon-server-connector` on the classpath)
 
-*Apply-condition:* `configuration=spring` AND JPA backend.
+*Apply-condition:* `configuration=spring` AND JPA backend AND `axon-server-connector` on the classpath — **whether AS is enabled, disabled (`axon.axonserver.enabled=false`), or you added an explicit `@Bean` in Step 3a.** **Skip entirely ONLY when the connector is absent** — then `@RegisterDefaultEntities` on the pure-JPA auto-config chain registers the framework entities, and adding `@EntityScan` would displace `AutoConfigurationPackages` and break it.
 
-> 🚨 Explicit `@Bean EventStorageEngine` trips `@ConditionalOnMissingBean(EventStorageEngine.class)` on `JpaEventStoreAutoConfiguration` BEFORE Spring processes `@Import(DefaultEntityRegistrar.class)`. Framework JPA entities never reach `AutoConfigurationPackages`. Symptom: `Could not resolve root entity 'AggregateEventEntry'`.
+> 🚨 Two ways the framework entities go unregistered, both fixed by `@EntityScan`:
+> - **Explicit `@Bean` present** — trips `@ConditionalOnMissingBean(EventStorageEngine.class)` on `JpaEventStoreAutoConfiguration` BEFORE Spring processes its `@RegisterDefaultEntities` (`@Import(DefaultEntityRegistrar.class)`).
+> - **Connector on classpath but `axon.axonserver.enabled=false`, no explicit `@Bean`** — the JPA engine auto-registers, but the framework JPA entities still aren't scanned cleanly once the connector is present.
+>
+> Symptom either way: `Could not resolve root entity 'AggregateEventEntry'`.
 
 Add to the Spring Boot main class (or any `@Configuration`):
 
@@ -298,8 +344,9 @@ Record in Result Notes: *"JPA backend selected — user must apply AF5 schema ch
 
 ## Gotchas
 
-- **`axon.axonserver.enabled=false` alone ≠ JPA backend.** In AF4, this flag gated `AxonServerBusAutoConfiguration` — but `JpaEventStoreAutoConfiguration` only kicked in when `EntityManagerFactory` was **also** on the classpath (`@ConditionalOnBean(EntityManagerFactory.class)`). Without JPA on the classpath, disabling AS left no EventStorageEngine auto-configured. Always check BOTH the YAML flag AND the presence of `spring-boot-starter-data-jpa` / `hibernate-core` to infer JPA backend. In AF5, `axon.axonserver.enabled=false` only gates `@Bean` methods in `AxonServerAutoConfiguration` — the ServiceLoader-discovered `AxonServerConfigurationEnhancer` is NOT gated by it. An explicit `@Bean EventStorageEngine` is the only reliable way to enforce JPA on the AF5 path.
-- **Auto-config never reliably wins on Spring when `axon-server-connector` is on the classpath.** Phase 1 OpenRewrite swaps `axon-spring-boot-starter` → `axoniq-spring-boot-starter`, which brings the connector. The connector's `AxonServerConfigurationEnhancer` (`order=MIN_VALUE+10`) runs `registerIfNotPresent` before `JpaEventStoreAutoConfiguration`'s enhancer (`order≈MAX_VALUE-600`) — DCB-flat `AxonServerEventStorageEngine` wins. `axon.axonserver.enabled=false` only gates `@Bean` methods in `AxonServerAutoConfiguration`, NOT the ServiceLoader enhancer. Always declare explicit `@Bean EventStorageEngine` on Path A.JPA.
+- **AF5's *default* JPA event store IS `AggregateBasedJpaEventStorageEngine`.** There is only one JPA `EventStorageEngine` in AF5 OSS; the DCB-flat default exists ONLY for Axon Server (via the connector) and for the commercial `PostgresqlEventStorageEngine`. So for the `EventStorageEngine` slot the `registerIfNotPresent` precedence is: connector enhancer (`Integer.MIN_VALUE + 10`, DCB-flat) → `JpaEventStoreAutoConfiguration` enhancer (`ENHANCER_ORDER − 500`, aggregate-based JPA) → `EventSourcingConfigurationDefaults` (`ENHANCER_ORDER`, in-memory). With the connector inactive and JPA infra (`EntityManagerFactory` + `PlatformTransactionManager`) present, the JPA enhancer wins over in-memory — that is why aggregate-based JPA is the auto-configured default, no bean required.
+- **`axon.axonserver.enabled=false` DOES disable the connector enhancer in Spring.** `AxonServerAutoConfiguration` registers a `disableAxonServerConfigurationEnhancer` bean (gated `@ConditionalOnProperty("axon.axonserver.enabled", havingValue="false")`) that calls `registry.disableEnhancer(AxonServerConfigurationEnhancer.class)`. So connector-on-classpath + `enabled=false` falls back to the JPA aggregate-based engine (matches `event-store.adoc`). The bean override is needed only while the enhancer is ACTIVE (connector present AND not disabled), or for an Axon Server backend.
+- **The two requirements key on DIFFERENT conditions.** `@Bean` override → enhancer ACTIVE (connector present AND `axon.axonserver.enabled` ≠ `false`) or AS backend. `@EntityScan` → connector present **at all** (enabled, disabled, or `@Bean`-overridden). Only when the connector is *entirely absent* do you add neither — then the pure-JPA auto-config registers both the engine and the entities. Adding `@EntityScan` in the connector-absent case is a regression: it displaces `AutoConfigurationPackages` and breaks `TokenEntry` / `DeadLetterEntry` registration.
 - **Two `EventStorageEngine` beans = startup failure.** Delete ALL AF4 `@Bean EventStore` / `@Bean EventStorageEngine` / `@Bean EmbeddedEventStore` before adding the AF5 bean.
 - **`AggregateEventEntry` comes from the framework JAR — never copy it.** Custom `DomainEventEntry` subclasses = B3 custom subclass blocker.
 - **Partial `@EntityScan` is worse than none.** Adding `@EntityScan` for only the app package displaces `AutoConfigurationPackages` entirely — all framework JPA entities stop being registered. Always include `org.axonframework` and `io.axoniq.framework` in the same annotation.
@@ -315,7 +362,7 @@ Inherits DEFAULT.md baseline.
 
 ### Success
 
-Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-store`. NOTES must include: (a) which path was taken (A.JPA / A.AS / B.JPA / B.AS); (b) if JPA: schema-change note for `aggregate_event_entry` (user-owned, out-of-band); (c) if custom Serializer flagged: list the FQNs; (d) no test coverage (Learning).
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-event-store`. NOTES must include: (a) which path was taken (A.JPA / A.AS / B.JPA / B.AS) **and**, for A.JPA, which of the three cases — *(i)* connector active → explicit `@Bean` + `@EntityScan`; *(ii)* connector present but `axon.axonserver.enabled=false` → no `@Bean`, `@EntityScan` only; *(iii)* connector absent → AF4 beans deleted, nothing added; (b) if JPA: schema-change note for `aggregate_event_entry` (user-owned, out-of-band); (c) if custom Serializer flagged: list the FQNs; (d) no test coverage (Learning).
 
 ### Blocker
 
