@@ -57,7 +57,7 @@ Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved 
 | Decision point | Auto action |
 |---|---|
 | Ambiguous recipe match (`mode=single`) | Pick first candidate by `applicable` score. |
-| Blocker | Auto-select `skip` — leave `$SOURCE` in current partial state, queue moves on. |
+| Blocker | Auto-select the Option the recipe marked `(Recommended)`; if none is marked, `skip`. A recommended migration path (e.g. saga `stateful-rewrite`) re-enters the recipe with that option id; `skip`/`revert` resolve in-place. See `BLOCKER_RESOLUTION.md § Auto mode`. |
 | Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
 | Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
 | OpenRewrite step completes | Immediately continue to mode-specific producer. Do NOT pause or end session. |

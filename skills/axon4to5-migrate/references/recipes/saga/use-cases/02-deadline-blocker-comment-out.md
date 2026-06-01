@@ -1,6 +1,6 @@
-# Use case 02 — DeadlineManager → Blocker with partial migration (comment out)
+# Use case 02 — `stateful-rewrite` of a deadline-bearing saga (comment out + follow-up)
 
-**Why interesting:** AF5 has no `DeadlineManager`. The recipe migrates the full saga structure (class, event handlers, state entity, repository) but cannot design the deadline replacement — that is a project-specific decision. Deadline code is commented out with TODO markers, and Blocker B1 is emitted so the caller can choose the replacement strategy.
+**Why interesting:** AF5 has no `DeadlineManager`. At B0 a deadline-bearing saga is recommended `skip`; this use case shows what happens when the caller **explicitly chooses `stateful-rewrite` anyway**, accepting the deadline follow-up. The recipe migrates the full saga structure (class, event handlers, state entity, repository) but cannot design the deadline replacement — that is a project-specific decision. Deadline code is commented out with TODO markers; the recipe returns **Success** and flags the deadline replacement as required follow-up in NOTES.
 
 ## Before (AF4) — deadline-bearing saga
 
@@ -112,15 +112,15 @@ public class PaymentSagaWithDeadline {
 - **`@DeadlineHandler` method commented out** with TODO block
 - `CommandGateway` field kept (constructor-injected) — needed if caller adds `@Scheduled` poller later
 - Two new files created: `PaymentSagaWithDeadlineState.java`, `PaymentSagaWithDeadlineStateRepository.java`
-- Recipe emits **Blocker B1** — source is partially migrated; caller decides on deadline replacement
+- Recipe returns **Success** with the deadline replacement flagged as required follow-up in NOTES
 
-## What the caller should do next (solve-manually option)
+## What the caller should do next (the deadline follow-up)
 
 1. Decide on a deadline replacement strategy. Common options:
    - **`@Scheduled` poller** (Spring): add `@Scheduled(fixedDelay = 1000)` method querying `findAllByTimestampLessThanAndStatusIn(cutoff, Status.PREPARED, Status.PENDING)`. Add `@EnableScheduling` to the Spring Boot app.
    - **`ScheduledExecutorService`** (native or Spring): wire manually; same polling logic applies.
 2. Uncomment and adapt the TODO-marked blocks.
-3. Re-invoke the saga recipe — it will re-check and proceed to Success.
+3. Add `@EnableScheduling` to the Spring Boot app if you went the `@Scheduled` route.
 
 ## Caveats
 
