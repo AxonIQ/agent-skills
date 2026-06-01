@@ -50,7 +50,7 @@ return BLOCKER
 
 | Form | Class declaration | Detectable by |
 |------|-------------------|---------------|
-| Interface (migratable) | `implements MessageHandlerInterceptor<CommandMessage>` | `grep 'implements MessageHandlerInterceptor'` |
+| Interface (migratable) | Java `implements` / Kotlin `:` `MessageHandlerInterceptor<CommandMessage>` | `grep 'MessageHandlerInterceptor'` on the class declaration |
 | Annotation (B1) | `@MessageHandlerInterceptor` on a method | `grep '@MessageHandlerInterceptor'` |
 
 The annotation may appear on a class that also has `@CommandHandler` / `@EventHandler` methods — that's the expected pattern for the inline style. The interface implementation appears on a dedicated interceptor class without handler annotations.

@@ -21,8 +21,8 @@ argument-hint: $SOURCE
 - Every event class referenced by `@EventSourcingHandler` first-parameter types on `$SOURCE`.
 - Every child entity reached via `@AggregateMember` (collection element type or field type).
 - For polymorphic aggregates: the abstract base + every concrete subtype declared `@Aggregate` / `@AggregateRoot`.
-- The primary test class — `<target>Test` if it exists; direct subclasses found via `grep -rln "extends <target>Test"`. Migrate the base test first.
-- For `configuration=native`: the Configurer wiring file (typical names `*Configuration.java`, `*Application.java`, `*Bootstrap.java`, per-slice `<Slice>Configuration.java`) — only the `registerEntity(...)` / `EventSourcedEntityModule` lines for `$SOURCE`. Do NOT touch other entities' registrations.
+- The primary test class — `<target>Test` if it exists; direct subclasses found by grepping the supertype name (`extends <target>Test` in Java, `: <target>Test` in Kotlin). Migrate the base test first.
+- For `configuration=native`: the Configurer wiring file (typical names `*Configuration`, `*Application`, `*Bootstrap`, per-slice `<Slice>Configuration`; `.java` or `.kt`) — only the `registerEntity(...)` / `EventSourcedEntityModule` lines for `$SOURCE`. Do NOT touch other entities' registrations.
 
 Scope grows during FLOW.md Research; it never shrinks. Sibling aggregates, projectors, sagas, application properties, logging are NEVER in scope.
 
@@ -164,7 +164,7 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 *Apply-condition:* `configuration=native`.
 
 1. Replace AF4 `@Aggregate` / `@AggregateRoot` with AF5 `@EventSourcedEntity` (`org.axonframework.eventsourcing.annotation.EventSourcedEntity`). Same `tagKey` / `idType` rules as Path A.
-2. Locate the project's Configurer wiring file (typical names: `*Configuration.java`, `*Application.java`, `*Bootstrap.java`, per-slice `<Slice>Configuration.java`). Add registration:
+2. Locate the project's Configurer wiring file (typical names: `*Configuration`, `*Application`, `*Bootstrap`, per-slice `<Slice>Configuration`; `.java` or `.kt`). Add registration:
    ```java
    EventSourcingConfigurer.create()
        .registerEntity(EventSourcedEntityModule.autodetected(<IdType>.class, <Entity>.class))

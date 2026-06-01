@@ -70,7 +70,7 @@ Aggregation: all (AND).
 For each named handler:
 
 a. Record the `queryName` value (e.g. `"findAvailable"`).
-b. Identify parameter: no-param → introduce `record FindAvailableQuery() {}`; bare scalar `String bikeType` → `record FindAvailableQuery(String bikeType) {}`. Place as a **separate top-level class** in the project's query API package (e.g. `queries/FindAvailableQuery.java`). Inner record inside the handler class is NOT acceptable — query classes are part of the API contract shared with dispatch sites.
+b. Identify parameter: no-param → introduce `record FindAvailableQuery() {}`; bare scalar `String bikeType` → `record FindAvailableQuery(String bikeType) {}`. Place as a **separate top-level class** in the project's query API package (e.g. `queries/FindAvailableQuery.java`). Inner record inside the handler class is NOT acceptable — query classes are part of the API contract shared with dispatch sites. **Create the file in `$SOURCE`'s language** — `.java` record as shown, or a Kotlin `data class FindAvailableQuery(val bikeType: String)` in a `.kt` file when the handler is Kotlin.
 c. Add `@Query(name = "findAvailable")` from `org.axonframework.messaging.queryhandling.annotation.Query` when record simple name (case-sensitive) ≠ queryName string. `FindAvailableQuery` ≠ `findAvailable` → annotation required.
 d. Change handler param from bare type to query record; update body references (e.g. `bikeType` → `query.bikeType()`). No-param case: `FindAvailableQuery ignored`.
 e. Remove `queryName` attribute. Result: `@QueryHandler public Iterable<BikeStatus> findAvailable(FindAvailableQuery query)`.

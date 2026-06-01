@@ -17,10 +17,10 @@ argument-hint: $SOURCE
 ## Scope
 
 - `$SOURCE` saga class.
-- New `<SagaName>State.java` entity class — created by this recipe in the same package as `$SOURCE`.
-- New `<SagaName>StateRepository.java` interface — created by this recipe in the same package as `$SOURCE`.
-- Any existing `*State.java` / `*StateRepository.java` files in the same package if already partially created.
-- Existing `*SagaTest.java` / `*Test.java` in the same package that imports `SagaTestFixture` (AF4) or `AxonTestFixture` (post-OpenRewrite) — **only when B2 option `rewrite-mockito` is chosen**.
+- New `<SagaName>State` entity class — created by this recipe in the same package as `$SOURCE`. **Created in `$SOURCE`'s own language** — `.kt` if `$SOURCE` is Kotlin, `.java` if Java.
+- New `<SagaName>StateRepository` interface — created by this recipe in the same package as `$SOURCE`, in `$SOURCE`'s language (see above).
+- Any existing `*State` / `*StateRepository` files (`.java` or `.kt`) in the same package if already partially created.
+- Existing `*SagaTest` / `*Test` (`.java` or `.kt`) in the same package that imports `SagaTestFixture` (AF4) or `AxonTestFixture` (post-OpenRewrite) — **only when B2 option `rewrite-mockito` is chosen**.
 
 Scope grows during Research; never shrinks. Sibling sagas, aggregates, projectors are NOT in scope.
 
@@ -39,7 +39,7 @@ Scope grows during Research; never shrinks. Sibling sagas, aggregates, projector
 
 Then emits Blocker B1. The source is in a partially-migrated state — the saga structure is done; only the deadline mechanics need the caller's decision.
 
-**B2 — Existing `*SagaTest.java` uses `SagaTestFixture` or `AxonTestFixture`**
+**B2 — Existing `*SagaTest` (`.java`/`.kt`) uses `SagaTestFixture` or `AxonTestFixture`**
 
 Detection: `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. AF4 uses `SagaTestFixture`; OpenRewrite renames it to `AxonTestFixture`. Either form applies to this blocker. Neither supports non-aggregate types in AF5 — the fixture is designed for aggregates only. The test will not compile after the saga rewrite.
 
@@ -95,9 +95,9 @@ For `$SOURCE` and every in-scope file:
 
 3. **AF5 `@EventHandler` import** present: `org.axonframework.messaging.eventhandling.annotation.EventHandler`.
 
-4. **State entity file exists** — a `*State.java` in the same package with `@Entity` and `@Id` on the primary key field.
+4. **State entity file exists** — a `*State` file (`.java`/`.kt`) in the same package with `@Entity` and `@Id` on the primary key field.
 
-5. **Repository file exists** — a `*StateRepository.java` extending `JpaRepository<StateClass, IdType>` in the same package.
+5. **Repository file exists** — a `*StateRepository` file (`.java`/`.kt`) extending `JpaRepository<StateClass, IdType>` (Java `extends`, Kotlin `:`) in the same package.
 
 **When B1 (DeadlineManager) IS in scope** — recipe emits Blocker after partial migration (criteria 1–5 above still apply to the non-deadline parts; deadline criteria are not checked since Blocker halts before Success verification).
 
@@ -174,6 +174,8 @@ public interface <Name>StateRepository extends JpaRepository<<Name>State, <IdTyp
 ```
 
 Add `findAllByTimestampLessThanAndStatusIn` — required if the caller later designs an `@Scheduled` poller; harmless when no deadline was present.
+
+> The Step 2/3 templates show Java. When `$SOURCE` is Kotlin, emit the Kotlin equivalent instead (`.kt` file, `interface <Name>StateRepository : JpaRepository<...>`, `data class`/`class` for the `@Entity`) — same annotations and JPA contract. Match `$SOURCE`'s language; never add a `.java` file to a Kotlin saga's package.
 
 ### Step 4 — Migrate event handlers (always)
 

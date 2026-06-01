@@ -121,6 +121,7 @@ Steps (after the common pre-steps):
 1. **Discover** — evaluate the recipe's `applicable` predicates across the codebase to produce candidate sources.
     - `execution=inline` → orchestrator scans inline using `Grep` / `Glob` / `Read`.
     - `execution=subagent` → dispatch one `Explore` subagent for this recipe. Read-only — no edits.
+    - **Scan `.java` AND `.kt`, across all source roots.** JVM projects are mixed and Kotlin files often sit under `src/main/java/` (and vice-versa) — never filter candidates by extension or source directory. Key on the recipe's Axon annotations, not on path. See `DEFAULT.md § Source file conventions` (the `Explore` subagent must be told this too).
 2. **Enqueue** — add `(recipe, source)` candidates. Deduplication is recipe's concern.
 3. **Drain** — exhaust all pending items for **this recipe** before advancing to the next:
     - `max-subagents=0` (default) → inline, main session, sequentially.
