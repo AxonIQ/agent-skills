@@ -1,0 +1,20 @@
+{
+  "name": "axoniq-agent-skills",
+  "interface": {
+    "displayName": "Axoniq Agent Skills"
+  },
+  "plugins": [
+    {
+      "name": "axon4to5",
+      "source": {
+        "source": "local",
+        "path": "./plugins/axon4to5"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

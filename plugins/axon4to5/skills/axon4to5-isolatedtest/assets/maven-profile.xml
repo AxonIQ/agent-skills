@@ -1,0 +1,44 @@
+<!--
+  Per-target isolated profile. Copy as a child of <profiles>...</profiles>
+  in the relevant module's pom.xml. Replace placeholders:
+    <TargetName>  — simple class name (PascalCase): e.g. ResourcesPool, PaymentId.
+    <relpath>     — repo-relative file paths under src/main/java (or src/main/kotlin)
+                    and src/test/java (or src/test/kotlin).
+
+  See ../references/maven.md for verify commands, multi-module notes, and cleanup.
+-->
+<profile>
+    <id>isolated-<TargetName></id>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include><relpath under src/main/java>.java</include>
+                        <!-- one entry per main-source file -->
+                    </includes>
+                    <testIncludes>
+                        <testInclude><relpath under src/test/java>.java</testInclude>
+                        <!-- one entry per test-source file -->
+                    </testIncludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <!--
+      Optional: extra dependencies that should ONLY be active in this scope.
+      Most projects rely on inherited <dependencies>; leave this block out
+      unless the input `extra-deps` is non-empty.
+    -->
+    <!--
+    <dependencies>
+        <dependency>
+            <groupId>group</groupId>
+            <artifactId>artifact</artifactId>
+            <version>${some.version}</version>
+        </dependency>
+    </dependencies>
+    -->
+</profile>

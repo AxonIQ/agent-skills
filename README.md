@@ -2,7 +2,7 @@
 
 Agent Skills to help developers using AI agents with Axon Framework.
 
-All skills live in [`skills/`](./skills) at the repo root and follow the [agentskills.io](https://agentskills.io/) format — the single canonical source. They can be consumed directly by any agent runtime that loads `SKILL.md` files (e.g. `npx skills`), or installed as a Claude Code plugin (see below).
+The canonical skills live in [`skills/`](./skills) at the repo root and follow the [agentskills.io](https://agentskills.io/) format. Plugin bundles contain generated copies of selected root skills so Claude Code and Codex can install curated plugin packages.
 
 ## Installation
 
@@ -19,7 +19,14 @@ Curated, named plugins; auto-updates via the marketplace. Run inside Claude Code
 
 ### Codex plugin
 
-🚧 **Coming soon** — a native [OpenAI Codex](https://developers.openai.com/codex/skills/) plugin packaging the same skills. Until then, use the `npx skills` method below with `-a codex`.
+Curated, named plugins; installable from the same checkout or GitHub repository:
+
+```bash
+codex plugin marketplace add AxonIQ/agent-skills
+codex plugin add axon4to5@axoniq-agent-skills
+```
+
+`codex plugin marketplace upgrade axoniq-agent-skills` later pulls the latest skills.
 
 ### npx skills (any agent)
 

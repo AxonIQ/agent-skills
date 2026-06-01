@@ -1,0 +1,40 @@
+{
+  "name": "axon4to5",
+  "version": "0.1.0",
+  "description": "Migrate applications from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5.",
+  "author": {
+    "name": "Axoniq",
+    "email": "contact@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axon",
+    "axoniq",
+    "migration",
+    "openrewrite",
+    "maven",
+    "gradle"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Axon 4 to 5 Migration",
+    "shortDescription": "Axon Framework 4 to Axoniq Framework 5 migration skills.",
+    "longDescription": "A curated Codex plugin for migrating applications from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. It bundles the phased migration orchestrator, OpenRewrite recipe runner, and isolated-test helper.",
+    "developerName": "Axoniq",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.axoniq.io/",
+    "brandColor": "#0055A5",
+    "defaultPrompt": [
+      "Plan an Axon 4 to 5 migration for this repository.",
+      "Run the Axon 4 to 5 OpenRewrite migration.",
+      "Set up isolated tests for an Axon migration target."
+    ]
+  }
+}
