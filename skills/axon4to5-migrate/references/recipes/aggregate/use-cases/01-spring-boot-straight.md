@@ -133,5 +133,5 @@ public record FinishDay(@TargetEntityId String calendarId, int month, int week, 
 
 - `tagKey` must be the **same string** on the entity and on every event. Pick the entity simple class name as the project default (`"Calendar"`), not the field name (`"calendarId"`).
 - `idType` is non-default here (`CalendarId`, not `String`). Omitting it would fail silently at runtime, not at compile time.
-- If the AF4 source had `@Aggregate(snapshotTriggerDefinition = "...")`, this use case's apply-condition doesn't match — the recipe emits Blocker B1 instead. See [04-snapshot-blocker.md](04-snapshot-blocker.md).
+- If the AF4 source had `@Aggregate(snapshotTriggerDefinition = "...")`, this use case's apply-condition doesn't match — the recipe additionally runs the snapshot migration (Step S: `@Snapshotting` + `SnapshotStore`). See [04-snapshotting.md](04-snapshotting.md).
 - Drop the AF4 framework-only no-arg constructor if `@EntityCreator` is on a new one; do not leave both.

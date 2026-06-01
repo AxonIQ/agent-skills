@@ -2,7 +2,7 @@
 
 **Why this case is interesting:** The fixture API surface changes shape: `new AggregateTestFixture<>(Type.class)` → `AxonTestFixture.with(<configurer>)`, the given/when/then DSL becomes fluent (`.given().events(...)`, `.when().command(...)`, `.then().events(...)`), and AF5 record-style accessors (`payload()` / `metaData()`) replace AF4 getters. Most importantly: assertion expectations flip in two specific cases — `AggregateNotFoundException` (instance handlers) and `EntityAlreadyExistsForCreationalCommandHandlerException` (static handlers) — and silently flipping these masks real behavioural regressions.
 
-**Apply-condition:** `<target>Test` exists in `# Scope` AND uses `AggregateTestFixture`. (Skipped entirely when Blocker B3 fires — i.e. the test class uses `SagaTestFixture`; the recipe halts before reaching the test-fixture migration step.)
+**Apply-condition:** `<target>Test` exists in `# Scope` AND uses `AggregateTestFixture`. (Skipped entirely when Blocker B2 fires — i.e. the test class uses `SagaTestFixture`; the recipe halts before reaching the test-fixture migration step.)
 
 ## Before (AF4)
 
@@ -126,4 +126,4 @@ class CalendarTest {
 - **Do NOT silently weaken assertions.** A flipped expectation that matches AF5 reality counts as Success only when the underlying behaviour is preserved. Replacing `expectException(AggregateNotFoundException)` with `expectSuccessfulHandlerExecution()` is a regression mask.
 - **The fixture's identifier type matters.** `EventSourcedEntityModule.autodetected(<IdType>.class, ...)` MUST match the `idType` declared on the entity's `@EventSourced` / `@EventSourcedEntity`. Mismatched types fail at fixture-construction time — usually quickly surfaced.
 - **`@AfterEach fixture.stop()` is non-optional.** Forgetting it leaks the embedded event store between tests; subtle ordering-dependent failures appear later.
-- **`SagaTestFixture` is unrelated.** If the test class also uses `SagaTestFixture`, the recipe emits Blocker B3 (no AF5 saga fixture replacement) — only happens if a saga test was incorrectly placed alongside an aggregate test.
+- **`SagaTestFixture` is unrelated.** If the test class also uses `SagaTestFixture`, the recipe emits Blocker B2 (no AF5 saga fixture replacement) — only happens if a saga test was incorrectly placed alongside an aggregate test.
