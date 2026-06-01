@@ -17,6 +17,21 @@ Both frameworks use the same version numbering line (e.g., `5.1.0`, `5.1.1`). Ax
 
 ---
 
+## Which BOM should I use?
+
+Pick **one** BOM based on which modules you intend to use. Importing both is unnecessary — the Axoniq BOM already imports the AF5 BOM.
+
+| Your plan | Use this BOM |
+|---|---|
+| Only open-source AF5: in-memory event store, or your own JPA/JDBC storage, single node, no Axon Server | `org.axonframework:axon-framework-bom` |
+| Any commercial Axoniq module: `axoniq-postgresql`, `axon-server-connector`, `axoniq-distributed-messaging`, `axoniq-event-streaming`, or `axoniq-dead-letter` | `io.axoniq.framework:axoniq-framework-bom` |
+
+The Axoniq BOM is a superset — it manages versions for every `org.axonframework` artifact **and** every `io.axoniq.framework` artifact. If you're unsure whether you'll need a commercial module later (e.g., you'll move from in-memory to PostgreSQL, or add Axon Server), start with the Axoniq BOM: it imports the matching AF5 BOM transitively, so all the `org.axonframework` dependencies below still resolve with no `<version>`, and you can add commercial modules later without touching `dependencyManagement`.
+
+Choosing the Axoniq BOM does **not** pull in any commercial code or licensing obligation on its own — a BOM only manages versions. You only depend on commercial artifacts when you declare them explicitly. See the [licensing notes](#axoniq-framework-commercial) below.
+
+---
+
 ## Axon Framework 5 (open source)
 
 ### Using the BOM (recommended)
