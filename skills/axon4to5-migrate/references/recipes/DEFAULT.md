@@ -119,6 +119,8 @@ Behaviour:
 
 On `Result: Blocker`, the recipe MUST enumerate continuation paths in an **Options** list (see FLOW.md § Result). The three baseline options below are **always** present in every Blocker result — recipes do not need to restate them, but must not remove them. Recipes MAY extend the list when there is a genuine recipe-specific path.
 
+A recipe MAY mark **exactly one** option `(Recommended)`. In `auto=true` the orchestrator picks the `(Recommended)` option; with none marked it falls back to `skip` (see `BLOCKER_RESOLUTION.md § Auto mode`). Mark a non-`skip` option `(Recommended)` **only when it is safe to auto-apply** — otherwise leave `skip` as the implicit recommendation so auto mode defers rather than making a risky judgment call.
+
 - [ ] **skip** — keep `$SOURCE` in its current partial state (whatever edits the recipe applied before halting stay). The queue moves on; the blocked item shows up in the final report so the caller knows to revisit it.
 - [ ] **revert** — undo every edit this recipe applied to `$SOURCE` and any of its in-scope dependencies; restore the pre-recipe state. Use when the partial state is worse than no migration at all. The queue moves on; the item shows in the final report as reverted.
 - [ ] **solve-manually** — pause this item. Surface the blocker to the caller so they can fix it by hand outside the skill, then re-invoke the skill to continue.

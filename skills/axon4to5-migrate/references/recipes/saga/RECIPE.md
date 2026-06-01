@@ -1,14 +1,14 @@
 ---
 id: saga
 title: Saga
-description: Migrates a single Axon Framework 4 Saga to a stateful @Component event handler with JPA-backed state — full structural rewrite, no AF5 Saga SPI.
+description: Migrates a single Axon Framework 4 Saga — AF5 removed the Saga SPI, so there is no canonical path; the recipe proposes strategies + a recommendation and the caller picks.
 order: 7
 argument-hint: $SOURCE
 ---
 
 # Saga
 
-> AF5 removed the Saga SPI entirely. No `@Saga`, no `@SagaEventHandler`, no `SagaLifecycle`, no `DeadlineManager`. This recipe performs a **structural rewrite** — the saga class becomes a `@Component @DisallowReplay` event handler backed by a JPA state entity. New files are always created (state entity + repository). **`DeadlineManager` / `@DeadlineHandler` have no AF5 equivalent** — the recipe migrates all non-deadline code, comments out the deadline parts, and emits `Blocker` for the caller to design the replacement. There is no migration path catalog entry for saga; this recipe is self-contained.
+> **AF5 removed the Saga SPI entirely.** No `@Saga`, no `@SagaEventHandler`, no `SagaLifecycle`, no `DeadlineManager`. **There is no single, mechanical migration path** — how to re-express an AF4 saga depends on what the saga actually does (pure correlation + command dispatch, time-driven deadlines, multi-context coordination). The recipe therefore does NOT silently apply one rewrite. It researches the saga's surface, **proposes the viable strategies with a recommendation derived from the detected signals (chiefly: are `@DeadlineHandler` / `DeadlineManager` present?), and surfaces the choice as a decision** (Blocker B0 → Options). The orchestrator asks the caller (`AskUserQuestion`) or, in `auto=true`, picks the `(Recommended)` option. Only after a strategy is chosen does the recipe execute it. There is no migration-path catalog entry for sagas; the recipe is self-contained.
 
 ## Source
 
@@ -17,49 +17,49 @@ argument-hint: $SOURCE
 ## Scope
 
 - `$SOURCE` saga class.
-- New `<SagaName>State` entity class — created by this recipe in the same package as `$SOURCE`. **Created in `$SOURCE`'s own language** — `.kt` if `$SOURCE` is Kotlin, `.java` if Java.
-- New `<SagaName>StateRepository` interface — created by this recipe in the same package as `$SOURCE`, in `$SOURCE`'s language (see above).
-- Any existing `*State` / `*StateRepository` files (`.java` or `.kt`) in the same package if already partially created.
-- Existing `*SagaTest` / `*Test` (`.java` or `.kt`) in the same package that imports `SagaTestFixture` (AF4) or `AxonTestFixture` (post-OpenRewrite) — **only when B2 option `rewrite-mockito` is chosen**.
+- **Under the `stateful-rewrite` strategy only**, the recipe also creates and owns:
+  - New `<SagaName>State` entity class — same package as `$SOURCE`, **in `$SOURCE`'s own language** (`.kt` if `$SOURCE` is Kotlin, `.java` if Java).
+  - New `<SagaName>StateRepository` interface — same package and language.
+  - Any existing `*State` / `*StateRepository` files (`.java` / `.kt`) in the same package if already partially created.
 
-Scope grows during Research; never shrinks. Sibling sagas, aggregates, projectors are NOT in scope.
+Scope grows during Research; never shrinks. Sibling sagas, aggregates, projectors are NOT in scope. Before a strategy is chosen, the recipe applies **no edits** — Scope only materialises once the caller picks a migration strategy.
 
 ## Blocker
 
-**B1 — `DeadlineManager` / `@DeadlineHandler` present (any configuration)**
+### B0 — Strategy decision (the primary outcome of this recipe)
 
-`DeadlineManager` field OR `@DeadlineHandler` method detected on `$SOURCE`. AF5 has no `DeadlineManager`. Designing a replacement (e.g., `@Scheduled` poller, `ScheduledExecutorService`) requires project-specific decisions (polling interval, state fields, error handling) that the recipe cannot make automatically.
+**Fires whenever:** live AF4 saga constructs are present on `$SOURCE` (i.e. it is not already migrated) **AND** no strategy hint was passed in (first visit, not a BLOCKER_RESOLUTION re-entry). This is the normal, expected outcome of a first run — not a failure.
 
-**Partial migration applies before emitting B1.** The recipe migrates all non-deadline code first (Steps 1–4, 6), then:
+There is no canonical AF5 replacement for a saga, so the recipe cannot pick the approach on the caller's behalf. It emits B0 with the candidate strategies as **Options** and a **recommendation** in NOTES. The orchestrator surfaces the list (`AskUserQuestion` when `auto=false`; auto-picks the `(Recommended)` option when `auto=true`).
 
-1. Comments out every `@DeadlineHandler` method body with a `// TODO AF5: DeadlineManager removed — design replacement (e.g. @Scheduled poller on the state entity)` note.
-2. Comments out every `deadlineManager.schedule(...)` / `deadlineManager.cancelAllWithinScope(...)` call site with a similar TODO.
-3. Comments out the `DeadlineManager` field declaration.
-4. Keeps all imports as comments so the caller can see what was there.
+Recipe-specific Options (in addition to the three baselines `skip` / `revert` / `solve-manually`):
 
-Then emits Blocker B1. The source is in a partially-migrated state — the saga structure is done; only the deadline mechanics need the caller's decision.
+- [ ] **stateful-rewrite** — rebuild the saga as a `@Component @DisallowReplay` event-handler backed by a new JPA state entity + repository (see § Toolbox). State that lived in saga fields becomes rows in the state entity; `SagaLifecycle` association/lifecycle calls become explicit repository lookups/saves; in-handler dispatch moves to a `CommandDispatcher` parameter. If `@DeadlineHandler` / `DeadlineManager` are present, the deadline code is commented out with `// TODO AF5:` markers and reported as required follow-up (AF5 has no scheduler equivalent — the replacement, e.g. an `@Scheduled` poller on the state entity's timestamp, is a project decision the recipe cannot make).
 
-**B2 — Existing `*SagaTest` (`.java`/`.kt`) uses `SagaTestFixture` or `AxonTestFixture`**
+The baseline **skip** option is the natural "defer" path: leave the saga on its AF4 shape now and redesign later.
 
-Detection: `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. AF4 uses `SagaTestFixture`; OpenRewrite renames it to `AxonTestFixture`. Either form applies to this blocker. Neither supports non-aggregate types in AF5 — the fixture is designed for aggregates only. The test will not compile after the saga rewrite.
+**Recommendation heuristics** — the recipe MUST state which option it recommends and why, derived from the saga's surface:
 
-**Does NOT block the saga structural rewrite.** Steps 1–6 run first; B2 fires after the main migration is complete and the test file is identified.
+| Detected signal | Recommended option | Why |
+|---|---|---|
+| No `@DeadlineHandler` / `DeadlineManager`; saga only correlates events and dispatches commands | **stateful-rewrite** *(Recommended)* | Mechanical, fully automatable; safe to auto-apply. |
+| `@DeadlineHandler` / `DeadlineManager` present | **skip** *(Recommended)* | Deadline replacement needs project-specific design (interval, error handling, scheduler mechanism). Auto-applying a rewrite would leave commented-out, non-functional timeout logic. Caller should choose `stateful-rewrite` explicitly if they accept the manual scheduler follow-up. |
+| Multi-context coordination / unclear state ownership / the saga is really a candidate for redesign | **solve-manually** *(Recommended)* | The "same architecture as AF4" goal does not hold cleanly; a human should decide the AF5 shape. |
 
-Options (in addition to three defaults):
-- `skip` *(Recommended)* — leave the test in its current (broken) state; caller rewrites later; queue moves on.
-- `rewrite-mockito` — recipe rewrites the test as a plain Mockito unit test: removes `SagaTestFixture` / `AxonTestFixture`, mocks `<SagaName>StateRepository` and `CommandDispatcher`, constructs the saga directly, and uses `ArgumentCaptor` / `verify(...)` assertions. Test file is added to scope.
-- `solve-manually` — pause; caller rewrites the test, then re-invokes.
+Mark exactly one Option `(Recommended)` per the table so `auto=true` resolves deterministically.
 
-**Unmet project prerequisites**
+### Unmet project prerequisites
 
 - Project does not compile pre-recipe — surface as Blocker `prerequisite-not-compiling`.
 
 ## Out of Scope
 
 - Sibling sagas, aggregates, projectors.
-- Cross-saga correlation redesign (if the saga coordinated multiple bounded contexts — note in NOTES; caller designs the state schema).
+- Cross-saga / cross-context correlation redesign (note in NOTES; caller designs the state schema).
+- Designing the deadline replacement mechanism (poller interval, scheduler, error handling) — recipe comments out deadline code and flags it; the design is the caller's.
 - Event-store or token-store changes.
-- Processor namespace / YAML wiring beyond `@EnableScheduling` flag.
+- Processor namespace / YAML wiring beyond an `@EnableScheduling` flag.
+- Rewriting existing saga tests — see § Gotchas (fixture-based saga tests do not survive; flagged as follow-up, not silently rewritten).
 - Logging, formatting, package renames.
 
 ## Applicable
@@ -71,16 +71,16 @@ Decision rule (top-down; first match wins):
 1. **Aggregate** — class annotated `@Aggregate` / `@AggregateRoot` AND has `@EventSourcingHandler`. → **Rejected** (route to aggregate recipe).
 2. **Event-processor** — class annotated `@ProcessingGroup` / `@Namespace` AND has `@EventHandler` (not `@SagaEventHandler`). → **Rejected** (route to event-processor recipe).
 3. **Saga AF4 shape** — class annotated `@Saga` OR any method annotated `@SagaEventHandler` / `@StartSaga` / `@EndSaga`. → **continue**.
-4. **Already migrated** — no `@Saga`, no `@SagaEventHandler`, class is `@Component @DisallowReplay` with `@EventHandler` methods. → **continue** (Success Criteria pre-Apply check decides idempotent-Success vs. continue).
+4. **Already migrated** — no `@Saga`, no `@SagaEventHandler`, class is `@Component @DisallowReplay` with `@EventHandler` methods. → **continue** (no live AF4 constructs → B0 does NOT fire; Success Criteria pre-Apply check decides idempotent-Success).
 5. **None of the above** — no saga or event-handler marker found. → **Rejected**.
 
 ## Success Criteria
 
-Extends DEFAULT.md baseline. Recipe-specific structural invariants:
+Success Criteria are evaluated **only once a strategy is chosen and the recipe is executing it** (a BLOCKER_RESOLUTION re-entry carrying a strategy hint), or when `$SOURCE` is already migrated (Applicable predicate 4 → idempotent check). On a first visit with no strategy chosen, the recipe returns Blocker B0 before reaching this section.
+
+Extends DEFAULT.md baseline. The checks below apply to the **`stateful-rewrite`** strategy.
 
 For `$SOURCE` and every in-scope file:
-
-**When B1 (DeadlineManager) is NOT in scope** — all of the following must hold:
 
 1. **No live AF4 saga constructs** on `$SOURCE`. None of the following appear as uncommented code:
    - `org.axonframework.spring.stereotype.Saga` import
@@ -99,17 +99,13 @@ For `$SOURCE` and every in-scope file:
 
 5. **Repository file exists** — a `*StateRepository` file (`.java`/`.kt`) extending `JpaRepository<StateClass, IdType>` (Java `extends`, Kotlin `:`) in the same package.
 
-**When B1 (DeadlineManager) IS in scope** — recipe emits Blocker after partial migration (criteria 1–5 above still apply to the non-deadline parts; deadline criteria are not checked since Blocker halts before Success verification).
+When deadlines were present, the commented-out deadline code is exempt from criterion 1 (it is non-code); criteria 1–5 apply to the live, non-deadline parts. The deadline follow-up is reported in NOTES, not failed.
 
-Aggregation rule: **all match (AND)** — DEFAULT.md baseline AND this section's checks (scoped to non-deadline parts when B1 applies).
+Aggregation rule: **all match (AND)** — DEFAULT.md baseline AND criteria 1–5.
 
 ### Verification
 
-First, run `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. If found → B2 applies (see § Blocker); choose option before proceeding to verification.
-
-When B2 option is `rewrite-mockito` and the test was rewritten: invoke `axon4to5-isolatedtest` with the saga class + rewritten test file. Both must compile and tests must pass green.
-
-When B2 option is `skip` or no test file exists: `axon4to5-isolatedtest` with `test-sources: []` (compile-only). Surface "no test coverage" as a Learning. Compile-clean check still applies — grep for lingering AF4 imports as a proxy before concluding Success.
+Run `grep -rn "SagaTestFixture\|AxonTestFixture" src/test`. If an existing saga test uses either fixture, it will not compile after the rewrite (neither supports non-aggregate types in AF5). **Do not block on it** — exclude it from `test-sources` (compile the saga + new files only), flag "saga test needs manual rewrite" as a `no-test-coverage` Learning, and proceed. Invoke `axon4to5-isolatedtest` with `test-sources: []` (compile-only). Compile-clean check still applies — grep for lingering AF4 imports as a proxy before concluding Success.
 
 ## References
 
@@ -120,18 +116,16 @@ No saga migration path exists in the docs catalog. Recipe is self-contained.
 
 ## Toolbox
 
-### Step 1 — Class-level annotation swap (always)
+The procedures below execute **only when the chosen strategy is `stateful-rewrite`** (B0 resolved to that option, re-entered with the hint). For `skip` / `revert` / `solve-manually` the recipe applies no edits.
 
-*Apply-condition:* always.
+### Step 1 — Class-level annotation swap
 
 1. Remove `@Saga` annotation and its import (`org.axonframework.spring.stereotype.Saga` / `org.axonframework.extension.spring.stereotype.Saga`).
 2. Add `@Component` (`org.springframework.stereotype.Component`).
 3. Add `@DisallowReplay` (`org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay`).
 4. Remove `@Autowired` on `CommandGateway` / `DeadlineManager` fields (will be constructor-injected or removed).
 
-### Step 2 — Create JPA state entity (always)
-
-*Apply-condition:* always (state entity is required; create if absent).
+### Step 2 — Create JPA state entity
 
 Name: `<SagaName>State` (e.g. `PaymentSaga` → `PaymentState`). Place in the same package as `$SOURCE`.
 
@@ -143,7 +137,7 @@ public class <Name>State {
     private <IdType> <correlationKey>;   // the saga's primary association key
     // additional correlation fields and business state fields
     private Status status;
-    private long timestamp;              // creation or "prepared" time — used by @Scheduled cutoff
+    private long timestamp;              // creation or "prepared" time — used by a deadline-replacement poller
 
     public <Name>State() {}             // Hibernate no-arg constructor (required)
 
@@ -162,9 +156,7 @@ public class <Name>State {
 
 Derive fields from the saga's fields + `@SagaEventHandler(associationProperty)` values.
 
-### Step 3 — Create JPA repository (always)
-
-*Apply-condition:* always.
+### Step 3 — Create JPA repository
 
 ```java
 @Repository
@@ -173,13 +165,11 @@ public interface <Name>StateRepository extends JpaRepository<<Name>State, <IdTyp
 }
 ```
 
-Add `findAllByTimestampLessThanAndStatusIn` — required if the caller later designs an `@Scheduled` poller; harmless when no deadline was present.
+Add `findAllByTimestampLessThanAndStatusIn` — required if the caller later designs a deadline-replacement poller; harmless when no deadline was present.
 
 > The Step 2/3 templates show Java. When `$SOURCE` is Kotlin, emit the Kotlin equivalent instead (`.kt` file, `interface <Name>StateRepository : JpaRepository<...>`, `data class`/`class` for the `@Entity`) — same annotations and JPA contract. Match `$SOURCE`'s language; never add a `.java` file to a Kotlin saga's package.
 
-### Step 4 — Migrate event handlers (always)
-
-*Apply-condition:* always.
+### Step 4 — Migrate event handlers
 
 Mapping:
 
@@ -195,15 +185,15 @@ Mapping:
 
 Every `@EventHandler` that dispatches commands gets `CommandDispatcher commandDispatcher` as a method parameter (AF5 style). Remove the class-level `CommandGateway` field.
 
-### Step 5 — Comment out DeadlineManager / @DeadlineHandler (when B1 in scope)
+### Step 5 — Comment out DeadlineManager / @DeadlineHandler (when deadlines present)
 
 *Apply-condition:* `DeadlineManager` field OR `@DeadlineHandler` method detected on `$SOURCE`.
 
-Do NOT remove deadline code. Comment it out and annotate it for the caller:
+AF5 has no scheduler equivalent and the recipe cannot design the replacement. Do NOT remove deadline code — comment it out, annotate it, and report it as required follow-up in NOTES:
 
 1. Comment out the `DeadlineManager` field:
    ```java
-   // TODO AF5: DeadlineManager removed — design replacement (e.g. @Scheduled poller on the state entity)
+   // TODO AF5: DeadlineManager removed — design replacement (e.g. @Scheduled poller on the state entity's timestamp)
    // private transient DeadlineManager deadlineManager;
    ```
 2. Comment out every `deadlineManager.schedule(...)` / `deadlineManager.cancelAllWithinScope(...)` call site (inline in the handler body).
@@ -215,11 +205,9 @@ Do NOT remove deadline code. Comment it out and annotate it for the caller:
    ```
 4. Keep the `org.axonframework.deadline.*` imports as comments so the caller knows what was there.
 
-After commenting out, proceed to emit Blocker B1 — do NOT attempt Step 6 for these constructs.
+The structural migration still succeeds; the deadline replacement is a follow-up the caller owns. (This is why, at B0, a deadline-bearing saga is recommended `skip` unless the caller explicitly accepts this follow-up.)
 
-### Step 6 — Constructor injection (always)
-
-*Apply-condition:* always.
+### Step 6 — Constructor injection
 
 Replace `@Autowired` field injection with constructor injection for all remaining dependencies (`CommandGateway`, `PaymentStateRepository`, etc.):
 
@@ -232,36 +220,34 @@ public <SagaName>(CommandGateway commandGateway, <Name>StateRepository repositor
 
 ## Use cases
 
-- [01-jpa-state-shape-spring.md](use-cases/01-jpa-state-shape-spring.md) — *apply-condition:* `$SOURCE` has no `DeadlineManager` (simple saga with `@StartSaga` / `@EndSaga` / `SagaLifecycle.associateWith`).
-- [02-deadline-blocker-comment-out.md](use-cases/02-deadline-blocker-comment-out.md) — *apply-condition:* `$SOURCE` injects `DeadlineManager` OR has `@DeadlineHandler` methods (partial migration + Blocker B1 approach).
+- [01-jpa-state-shape-spring.md](use-cases/01-jpa-state-shape-spring.md) — *apply-condition:* strategy = `stateful-rewrite` AND `$SOURCE` has no `DeadlineManager` (simple saga with `@StartSaga` / `@EndSaga` / `SagaLifecycle.associateWith`).
+- [02-deadline-blocker-comment-out.md](use-cases/02-deadline-blocker-comment-out.md) — *apply-condition:* strategy = `stateful-rewrite` AND `$SOURCE` injects `DeadlineManager` OR has `@DeadlineHandler` methods (rewrite + comment-out + deadline follow-up).
 - [03-rejected-not-a-saga.md](use-cases/03-rejected-not-a-saga.md) — *apply-condition:* `$SOURCE` is an aggregate or projector (Applicable predicate 1 or 2 fires; for routing reference only).
 
 ## Gotchas
 
-- **`@DisallowReplay` is mandatory.** Without it, a full replay re-fires every `@EventHandler` on the migrated component and creates duplicate state rows. `@DisallowReplay` blocks the processor during replay so the JPA state is only built from live events.
-- **`CommandDispatcher` vs `CommandGateway`.** In-handler dispatch uses `CommandDispatcher` as a method parameter. If the caller later adds an `@Scheduled` poller, that method is NOT an event handler — it must use a `CommandGateway` field (constructor-injected). Having both in the same class is correct.
-- **`SagaLifecycle.associateWith("secondaryKey", value)` → store in state entity.** If the AF4 saga added a second association key (e.g., `paymentReference` added after a `bikeId` start), store `value` as a field on the state entity in the start handler. Subsequent handlers look it up via `repository.findById(event.paymentReference())` — no Axon-level routing needed.
-- **`DeadlineManager.cancelAllWithinScope(...)` in `@EndSaga` handlers** — comment it out along with the other deadline calls. The caller's `@Scheduled` replacement will naturally skip terminal-status rows via the `statusIn(PENDING, PREPARED)` query predicate.
-- **Processor wiring out of scope but important.** The migrated `@Component` needs an `EventProcessorDefinition` (Spring) or `MessagingConfigurer.eventProcessing(...)` (native) to register as an event processor. Without it, handlers may be auto-assigned to the default processor. Flag in Result NOTES with a pointer to `projectors-event-processors.adoc`.
+- **The first run of this recipe is a decision, not an edit.** A first visit on an AF4 saga always returns Blocker B0 with strategy Options + a recommendation; no source files change until the caller picks a strategy. Do not "helpfully" start rewriting before B0 is resolved.
+- **Deadlines drive the recommendation.** Presence of `@DeadlineHandler` / `DeadlineManager` flips the recommendation from `stateful-rewrite` to `skip`, because the timeout replacement is a genuine project decision (interval, scheduler, error handling) the recipe cannot make. `stateful-rewrite` is still offered for callers who accept the manual follow-up.
+- **`@DisallowReplay` is mandatory** (stateful-rewrite). Without it, a full replay re-fires every `@EventHandler` and creates duplicate state rows. `@DisallowReplay` blocks the processor during replay so the JPA state is only built from live events.
+- **`CommandDispatcher` vs `CommandGateway`.** In-handler dispatch uses `CommandDispatcher` as a method parameter. If the caller later adds a deadline-replacement poller, that method is NOT an event handler — it must use a `CommandGateway` field (constructor-injected). Having both in the same class is correct.
+- **`SagaLifecycle.associateWith("secondaryKey", value)` → store in state entity.** A second association key (e.g. `paymentReference` added after a `bikeId` start) becomes a field on the state entity set in the start handler; subsequent handlers look it up via `repository.findById(event.paymentReference())` — no Axon-level routing needed.
+- **`DeadlineManager.cancelAllWithinScope(...)` in `@EndSaga` handlers** — comment it out with the other deadline calls. A poller replacement naturally skips terminal-status rows via a `statusIn(PENDING, PREPARED)` query predicate.
+- **Processor wiring out of scope but important.** The migrated `@Component` needs an `EventProcessorDefinition` (Spring) or `MessagingConfigurer.eventProcessing(...)` (native) to register as an event processor. Flag in Result NOTES with a pointer to `projectors-event-processors.adoc`.
 - **No-arg JPA constructor.** Hibernate requires a no-arg constructor on `@Entity` classes. Always generate `public <Name>State() {}`.
-- **`@Saga` in AF4 had two common import paths:** `org.axonframework.spring.stereotype.Saga` (older) and `org.axonframework.extension.spring.stereotype.Saga` (newer Extension model). Grep for both; both must be removed.
-- **Saga fields become repository lookups.** Instance fields like `private String bikeId; private String renter;` stored between event invocations are replaced by fields on the JPA entity. Every handler that reads those fields must look up the entity first.
-- **`@EntityScan(basePackageClasses = {SagaEntry.class})` fails to compile after saga removal.** `org.axonframework.modelling.saga.repository.jpa.SagaEntry` was removed with the Saga SPI. Replace with the new state entity class (`<SagaName>State.class`). For modules that don't depend on the module containing the state entity (e.g., a microservices application class), use `basePackages = "..."` (string-based package scan) instead of a class reference to avoid a cross-module compile dependency.
+- **`@Saga` had two common import paths:** `org.axonframework.spring.stereotype.Saga` (older) and `org.axonframework.extension.spring.stereotype.Saga` (newer Extension model). Grep for both; both must be removed.
+- **Saga fields become repository lookups.** Instance fields stored between event invocations are replaced by fields on the JPA entity. Every handler that reads those fields must look up the entity first.
+- **Existing saga tests do not survive.** `SagaTestFixture` (AF4) / `AxonTestFixture` (post-OpenRewrite) do not support non-aggregate types in AF5. After a `stateful-rewrite`, such a test will not compile — exclude it from the isolated-test compile, flag "saga test needs manual rewrite" as a `no-test-coverage` Learning, and leave the test for the caller (a Mockito unit test mocking the repository + `CommandDispatcher` is the usual replacement). Do NOT silently rewrite it.
+- **`@EntityScan(basePackageClasses = {SagaEntry.class})` fails to compile after saga removal.** `org.axonframework.modelling.saga.repository.jpa.SagaEntry` was removed with the Saga SPI. Replace with the new state entity class (`<SagaName>State.class`). For modules that don't depend on the module containing the state entity, use `basePackages = "..."` (string-based scan) to avoid a cross-module compile dependency.
+
 ## Result
 
 Inherits DEFAULT.md baseline.
 
-### Success
+### Blocker (B0 — strategy decision, the primary first-run outcome)
 
-Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES must name the two new files created (state entity + repository). Flag in NOTES: (a) processor wiring not handled — caller should add `EventProcessorDefinition` per `projectors-event-processors.adoc`; (b) `@EnableScheduling` addition needed if `@Scheduled` was introduced; (c) no test coverage (saga fixtures rarely ship tests — Learning).
+Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES state that AF5 removed the Saga SPI so there is no canonical path, summarise the saga's detected signals (deadlines? command dispatch? coordination?), and **name the recommended option and why**. The Options block lists the recipe-specific `stateful-rewrite` option plus the three baselines, with exactly one marked `(Recommended)` per the heuristics table.
 
-### Blocker
-
-Say **"return BLOCKER"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES name the detected blocker(s) + location. Options block per detected blocker with their respective options.
-
-B1 and B2 may fire in the same run — emit one combined Blocker result with separate Options sub-sections.
-
-Example (B1 — DeadlineManager + native):
+Example (no deadlines — recommend stateful-rewrite):
 
 ```
 return BLOCKER
@@ -270,35 +256,50 @@ return BLOCKER
 > **Source:** `com.example.paymentsaga.PaymentSaga`
 > **Recipe:** axon4to5-saga
 >
-> **Notes:** 1 blocker detected. B1 (DeadlineManager + native config) at `PaymentSaga.java:12` — `@Autowired private transient DeadlineManager deadlineManager` and `@DeadlineHandler(deadlineName = "cancelPayment")`. AF5 has no DeadlineManager. Native projects cannot use `@Scheduled`; a custom `ScheduledExecutorService` replacement must be wired manually.
+> **Notes:** AF5 removed the Saga SPI — no canonical migration path. `PaymentSaga` only correlates events (`bikeId`) and dispatches commands; no `@DeadlineHandler` / `DeadlineManager` detected. Recommend a stateful-rewrite (mechanical, fully automatable). Choose a strategy before the recipe applies any edits.
+>
+> **Learnings:**
+> ## YYYY-MM-DD — Saga strategy is a caller decision (no AF5 Saga SPI)
+> **Trigger:** blocker
+> **Where:** `com.example.paymentsaga.PaymentSaga`
+> **Surprise:** AF5 has no Saga SPI; the recipe cannot pick the AF5 shape unilaterally.
+> **Resolution:** Halted with strategy Options; recommended `stateful-rewrite` (no deadlines). No edits applied yet.
 >
 > **Options:**
->
-> _For B1 (DeadlineManager):_
-> - [ ] **skip** — keep `PaymentSaga` in its partially-migrated state (saga structure done, deadline code commented); queue moves on.
-> - [ ] **revert** — undo all edits; restore pre-recipe state.
-> - [ ] **solve-manually** — implement the deadline replacement (e.g., `@Scheduled` poller using the JPA state entity's timestamp field), uncomment the commented-out TODO blocks, and re-invoke.
+> - [ ] **stateful-rewrite** *(Recommended)* — rebuild as `@Component @DisallowReplay` event handler backed by a new JPA `PaymentState` entity + repository; in-handler dispatch via `CommandDispatcher`.
+> - [ ] **skip** — leave `PaymentSaga` on its AF4 shape; redesign later; queue moves on.
+> - [ ] **revert** — no edits applied yet; equivalent to skip.
+> - [ ] **solve-manually** — pause; caller designs the AF5 shape by hand, then re-invokes.
 ```
 
-Example (B2 — existing test uses `AxonTestFixture`):
+Example (deadlines present — recommend skip):
 
 ```
 return BLOCKER
 
 > **Result:** 🚧 Blocker
-> **Source:** `com.example.paymentsaga.PaymentSaga`
+> **Source:** `com.example.paymentsaga.PaymentSagaWithDeadline`
 > **Recipe:** axon4to5-saga
 >
-> **Notes:** 1 blocker detected. B2 (existing saga test uses AxonTestFixture) at `PaymentSagaTest.java:36` — `new AxonTestFixture(PaymentSaga.class)`. `AxonTestFixture` does not support non-aggregate types in AF5. Structural saga rewrite is complete; only the test requires a decision.
+> **Notes:** AF5 removed the Saga SPI — no canonical migration path. `PaymentSagaWithDeadline` injects `DeadlineManager` and has `@DeadlineHandler(deadlineName = "cancelPayment")`. AF5 has no scheduler equivalent; the timeout replacement (interval, mechanism, error handling) is a project decision. Recommend `skip` (defer) — or `stateful-rewrite` if you accept that the deadline code is commented out with TODOs for a follow-up `@Scheduled` poller you design.
+>
+> **Learnings:**
+> ## YYYY-MM-DD — Deadline-bearing saga has no automatic AF5 path
+> **Trigger:** blocker
+> **Where:** `com.example.paymentsaga.PaymentSagaWithDeadline:12`
+> **Surprise:** AF5 removed both the Saga SPI and `DeadlineManager`; the timeout replacement cannot be auto-designed.
+> **Resolution:** Halted with strategy Options; recommended `skip`. No edits applied yet.
 >
 > **Options:**
->
-> _For B2 (SagaTestFixture / AxonTestFixture in existing test):_
-> - [ ] **skip** *(Recommended)* — leave `PaymentSagaTest` in its current broken state; caller rewrites later; queue moves on.
-> - [ ] **rewrite-mockito** — recipe rewrites `PaymentSagaTest` as a plain Mockito unit test (mocked repository + `CommandDispatcher`, direct construction, `ArgumentCaptor` assertions). Test file added to scope.
-> - [ ] **revert** — undo all edits including the saga rewrite; restore pre-recipe state.
-> - [ ] **solve-manually** — pause; caller rewrites the test, then re-invokes.
+> - [ ] **skip** *(Recommended)* — leave the saga on its AF4 shape; design the AF5 process + timeout replacement deliberately; queue moves on.
+> - [ ] **stateful-rewrite** — rebuild as `@Component @DisallowReplay` + JPA state; deadline code is commented out with `// TODO AF5:` markers and reported as required follow-up (you design the `@Scheduled`/scheduler replacement).
+> - [ ] **revert** — no edits applied yet; equivalent to skip.
+> - [ ] **solve-manually** — pause; caller designs the AF5 shape + timeout replacement by hand, then re-invokes.
 ```
+
+### Success (after `stateful-rewrite` is chosen and executed)
+
+Say **"return SUCCESS"**, then **MUST emit** the result block (schema: FLOW.md § Result). `Recipe:` field is `axon4to5-saga`. NOTES must name the two new files created (state entity + repository). Flag in NOTES: (a) processor wiring not handled — caller should add `EventProcessorDefinition` per `projectors-event-processors.adoc`; (b) if deadlines were present, the commented-out deadline code is a **required follow-up** — the caller must design the replacement (e.g. `@Scheduled` poller + `@EnableScheduling`); (c) any existing saga test was left for manual rewrite (`no-test-coverage` Learning).
 
 ### Rejected
 

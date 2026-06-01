@@ -26,8 +26,9 @@ For now, this node is a **single step**: present the recipe's **Options** list t
 
 ## Auto mode (`auto=true`)
 
-Skip `AskUserQuestion`. Auto-select `skip` for every blocker. Emit:
+Skip `AskUserQuestion`. Pick the option the recipe marked `(Recommended)`; if no option is marked, fall back to `skip`. Recipes mark a non-`skip` option `(Recommended)` only when it is safe to auto-apply (see `DEFAULT.md § Blocker Options baselines`). Emit:
 
-> ⚙️ auto: Blocker on `<$SOURCE>` → skip
+> ⚙️ auto: Blocker on `<$SOURCE>` → `<chosen id>`
 
-Record in `progress.md` decisions log as `auto-skip`. Queue moves on. No re-entry into the recipe sub-flow.
+- **skip / revert** → handled here exactly as the interactive path (mark `Blocker`, queue moves on; `revert` git-restores first). Record as `auto-<id>`.
+- **recipe-specific option** (e.g. saga `stateful-rewrite`) → re-enter the recipe sub-flow on the same item, passing the chosen option id as a hint — same as interactive resolution. Budget = 1: if the re-entered run blocks again, mark blocked immediately. Record as `auto-<id>`.
