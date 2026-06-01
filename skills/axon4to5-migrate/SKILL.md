@@ -124,7 +124,7 @@ Steps (after the common pre-steps):
 2. **Enqueue** — add `(recipe, source)` candidates. Deduplication is recipe's concern.
 3. **Drain** — exhaust all pending items for **this recipe** before advancing to the next:
     - `max-subagents=0` (default) → inline, main session, sequentially.
-    - `max-subagents=N` → main session acts as **coordinator**. Dispatches up to N pending items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Each subagent executes ONE recipe sub-flow and returns a result block (`RESULT:` line + NOTES).
+    - `max-subagents=N` → main session acts as **coordinator**. Dispatches up to N pending items simultaneously as `general-purpose` subagents (single `Agent` message per batch). Each subagent executes ONE recipe sub-flow and returns a result block (`RESULT:` line + Notes + a `Learnings` field — complete authored entries, or an explicit `none — <why>`). The subagent **authors** the learning prose (it witnessed the run) but MUST NOT write `learnings.md` itself — the coordinator is the single safe writer under parallelism and stamps the date + commit sha, relaying each entry verbatim (see DURABILITY § Proactive Learnings).
       - ✅ Success / ⏭ Rejected / ❌ Failure → main records result, immediately dispatches next pending item. **No pause.**
       - 🚧 Blocker → **BLOCKER_RESOLUTION in main session**: `AskUserQuestion` if `auto=false`; auto-skip if `auto=true`. Resolved → re-dispatch same item to a new subagent. Not resolved → mark blocked, dispatch next pending item.
       - Main session never pauses unless waiting for user input on a blocker (`auto=false`).

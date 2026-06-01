@@ -158,7 +158,7 @@ When emitting any outcome, the recipe MUST say **"return <OUTCOME>"** (one of `S
 
 ### Success
 
-Say **"return SUCCESS"**, then emit the result block. **Notes** is required; **Learnings** is optional (include only if surprises encountered).
+Say **"return SUCCESS"**, then emit the result block. **Notes** + **Learnings** are required; write one entry per fired trigger (see `DEFAULT.md § Learning Triggers`), or `none — <why>` on a genuinely clean run.
 
 <example>
 <!-- TODO: Fill during iterations. -->
@@ -166,7 +166,7 @@ Say **"return SUCCESS"**, then emit the result block. **Notes** is required; **L
 
 ### Blocker
 
-Say **"return BLOCKER"**, then emit the result block. **Notes** is required, **Options** is required (include the three baselines from `DEFAULT.md` plus any recipe-specific extensions). **Learnings** is optional.
+Say **"return BLOCKER"**, then emit the result block. **Notes** + **Options** are required (Options: the three baselines from `DEFAULT.md` plus any recipe-specific extensions). **Learnings** always includes a `blocker` entry.
 
 <example>
 return BLOCKER
@@ -177,6 +177,13 @@ return BLOCKER
 >
 > **Notes:** <one-paragraph summary — what is blocking, where, and what the caller needs to decide>
 >
+> **Learnings:**
+> ## YYYY-MM-DD — <headline>
+> **Trigger:** blocker
+> **Where:** `<fqn>` | `<file:line>` | `<module>` | project-wide
+> **Surprise:** <what made this unmigrateable / which prerequisite is unmet>
+> **Resolution:** <halted with Options; any partial state left behind>
+>
 > **Options:**
 > - [ ] **skip** — keep `$SOURCE` in current partial state; queue moves on.
 > - [ ] **revert** — undo this recipe's edits to `$SOURCE`; return to pre-recipe state.
@@ -185,7 +192,7 @@ return BLOCKER
 
 ### Rejected
 
-Say **"return REJECTED"**, then emit the result block. **Notes** is required (which `# Applicable` predicate failed). **Learnings** optional.
+Say **"return REJECTED"**, then emit the result block. **Notes** + **Learnings** are required (Notes: which `# Applicable` predicate failed). A routine rejection → `Learnings: none — <why>`; add an entry only if the rejection itself was a surprise.
 
 <example>
 <!-- TODO: Fill during iterations. -->
@@ -193,7 +200,7 @@ Say **"return REJECTED"**, then emit the result block. **Notes** is required (wh
 
 ### Failure
 
-Say **"return FAILURE"**, then emit the result block. **Notes** is required (failing Success Criteria + last error verbatim). **Learnings** nearly always present — record the hypothesis for the next iteration.
+Say **"return FAILURE"**, then emit the result block. **Notes** + **Learnings** are required (Notes: failing Success Criteria + last error verbatim). **Learnings** is effectively always entries — `retry` and `compile-error` almost always fired; record the hypothesis for the next iteration.
 
 <example>
 <!-- TODO: Fill during iterations. -->
