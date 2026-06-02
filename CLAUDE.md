@@ -2,9 +2,9 @@
 
 Skills follow the [agentskills.io](https://agentskills.io/) format.
 
-Repository layout (canonical `skills/` pool, `plugins/`, marketplace) and how to add a plugin: see [DEVELOPMENT.md](DEVELOPMENT.md).
+Repository layout (per-plugin skills under `plugins/<plugin>/skills/`, multi-runtime marketplaces) and how to add a plugin: see [DEVELOPMENT.md](DEVELOPMENT.md).
 
-ALWAYS CREATE NEW SKILLS IN DIRECTORY: [skills](skills) and while developing execute other Skills (expecially
+ALWAYS CREATE NEW SKILLS UNDER THEIR OWNING PLUGIN: `plugins/<plugin>/skills/` (today: [`plugins/axon4to5/skills/`](plugins/axon4to5/skills)). While developing, execute other Skills (especially
 `/skill-creator`) using rules from: [using-superpowers](.knowledge/repositories/ai-bestpractices/obra-superpowers/skills/using-superpowers)
 
 ## Skill authoring practices

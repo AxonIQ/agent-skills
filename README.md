@@ -2,7 +2,7 @@
 
 Agent Skills to help developers using AI agents with Axon Framework.
 
-The canonical skills live in [`skills/`](./skills) at the repo root and follow the [agentskills.io](https://agentskills.io/) format. Plugin bundles contain generated copies of selected root skills so Claude Code and Codex can install curated plugin packages.
+Skills follow the [agentskills.io](https://agentskills.io/) format and live with the plugin that owns them, under [`plugins/<plugin>/skills/`](./plugins). This repo is a multi-runtime marketplace (`axoniq`): install a curated plugin into Claude Code, Codex, or Cursor, or pull individual skills into any agent with `npx skills`.
 
 ## Installation
 
@@ -12,25 +12,32 @@ Curated, named plugins; auto-updates via the marketplace. Run inside Claude Code
 
 ```
 /plugin marketplace add AxonIQ/agent-skills
-/plugin install axon4to5@axoniq-agent-skills
+/plugin install axon4to5@axoniq
 ```
 
-`marketplace update axoniq-agent-skills` later pulls the latest skills.
+`marketplace update axoniq` later pulls the latest skills.
 
 ### Codex plugin
 
-Curated, named plugins; installable from the same checkout or GitHub repository:
-
 ```bash
 codex plugin marketplace add AxonIQ/agent-skills
-codex plugin add axon4to5@axoniq-agent-skills
+codex plugin add axon4to5@axoniq
 ```
 
-`codex plugin marketplace upgrade axoniq-agent-skills` later pulls the latest skills.
+`codex plugin marketplace upgrade axoniq` later pulls the latest skills.
+
+### Cursor plugin
+
+```
+/plugin marketplace add AxonIQ/agent-skills
+/plugin install axon4to5@axoniq
+```
+
+Or browse/submit via the [Cursor marketplace](https://cursor.com/marketplace).
 
 ### npx skills (any agent)
 
-For Codex, Gemini CLI, Cursor, opencode, etc. — installs skill folders directly from the canonical `skills/` pool (the plugin layer is ignored):
+For Gemini CLI, opencode, and others — installs skill folders directly (the plugin layer is ignored; skills are discovered under `plugins/*/skills/`):
 
 ```bash
 npx skills add AxonIQ/agent-skills                                               # interactive picker

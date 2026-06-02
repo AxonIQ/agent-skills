@@ -1,3 +1,0 @@
-axon4to5-openrewrite
-axon4to5-migrate
-axon4to5-isolatedtest

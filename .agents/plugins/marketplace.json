@@ -1,5 +1,5 @@
 {
-  "name": "axoniq-agent-skills",
+  "name": "axoniq",
   "interface": {
     "displayName": "Axoniq Agent Skills"
   },

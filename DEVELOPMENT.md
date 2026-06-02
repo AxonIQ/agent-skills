@@ -4,89 +4,79 @@ How this repository is structured and how to add plugins. For installation/usage
 
 ## Repository layout
 
-This repo is both a skill pool and a Claude Code / Codex plugin **marketplace** that can host many plugins, each bundling a curated subset of the canonical skills.
+This repo is a multi-runtime plugin **marketplace** (`axoniq`) that can host many plugins. Each plugin owns its skills directly — there is no separate root skill pool and no sync step. The same plugin is published to three runtimes (Claude Code, Codex, Cursor) from one set of files; `npx skills` reads the skills directly too.
 
 ```
-skills/                          # canonical skill pool (single source of truth)
-  axon4to5-openrewrite/SKILL.md
-  axon4to5-migrate/SKILL.md
-  axon4to5-isolatedtest/SKILL.md
-.claude-plugin/
-  marketplace.json               # lists all plugins; one entry per plugin
-.agents/plugins/
-  marketplace.json               # Codex marketplace; one entry per plugin
 plugins/
-  axon4to5/                      # a plugin = manifest + the skills it bundles
-    .claude-plugin/plugin.json
-    .codex-plugin/plugin.json
-    skills.txt                   # canonical list of root skills bundled by this plugin
-    skills/                      # materialized from ../../../skills/<name>
-      axon4to5-openrewrite/
-      axon4to5-migrate/
-      axon4to5-isolatedtest/
+  axon4to5/                         # one plugin = manifests + its own skills
+    .claude-plugin/plugin.json      # Claude Code manifest
+    .codex-plugin/plugin.json       # Codex manifest (skills: "./skills/")
+    .cursor-plugin/plugin.json      # Cursor manifest (skills: "./skills/")
+    skills/                         # canonical skills for this plugin
+      axon4to5-openrewrite/SKILL.md
+      axon4to5-migrate/SKILL.md
+      axon4to5-isolatedtest/SKILL.md
+.claude-plugin/marketplace.json     # Claude marketplace; one entry per plugin
+.agents/plugins/marketplace.json    # Codex marketplace; one entry per plugin
+.cursor-plugin/marketplace.json     # Cursor marketplace; one entry per plugin
 ```
 
-Root `skills/` is the authoring source of truth. Each plugin's `skills/` is a materialized bundle generated from the names in `plugins/<plugin>/skills.txt`:
+Skills are **real files** (not symlinks): Codex and Cursor copy a plugin into a cache on install and do not follow cross-directory symlinks, so each plugin's `skills/` must contain real skill directories. Edit skills in place under `plugins/<plugin>/skills/`.
 
-```bash
-scripts/sync-plugin-skills.sh axon4to5
-scripts/sync-plugin-skills.sh --all
-```
+The three marketplace files all use marketplace name `axoniq` (human label "Axoniq Agent Skills"); each lists the same plugins, differing only in source-path syntax:
 
-Do not edit files under `plugins/<plugin>/skills/` directly. Edit `skills/<skill>/...`, then re-run the sync script.
+| Runtime | Marketplace file | Plugin source field |
+| --- | --- | --- |
+| Claude Code | `.claude-plugin/marketplace.json` | `"source": "./plugins/<plugin>"` |
+| Codex | `.agents/plugins/marketplace.json` | `"source": { "source": "local", "path": "./plugins/<plugin>" }` |
+| Cursor | `.cursor-plugin/marketplace.json` | `"source": "plugins/<plugin>"` |
 
-Claude Code can install from symlinked plugin skills, but Codex currently installs the plugin into a cache and does not preserve cross-directory skill symlinks there. For that reason, committed plugin bundles contain real copied skill directories while root `skills/` remains canonical. `npx skills` and agentskills.io read the root `skills/` directly and never touch the plugin layer.
-
-## Codex multi-plugin model
-
-Yes, one repository can host many Codex plugins while keeping skill authoring in the root `skills/` pool. The Codex marketplace file has a `plugins[]` array, and each entry points at one `plugins/<plugin>` directory. Each plugin still needs its own `.codex-plugin/plugin.json` and a plugin-local `skills/` directory. Do not point `plugin.json` directly at `../../skills`; Codex expects the manifest skill path to resolve to `skills`, and install caches must contain real skill files.
+The Claude plugin manifest needs no `skills` field (Claude auto-discovers `skills/` under the plugin root); Codex and Cursor declare `"skills": "./skills/"`.
 
 ## Adding a new plugin
 
-1. `mkdir -p plugins/<plugin>/{.claude-plugin,skills}`
-2. If the plugin supports Codex too, also create `plugins/<plugin>/.codex-plugin/`.
-3. Write `plugins/<plugin>/.claude-plugin/plugin.json` (`name`, `description`, …).
-4. Write `plugins/<plugin>/.codex-plugin/plugin.json` with `skills: "./skills/"` plus Codex interface metadata.
-5. List bundled root skills in `plugins/<plugin>/skills.txt`, one skill name per line.
-6. Materialize the plugin bundle: `scripts/sync-plugin-skills.sh <plugin>`.
-7. Add an entry to `.claude-plugin/marketplace.json` (`name` + `source: "./plugins/<plugin>"`).
-8. Add an entry to `.agents/plugins/marketplace.json` (`name` + `source.path: "./plugins/<plugin>"`).
+1. `mkdir -p plugins/<plugin>/{.claude-plugin,.codex-plugin,.cursor-plugin,skills}`
+2. Author the plugin's skills directly under `plugins/<plugin>/skills/<skill>/SKILL.md`.
+3. Write the three manifests:
+   - `.claude-plugin/plugin.json` — `name`, `description`, identity metadata (no `skills` field needed).
+   - `.codex-plugin/plugin.json` — same identity + `"skills": "./skills/"` + an `interface` block (displayName, category, capabilities, defaultPrompt, …).
+   - `.cursor-plugin/plugin.json` — same identity + `"skills": "./skills/"`.
+4. Add one entry to each marketplace file (`name` + the runtime's source field from the table above).
 
-For Claude-only plugins, skip the Codex manifest and Codex marketplace entry. For Codex-only plugins, skip the Claude manifest and Claude marketplace entry.
+For a single-runtime plugin, create only that runtime's manifest + marketplace entry.
 
-> **Sync note:** run `scripts/sync-plugin-skills.sh <plugin>` after editing any root skill that is bundled by a plugin. The plugin-local copy is intentionally checked in so Codex installs contain real skill files.
+> **Shared skills:** if two plugins need the same skill, copy it into each plugin's `skills/` (Codex/Cursor require real files and cannot reference another plugin's directory). Only introduce a shared pool + a copy/generate step if that sharing actually arises.
 
 ## Installing from a local checkout (development)
 
-To test local, uncommitted changes, add the checkout as a marketplace and install from it:
+Add the checkout as a marketplace and install from it (this copies real skill files into the runtime's cache; `--plugin-dir` is not equivalent).
 
 ```bash
 git clone https://github.com/AxonIQ/agent-skills.git ~/GitRepos/agent-skills
 ```
+
+Claude Code:
+
 ```
 /plugin marketplace add ~/GitRepos/agent-skills
-/plugin install axon4to5@axoniq-agent-skills
-/plugin marketplace update axoniq-agent-skills   # after editing skills
+/plugin install axon4to5@axoniq
+/plugin marketplace update axoniq            # after editing skills
 ```
 
-> Use `marketplace add`, not `--plugin-dir`, so marketplace metadata and plugin bundles are tested together.
-
-For Codex:
+Codex:
 
 ```bash
 codex plugin marketplace add ~/GitRepos/agent-skills
-codex plugin add axon4to5@axoniq-agent-skills
-codex plugin marketplace upgrade axoniq-agent-skills   # after editing skills
+codex plugin add axon4to5@axoniq
+codex plugin marketplace upgrade axoniq      # after editing skills
 ```
 
-Smoke-test a Codex plugin install before publishing:
+Smoke-test a Codex install in an isolated home before publishing:
 
 ```bash
 tmp=$(mktemp -d)
 CODEX_HOME="$tmp" codex plugin marketplace add .
-CODEX_HOME="$tmp" codex plugin add axon4to5@axoniq-agent-skills
-find "$tmp/plugins/cache/axoniq-agent-skills/axon4to5/0.1.0/skills" -name SKILL.md -print
+CODEX_HOME="$tmp" codex plugin add axon4to5@axoniq
+find "$tmp"/plugins/cache -name SKILL.md -print
 rm -rf "$tmp"
 ```
-
-The local plugin-creator validator is stricter than `codex plugin add`: it rejects `disable-model-invocation: true`. Keep that flag only when the skill is intentionally hidden from automatic model invocation.
