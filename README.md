@@ -37,13 +37,17 @@ Or browse/submit via the [Cursor marketplace](https://cursor.com/marketplace).
 
 ### npx skills (any agent)
 
-For Gemini CLI, opencode, and others — installs skill folders directly (the plugin layer is ignored; skills are discovered under `plugins/*/skills/`):
+For Gemini CLI, Cursor, Codex, opencode, and others — installs skill folders directly (skills are discovered under `plugins/*/skills/`). For migration work, install the full `axon4to5` skill set explicitly:
 
 ```bash
 npx skills add AxonIQ/agent-skills                                               # interactive picker
-npx skills add AxonIQ/agent-skills --skill axon4to5-openrewrite -a claude-code   # specific skill + agent
-npx skills add AxonIQ/agent-skills --skill '*' -g                                # all skills, user-global
+npx skills add AxonIQ/agent-skills \
+  --skill axon4to5-openrewrite axon4to5-migrate axon4to5-isolatedtest \
+  -a <agent>                                                                     # all axon4to5 migration skills
+npx skills add AxonIQ/agent-skills --skill axon4to5-openrewrite -a claude-code   # one skill + agent
 ```
+
+Common `-a <agent>` values include `gemini-cli`, `cursor`, `codex`, `opencode`, and `claude-code`.
 
 ## Contributing
 
