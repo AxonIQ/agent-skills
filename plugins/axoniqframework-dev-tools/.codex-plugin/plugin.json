@@ -1,0 +1,42 @@
+{
+  "name": "axoniqframework-dev-tools",
+  "version": "0.3.9",
+  "description": "Skills for developers building applications with Axon Framework 5: command handling and event-sourced entities, DCB decision models, event handling and processors, query handling, the event store and conversion, messaging foundations, configuration, and testing.",
+  "author": {
+    "name": "Axon Framework Team",
+    "email": "contact@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axon",
+    "axoniq",
+    "cqrs",
+    "event-sourcing",
+    "dcb",
+    "ddd",
+    "command-handling",
+    "application"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Axoniq Framework Dev Tools",
+    "shortDescription": "Skills for building applications with Axon Framework 5.",
+    "longDescription": "A curated plugin of Axon Framework 5 application-development skills: command handling and event-sourced entities, DCB decision models, event handling and processors, query handling, the event store and conversion, messaging foundations, configuration, and testing.",
+    "developerName": "Axoniq",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.axoniq.io/",
+    "brandColor": "#0055A5",
+    "defaultPrompt": [
+      "Implement a command handler and event-sourced entity in Axon Framework 5.",
+      "Set up event handling and a projection in Axon Framework 5.",
+      "Configure Axon Framework 5 in a Spring Boot application."
+    ]
+  }
+}

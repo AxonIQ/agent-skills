@@ -8,6 +8,16 @@
       "name": "axon4to5",
       "source": "plugins/axon4to5",
       "description": "Migrate applications from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5."
+    },
+    {
+      "name": "axoniqframework-dev-tools",
+      "source": "plugins/axoniqframework-dev-tools",
+      "description": "Skills for developers building applications with Axon Framework 5: command handling and event-sourced entities, DCB decision models, event handling and processors, query handling, the event store and conversion, messaging foundations, configuration, and testing."
+    },
+    {
+      "name": "axoniqframework-contribution-tools",
+      "source": "plugins/axoniqframework-contribution-tools",
+      "description": "Tools for contributors to the Axon Framework project: code reviews against AF5 standards, core coding patterns, framework infrastructure design guidelines, reference documentation authoring, and PR comment processing. Not intended for application developers."
     }
   ]
 }

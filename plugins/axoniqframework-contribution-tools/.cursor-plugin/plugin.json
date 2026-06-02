@@ -1,0 +1,27 @@
+{
+  "name": "axoniqframework-contribution-tools",
+  "displayName": "Axoniq Framework Contribution Tools",
+  "description": "Tools for contributors to the Axon Framework project: comprehensive code reviews against AF5 standards, core coding patterns, framework infrastructure design guidelines, reference documentation authoring, and PR comment processing. Not intended for application developers using Axon Framework.",
+  "version": "1.3.1",
+  "author": {
+    "name": "Axon Framework Team",
+    "email": "contact@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axon",
+    "axoniq",
+    "framework",
+    "contributor",
+    "framework-development",
+    "code-review",
+    "pull-request",
+    "event-sourcing",
+    "cqrs",
+    "ddd"
+  ],
+  "skills": "./skills/"
+}
