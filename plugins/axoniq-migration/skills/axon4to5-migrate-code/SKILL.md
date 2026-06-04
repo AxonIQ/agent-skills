@@ -1,17 +1,22 @@
 ---
-name: axon4to5-migrate
+name: axon4to5-migrate-code
 description: >-
-  Migrate Axon Framework 4 project to Axon(iq) Framework 5.
+  Migrate Axon Framework 4 project code and configuration to Axon(iq) Framework 5. Migrates source code and wiring only — NOT stored data (event store contents / stored events, tracking tokens), which are left untouched.
 argument-hint: "framework=<axon|axoniq> configuration=<native|spring> mode=<single|project> [execution=<inline|subagent>] [source=<class|file|fqn>] [max-subagents=<0..N>] [auto=<true|false>]"
 disable-model-invocation: true
 ---
 
-# axon4to5-migrate
+# axon4to5-migrate-code
 
 ## Goal
 
 > Fully (or as most as possible) compiling, green-test codebase on AF5, **same architecture as AF4**.
 > No DCB. No new patterns. Legacy event storage preserved.
+>
+> **Scope: code and configuration only.** This skill migrates source code and wiring. It does **NOT**
+> migrate stored data — the event store contents (stored events) and tracking tokens are left untouched.
+> Migrating to AF5 with the legacy event-storage layout keeps those stores compatible as-is; moving data
+> to a new storage layout (e.g. DCB) is out of scope.
 > The migration preserves the project's existing configuration style: a Spring Boot
 > project stays on Spring auto-config (recipes use `@Component` / `@Bean`
 > idioms); a plain framework-configuration project stays on the direct

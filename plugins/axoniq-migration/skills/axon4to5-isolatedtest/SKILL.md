@@ -1,6 +1,6 @@
 ---
 name: axon4to5-isolatedtest
-description: Internal helper, invoked ONLY by other skills (e.g. axon4to5-migrate). Scopes Maven/Gradle compile+test to ONE target class plus all classes required for it to compile, via per-target profile or source-set. Do NOT auto-trigger from user prompts.
+description: Internal helper, invoked ONLY by other skills (e.g. axon4to5-migrate-code). Scopes Maven/Gradle compile+test to ONE target class plus all classes required for it to compile, via per-target profile or source-set. Do NOT auto-trigger from user prompts.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob
 argument-hint: <TargetName> [build-file=<path>] [cleanup=true|false]
 user-invocable: false

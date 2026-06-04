@@ -54,7 +54,7 @@ For Gemini CLI, Cursor, Codex, opencode, and others — installs skill folders d
 ```bash
 npx skills add AxonIQ/agent-skills                                               # interactive picker
 npx skills add AxonIQ/agent-skills \
-  --skill axon4to5-openrewrite axon4to5-migrate axon4to5-isolatedtest \
+  --skill axon4to5-openrewrite axon4to5-migrate-code axon4to5-isolatedtest \
   -a <agent>                                                                     # all axon4to5 migration skills
 npx skills add AxonIQ/agent-skills --skill axon4to5-openrewrite -a claude-code   # one skill + agent
 ```
