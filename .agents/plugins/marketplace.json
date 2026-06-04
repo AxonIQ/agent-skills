@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "axon4to5",
+      "name": "axoniq-migration",
       "source": {
         "source": "local",
-        "path": "./plugins/axon4to5"
+        "path": "./plugins/axoniq-migration"
       },
       "policy": {
         "installation": "AVAILABLE",
@@ -17,10 +17,10 @@
       "category": "Developer Tools"
     },
     {
-      "name": "axoniqframework-dev-tools",
+      "name": "axoniq-app-development",
       "source": {
         "source": "local",
-        "path": "./plugins/axoniqframework-dev-tools"
+        "path": "./plugins/axoniq-app-development"
       },
       "policy": {
         "installation": "AVAILABLE",
@@ -29,10 +29,10 @@
       "category": "Developer Tools"
     },
     {
-      "name": "axoniqframework-contribution-tools",
+      "name": "axoniq-framework-contribution",
       "source": {
         "source": "local",
-        "path": "./plugins/axoniqframework-contribution-tools"
+        "path": "./plugins/axoniq-framework-contribution"
       },
       "policy": {
         "installation": "AVAILABLE",

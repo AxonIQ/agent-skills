@@ -8,7 +8,7 @@ This repo is a multi-runtime plugin **marketplace** (`axoniq`) that can host man
 
 ```
 plugins/
-  axon4to5/                         # one plugin = manifests + its own skills
+  axoniq-migration/                 # one plugin = manifests + its own skills
     .claude-plugin/plugin.json      # Claude Code manifest
     .codex-plugin/plugin.json       # Codex manifest (skills: "./skills/")
     .cursor-plugin/plugin.json      # Cursor manifest (skills: "./skills/")
@@ -17,8 +17,8 @@ plugins/
       axon4to5-openrewrite/SKILL.md
       axon4to5-migrate/SKILL.md
       axon4to5-isolatedtest/SKILL.md
-  axoniqframework-dev-tools/        # AF5 application-development skills (framework users)
-  axoniqframework-contribution-tools/  # tools for contributing to the framework itself
+  axoniq-app-development/           # AF5 application-development skills (framework users)
+  axoniq-framework-contribution/    # tools for contributing to the framework itself
 .claude-plugin/marketplace.json     # Claude marketplace; one entry per plugin
 .agents/plugins/marketplace.json    # Codex marketplace; one entry per plugin
 .cursor-plugin/marketplace.json     # Cursor marketplace; one entry per plugin
@@ -69,7 +69,7 @@ Claude Code:
 
 ```
 /plugin marketplace add ~/GitRepos/agent-skills
-/plugin install axon4to5@axoniq
+/plugin install axoniq-migration@axoniq
 /plugin marketplace update axoniq            # after editing skills
 ```
 
@@ -77,7 +77,7 @@ Codex:
 
 ```bash
 codex plugin marketplace add ~/GitRepos/agent-skills
-codex plugin add axon4to5@axoniq
+codex plugin add axoniq-migration@axoniq
 codex plugin marketplace upgrade axoniq      # after editing skills
 ```
 
@@ -86,7 +86,7 @@ Smoke-test a Codex install in an isolated home before publishing:
 ```bash
 tmp=$(mktemp -d)
 CODEX_HOME="$tmp" codex plugin marketplace add .
-CODEX_HOME="$tmp" codex plugin add axon4to5@axoniq
+CODEX_HOME="$tmp" codex plugin add axoniq-migration@axoniq
 find "$tmp"/plugins/cache -name SKILL.md -print
 rm -rf "$tmp"
 ```

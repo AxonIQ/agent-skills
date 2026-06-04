@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to the **axoniqframework-contribution-tools** plugin will be documented in
+All notable changes to the **axoniq-framework-contribution** plugin will be documented in
 this file. This plugin is for **contributors to the Axon Framework project itself** (developing
-the framework) — *not* for developers building applications with it (use `axoniqframework-dev-tools`).
+the framework) — *not* for developers building applications with it (use `axoniq-app-development`).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Renamed from `axonframework-contributor-tools` to **`axoniqframework-contribution-tools`** and folded into the `axoniq` multi-runtime marketplace; now packaged for Claude, Codex, and Cursor. No skill-content changes.
+- Renamed from `axonframework-contributor-tools` to **`axoniq-framework-contribution`** and folded into the `axoniq` multi-runtime marketplace; now packaged for Claude, Codex, and Cursor. No skill-content changes.
 - Consolidated the changelog: de-duplicated the two conflicting `1.1.0` sections and backfilled the previously-missing `1.3.0` entry.
 
 ## [1.3.0] - 2026-05-12

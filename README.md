@@ -8,15 +8,15 @@ Skills follow the [agentskills.io](https://agentskills.io/) format and live with
 
 | Plugin | Version | For whom |
 |--------|---------|----------|
-| [`axon4to5`](./plugins/axon4to5) | 0.1.0 | Anyone **migrating** an application from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. |
-| [`axoniqframework-dev-tools`](./plugins/axoniqframework-dev-tools) | 0.3.9 | Developers **building their own applications** with Axon Framework 5 — the framework's users. |
-| [`axoniqframework-contribution-tools`](./plugins/axoniqframework-contribution-tools) | 1.3.1 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
+| [`axoniq-migration`](./plugins/axoniq-migration) | 0.1.0 | Anyone **migrating** an application from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. |
+| [`axoniq-app-development`](./plugins/axoniq-app-development) | 0.3.9 | Developers **building their own applications** with Axon Framework 5 — the framework's users. |
+| [`axoniq-framework-contribution`](./plugins/axoniq-framework-contribution) | 1.3.1 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
 
 Each plugin carries its own `CHANGELOG.md` and is versioned independently.
 
 ## Installation
 
-Replace `<plugin>` below with one of `axon4to5`, `axoniqframework-dev-tools`, or `axoniqframework-contribution-tools`.
+Replace `<plugin>` below with one of `axoniq-migration`, `axoniq-app-development`, or `axoniq-framework-contribution`.
 
 ### Claude Code plugin (recommended)
 
