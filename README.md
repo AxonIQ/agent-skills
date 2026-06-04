@@ -4,7 +4,7 @@ Agent Skills to help developers using AI agents with Axon Framework — whether 
 
 Skills follow the [agentskills.io](https://agentskills.io/) format and live with the plugin that owns them, under [`plugins/<plugin>/skills/`](./plugins). This repo is a multi-runtime marketplace (`axoniq`): install a curated plugin into Claude Code, Codex, or Cursor, or pull individual skills into any agent with `npx skills`.
 
-> ⚠️ **These skills drive LLMs, which can make mistakes and hallucinate.** Don't trust the output blindly — **review, test, and verify it before relying on it**, especially anything that changes your code. The skills are provided on a best-effort basis, with no guarantee of correctness or completeness. Spot a problem or a gap? Contributions are very welcome — see [Contributing](#contributing) and help us make these skills better.
+> ⚠️ **These skills drive LLMs, which can make mistakes and hallucinate.** Don't trust the output blindly — **review, test, and verify it before relying on it**. The skills are provided on a best-effort basis, with no guarantee of correctness or completeness. Spot a problem or a gap? Contributions are very welcome — see [Contributing](#contributing) and help us make these skills better.
 
 ## Plugins
 
