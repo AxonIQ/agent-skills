@@ -8,9 +8,9 @@ Skills follow the [agentskills.io](https://agentskills.io/) format and live with
 
 | Plugin | Version | For whom |
 |--------|---------|----------|
-| [`axoniq-migration`](./plugins/axoniq-migration) | 0.1.0 | Anyone **migrating** an application from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. |
-| [`axoniq-app-development`](./plugins/axoniq-app-development) | 0.3.9 | Developers **building their own applications** with Axon Framework 5 — the framework's users. |
-| [`axoniq-framework-contribution`](./plugins/axoniq-framework-contribution) | 1.3.1 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
+| [`axoniq-migration`](./plugins/axoniq-migration) | 0.2.0 | Anyone **migrating** an application from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. |
+| [`axoniq-app-development`](./plugins/axoniq-app-development) | 0.4.0 | Developers **building their own applications** with Axon Framework 5 — the framework's users. |
+| [`axoniq-framework-contribution`](./plugins/axoniq-framework-contribution) | 1.4.0 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
 
 Each plugin carries its own `CHANGELOG.md` and is versioned independently.
 
