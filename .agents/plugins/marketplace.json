@@ -1,0 +1,44 @@
+{
+  "name": "axoniq",
+  "interface": {
+    "displayName": "Axoniq Agent Skills"
+  },
+  "plugins": [
+    {
+      "name": "axoniq-migration",
+      "source": {
+        "source": "local",
+        "path": "./plugins/axoniq-migration"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "axoniq-app-development",
+      "source": {
+        "source": "local",
+        "path": "./plugins/axoniq-app-development"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "axoniq-framework-contribution",
+      "source": {
+        "source": "local",
+        "path": "./plugins/axoniq-framework-contribution"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

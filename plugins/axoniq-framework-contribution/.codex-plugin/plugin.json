@@ -1,0 +1,45 @@
+{
+  "name": "axoniq-framework-contribution",
+  "version": "1.4.0",
+  "description": "Tools for contributors to the Axon Framework project: comprehensive code reviews against AF5 standards, core coding patterns, framework infrastructure design guidelines, reference documentation authoring, and PR comment processing. Not intended for application developers using Axon Framework.",
+  "author": {
+    "name": "Axon Framework Team",
+    "email": "info@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axon",
+    "axoniq",
+    "axonframework",
+    "framework",
+    "contributor",
+    "framework-development",
+    "code-review",
+    "pull-request",
+    "event-sourcing",
+    "cqrs",
+    "ddd"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Axoniq Framework Contribution Tools",
+    "shortDescription": "Tools for contributing to the Axon Framework project.",
+    "longDescription": "A curated plugin for Axon Framework contributors: code reviews against AF5 standards, core coding patterns, framework infrastructure design guidelines, reference documentation authoring, and PR comment processing. Not intended for application developers using Axon Framework.",
+    "developerName": "Axoniq",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.axoniq.io/",
+    "brandColor": "#0055A5",
+    "defaultPrompt": [
+      "Review my Axon Framework changes against AF5 contributor standards.",
+      "Process the review comments on an Axon Framework pull request.",
+      "Add or update Axon Framework 5 reference documentation."
+    ]
+  }
+}

@@ -26,8 +26,3 @@ AxonIQ Workflow extension for Axon Framework 5 — durable-execution engine and 
 [Details](axonframework_extension-data-protection.md) — branch `main`.
 **Keywords:** data protection, gdpr, field-level encryption, cryptographic erasure, right to be forgotten, axon 5 extension, axoniq commercial
 AxonIQ Data Protection extension for Axoniq Framework 5 — field-level encryption with cryptographic erasure for GDPR "Right to be Forgotten" on event-sourced apps; commercial module requiring an `axoniq.license`.
-
-## claude-plugin
-[Details](axonframework_claude-plugin.md) — branch `main`.
-**Keywords:** claude plugin, axon 5 skills, migration skill patterns, agent skill authoring, axoniq claude plugin
-AxonIQ's Claude Code plugin — bundled Axon Framework 5 skills that serve as the authoring reference for how migration/authoring skills in this repo should be shaped.

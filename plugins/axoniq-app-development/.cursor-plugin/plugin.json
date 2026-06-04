@@ -1,0 +1,26 @@
+{
+  "name": "axoniq-app-development",
+  "displayName": "Axoniq Framework Dev Tools",
+  "description": "For developers building their own applications with Axon Framework 5 (the framework's users): command handling and event-sourced entities, DCB decision models, event handling and processors, query handling, the event store and conversion, messaging foundations, configuration, and testing.",
+  "version": "0.4.0",
+  "author": {
+    "name": "Axon Framework Team",
+    "email": "info@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axon",
+    "axoniq",
+    "axonframework",
+    "cqrs",
+    "event-sourcing",
+    "dcb",
+    "ddd",
+    "command-handling",
+    "application"
+  ],
+  "skills": "./skills/"
+}
