@@ -15,7 +15,7 @@ plugins/
     CHANGELOG.md                    # this plugin's own changelog
     skills/                         # canonical skills for this plugin
       axon4to5-openrewrite/SKILL.md
-      axon4to5-migrate/SKILL.md
+      axon4to5-migrate-code/SKILL.md
       axon4to5-isolatedtest/SKILL.md
   axoniq-app-development/           # AF5 application-development skills (framework users)
   axoniq-framework-contribution/    # tools for contributing to the framework itself
