@@ -1,6 +1,6 @@
 {
   "name": "axoniq-app-development",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "Skills for developers building applications with Axon Framework 5: command handling and event-sourced entities, DCB decision models, event handling and processors, query handling, the event store and conversion, messaging foundations, configuration, and testing.",
   "author": {
     "name": "Axon Framework Team",

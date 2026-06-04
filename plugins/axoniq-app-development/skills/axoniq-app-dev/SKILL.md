@@ -1,5 +1,5 @@
 ---
-name: axonframework
+name: axoniq-app-dev
 description: >
   Building applications with Axon Framework 5 (AF5) and Axoniq Framework. Covers all aspects of AF5 application development: command handlers (stateless and DCB/stateful), event-sourced entities (@EventSourcedEntity, @EntityCreator, @InjectEntity, entity hierarchies and polymorphism), dispatching commands (CommandGateway/CommandBus, routing keys); event handling and projections, event processors (subscribing and pooled streaming, tracking tokens, segments, replay/reset), publishing events (EventAppender, EventGateway), event versioning and upcasting; query handling and subscription queries; event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), event store internals (EventStore, EventStorageEngine), conversion and serialization (Converter, Jackson, Avro); messaging foundations (message anatomy, ProcessingContext/unit of work, correlation, Metadata), supported handler parameters, message annotations, exception handling (@ExceptionHandler) and handler timeouts, interceptors, handler customization (ParameterResolver, HandlerEnhancerDefinition, meta-annotations), identifier generation; application configuration (plain Java and Spring Boot), testing with AxonTestFixture (matchers, field filters, integration tests), dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or Axoniq Framework application.
 disable-model-invocation: false
@@ -102,7 +102,7 @@ When working on a topic, read the corresponding guide file. Guides are grouped i
 **To load a guide**: use the Read tool with the path relative to this file, e.g.:
 
 ```
-Read: skills/axonframework/commands/decision-models-dcb.md
+Read: skills/axoniq-app-dev/commands/decision-models-dcb.md
 ```
 
 ---

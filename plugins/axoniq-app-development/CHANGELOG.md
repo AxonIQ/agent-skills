@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.4.0] - 2026-06-04
+
+### Changed
+
+- Renamed the `axonframework` skill to **`axoniq-app-dev`** (directory and skill `name`); updated the `SKILL.md` routing-table example path accordingly. No skill-content changes.
+
 ## [0.3.9] - 2026-06-02
 
 ### Changed
