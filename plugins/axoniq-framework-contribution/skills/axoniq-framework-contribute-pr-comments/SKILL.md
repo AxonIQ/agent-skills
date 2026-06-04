@@ -1,5 +1,5 @@
 ---
-name: axonframework-contributor-pr-comments
+name: axoniq-framework-contribute-pr-comments
 description: >
   Process GitHub PR review comments one by one for an Axon Framework pull request.
   Use when the user says "process PR comments", "work through review comments",
@@ -588,7 +588,7 @@ Reviewer: reviewer-b | Thread: 2 messages | Status: valid
 
 | User says | Action |
 |---|---|
-| `/axonframework-contributor-pr-comments https://github.com/...` | Run phases 1–8, then wait |
+| `/axoniq-framework-contribute-pr-comments https://github.com/...` | Run phases 1–8, then wait |
 | `start` / `next` | Process next open todo item |
 | `process #N` | Process specific comment N |
 | `skip #N` | Mark as skipped, move on |

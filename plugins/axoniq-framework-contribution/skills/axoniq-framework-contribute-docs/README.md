@@ -47,16 +47,16 @@ This skill is for **contributing documentation to the Axon Framework 5 reference
 ## Usage
 
 ```bash
-/axonframework-contributor-docs-update
+/axoniq-framework-contribute-docs
 ```
 
 Or with a target:
 
 ```bash
-/axonframework-contributor-docs-update event processors overview
-/axonframework-contributor-docs-update commands/command-dispatching.adoc
-/axonframework-contributor-docs-update GH-1234
-/axonframework-contributor-docs-update current branch
+/axoniq-framework-contribute-docs event processors overview
+/axoniq-framework-contribute-docs commands/command-dispatching.adoc
+/axoniq-framework-contribute-docs GH-1234
+/axoniq-framework-contribute-docs current branch
 ```
 
 ## Key Conventions at a Glance
@@ -78,7 +78,7 @@ Or with a target:
 ## File Structure
 
 ```
-skills/axonframework-contributor-docs-update/
+skills/axoniq-framework-contribute-docs/
 ├── SKILL.md     # Complete skill with all phases and conventions
 ├── README.md    # This file
 └── evals/
@@ -87,5 +87,5 @@ skills/axonframework-contributor-docs-update/
 
 ## Related Skills
 
-- **axonframework-contributor-coding**: For developing framework infrastructure components
-- **axonframework-contributor-review**: For reviewing PRs against AF5 standards
+- **axoniq-framework-contribute-code**: For developing framework infrastructure components
+- **axoniq-framework-contribute-review**: For reviewing PRs against AF5 standards

@@ -61,13 +61,13 @@ For each comment the user triggers:
 ## Usage
 
 ```bash
-/axonframework-contributor-pr-comments https://github.com/AxonIQ/AxonFramework/pull/4552
+/axoniq-framework-contribute-pr-comments https://github.com/AxonIQ/AxonFramework/pull/4552
 ```
 
 Or with a short form if run from inside the repo:
 
 ```bash
-/axonframework-contributor-pr-comments 4552
+/axoniq-framework-contribute-pr-comments 4552
 ```
 
 After the overview is shown, process comments interactively:
@@ -83,13 +83,13 @@ show overview  # re-display the full table
 ## File Structure
 
 ```
-skills/axonframework-contributor-pr-comments/
+skills/axoniq-framework-contribute-pr-comments/
 ├── SKILL.md     # Complete skill with all phases and processing rules
 └── README.md    # This file
 ```
 
 ## Related Skills
 
-- **axonframework-contributor-review** — Review a branch against AF5 standards before submitting a PR
-- **axonframework-contributor-coding** — Design patterns for framework infrastructure components
-- **axonframework-contributor-docs-update** — Add or update reference documentation
+- **axoniq-framework-contribute-review** — Review a branch against AF5 standards before submitting a PR
+- **axoniq-framework-contribute-code** — Design patterns for framework infrastructure components
+- **axoniq-framework-contribute-docs** — Add or update reference documentation

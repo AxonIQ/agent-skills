@@ -1,5 +1,5 @@
 ---
-name: axonframework-contributor-docs-update
+name: axoniq-framework-contribute-docs
 description: >
   Add or update Axon Framework 5 reference documentation.
   Use when the user says "add docs", "update docs", "document feature", "write documentation for",

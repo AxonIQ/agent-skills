@@ -1,5 +1,5 @@
 ---
-name: axonframework-contributor-review
+name: axoniq-framework-contribute-review
 description: For Axon Framework contributors. Performs comprehensive code reviews against AF5 contributor standards: analyzes changed files, checks Antora documentation, verifies test coverage, and ensures compliance with AF5 patterns. Provides actionable fix suggestions that can be applied immediately.
 disable-model-invocation: false
 user-invocable: true

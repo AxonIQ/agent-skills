@@ -46,7 +46,7 @@ Both frameworks share identical coding conventions. Axoniq Framework builds on t
 ## Usage
 
 ```bash
-/axonframework-contributor-coding
+/axoniq-framework-contribute-code
 ```
 
 This will load the skill and make it available during your coding session. Use it when:
@@ -126,7 +126,7 @@ The skill documents common mistakes to avoid:
 ## File Structure
 
 ```
-.claude/skills/axonframework-core-coding/
+.claude/skills/axoniq-framework-contribute-code/
 ├── SKILL.md     # Complete skill with all patterns and examples (1128 lines)
 └── README.md    # This file - overview and quick reference
 ```

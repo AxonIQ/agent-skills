@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > `axonframework-core-coding` skills). Entry bodies are preserved; the duplicated/mis-ordered
 > upstream version headers were consolidated.
 
+## [1.4.0] - 2026-06-04
+
+### Changed
+
+- Renamed all four skills to the `axoniq-framework-contribute-*` scheme (directories and skill `name`), updating slash-command examples and cross-references throughout:
+  - `axonframework-contributor-coding` → **`axoniq-framework-contribute-code`**
+  - `axonframework-contributor-docs-update` → **`axoniq-framework-contribute-docs`**
+  - `axonframework-contributor-review` → **`axoniq-framework-contribute-review`**
+  - `axonframework-contributor-pr-comments` → **`axoniq-framework-contribute-pr-comments`**
+- Fixed a stale `axonframework-core-coding` path reference in the contribute-code README. No skill-content changes.
+
 ## [1.3.1] - 2026-06-02
 
 ### Changed

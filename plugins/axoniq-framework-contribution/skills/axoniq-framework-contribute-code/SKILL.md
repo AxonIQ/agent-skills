@@ -1,5 +1,5 @@
 ---
-name: axonframework-contributor-coding
+name: axoniq-framework-contribute-code
 description: Design patterns and principles for building Axon Framework core components. Covers layered API design, component lifecycle, thread safety, and extension points. Use when developing infrastructure components for Axon Framework itself.
 disable-model-invocation: false
 user-invocable: true
