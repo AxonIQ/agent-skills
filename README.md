@@ -4,6 +4,8 @@ Agent Skills to help developers using AI agents with Axon Framework — whether 
 
 Skills follow the [agentskills.io](https://agentskills.io/) format and live with the plugin that owns them, under [`plugins/<plugin>/skills/`](./plugins). This repo is a multi-runtime marketplace (`axoniq`): install a curated plugin into Claude Code, Codex, or Cursor, or pull individual skills into any agent with `npx skills`.
 
+> ⚠️ **These skills drive LLMs, which can make mistakes and hallucinate.** Treat every result as a draft, not a finished product — **you are responsible for reviewing, testing, and verifying the outcome** before relying on it (especially anything that changes your code). The skills are provided on a best-effort basis with no guarantee of correctness or completeness. Spot a problem or a gap? Contributions are very welcome — see [Contributing](#contributing) and help us make these skills better.
+
 ## Plugins
 
 | Plugin | Version | For whom |
@@ -13,6 +15,8 @@ Skills follow the [agentskills.io](https://agentskills.io/) format and live with
 | [`axoniq-framework-contribution`](./plugins/axoniq-framework-contribution) | 1.4.0 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
 
 Each plugin carries its own `CHANGELOG.md` and is versioned independently.
+
+> **`axoniq-migration` is best-effort.** It automates as much of the Axon Framework 4 → 5 migration as it reliably can, but it will not always migrate everything: expect some leftover concerns (unusual patterns, edge cases, manual decisions) flagged for **you** to finish by hand. It migrates code and configuration only — not stored data (event store contents, tracking tokens). Always review and test the result.
 
 ## Installation
 
@@ -63,4 +67,4 @@ Common `-a <agent>` values include `gemini-cli`, `cursor`, `codex`, `opencode`, 
 
 ## Contributing
 
-Repository layout and how to add a plugin: see [DEVELOPMENT.md](./DEVELOPMENT.md).
+**Contributions are very welcome** — these skills get better the more people use them and report back. Found a hallucinated or wrong result, a migration gap, a missing recipe, or an idea for a new skill? Open an issue or a PR. Repository layout and how to add a plugin: see [DEVELOPMENT.md](./DEVELOPMENT.md).
