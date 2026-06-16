@@ -1,7 +1,7 @@
 ---
 repo_type: axon-examples
 repo_name: auction-house (axon4)
-submodule_path: .knowledge/repositories/axon-examples/axon4/auction-house
+repo_path: .knowledge/repositories/axon-examples/axon4/auction-house
 url: https://github.com/AxonIQ/auction-house-axon-observability-demo.git
 branch: migration-ready/af5
 variant: axon4

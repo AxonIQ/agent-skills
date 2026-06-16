@@ -1,7 +1,7 @@
 ---
 repo_type: axonframework
 repo_name: extension-data-protection
-submodule_path: .knowledge/repositories/axonframework/extension-data-protection
+repo_path: .knowledge/repositories/axonframework/extension-data-protection
 url: https://github.com/AxonIQ/extension-data-protection.git
 branch: main
 keywords:

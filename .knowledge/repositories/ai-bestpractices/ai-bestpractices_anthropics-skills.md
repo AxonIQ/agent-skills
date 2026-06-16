@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: anthropics-skills
-submodule_path: .knowledge/repositories/ai-bestpractices/anthropics-skills
+repo_path: .knowledge/repositories/ai-bestpractices/anthropics-skills
 url: https://github.com/anthropics/skills.git
 branch: main
 keywords:

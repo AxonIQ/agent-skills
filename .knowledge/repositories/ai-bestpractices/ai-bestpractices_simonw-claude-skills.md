@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: simonw-claude-skills
-submodule_path: .knowledge/repositories/ai-bestpractices/simonw-claude-skills
+repo_path: .knowledge/repositories/ai-bestpractices/simonw-claude-skills
 url: https://github.com/simonw/claude-skills.git
 branch: main
 keywords:

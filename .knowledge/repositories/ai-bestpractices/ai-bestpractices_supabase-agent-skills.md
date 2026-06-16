@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: supabase-agent-skills
-submodule_path: .knowledge/repositories/ai-bestpractices/supabase-agent-skills
+repo_path: .knowledge/repositories/ai-bestpractices/supabase-agent-skills
 url: https://github.com/supabase/agent-skills.git
 branch: main
 keywords:

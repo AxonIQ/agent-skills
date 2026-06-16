@@ -1,63 +1,60 @@
 # .knowledge
 
-Useful resources for skills development.
-The content should be used for context engineering while building new skills.
+Useful resources for developing and updating skills. This directory is **for contributors only** — end users who install the skills from the marketplace do not need any of this.
 
-## Submodules are read-only
+## Structure
 
-All submodules under `.knowledge/repositories/` are tracked as **fetch-only**, enforced by two independent layers:
-
-1. **Disabled push URL** — `remote.origin.pushurl` is set to `DISABLED`, so `git push` resolves to a non-existent remote and fails.
-2. **Pre-push hook** — `.git/modules/<submodule>/hooks/pre-push` rejects every push attempt with a clear message. Belt-and-suspenders in case the URL is ever restored by mistake.
-
-Fetch, pull, checkout, local commits, and local branches still work normally — only pushing upstream is blocked.
-
-### Why
-
-These submodules pin external reference repos (Axon Framework sources, example apps, extensions). We read them and occasionally experiment locally, but we never want to publish changes to their upstreams from this workspace.
-
-### Applying / re-applying the lock
-
-Hooks live under `.git/modules/...` and are **not** tracked by git, so after a fresh clone they need to be reinstalled. Run from the superproject root:
-
-```bash
-bash .knowledge/scripts/lock-submodules.sh
+```
+.knowledge/
+  docs/                       # Tracked markdown guides (skill-authoring best practices, etc.)
+  repositories/               # Per-type catalog: INDEX.md + per-repo descriptor files
+    axonframework/             # Axon Framework source trees
+    axon-examples/             # Example applications (axon4 ↔ axon5 pairs)
+    ai-bestpractices/          # External skill/agent best-practice references
+  scripts/
+    setup-repos.sh             # Fetch all reference repositories (run once after cloning)
 ```
 
-The script is idempotent — it sets the disabled push URL and installs the pre-push hook on every submodule in `.gitmodules`. Re-run it after `git submodule add`, after cloning, or any time you're unsure.
+The `repositories/` subdirectories contain:
+- `INDEX.md` — scannable catalog with keywords, for AI agents to pick which repo to open
+- `<type>_<name>.md` — per-repo detail files with frontmatter, key paths, and highlights
 
-Verify the push URLs:
+The actual repository source trees are **gitignored** and fetched separately (see below).
 
-```bash
-git submodule foreach 'git remote -v'
-# expect: origin <url> (fetch) / origin DISABLED (push) for each
-```
+## Fetching reference repositories
 
-### Discarding local changes in a submodule
-
-Reset a single submodule to its remote branch:
+Reference repositories (Axon Framework source, example apps, AI best-practice repos) live under `.knowledge/repositories/` but are not committed to this repo. Fetch them with:
 
 ```bash
-cd .knowledge/repositories/<path-to-submodule>
-git fetch origin
-git reset --hard origin/<branch>
-git clean -fd
+bash .knowledge/scripts/setup-repos.sh
 ```
 
-Or snap **all** submodules back to the commits this superproject pins (drops local submodule commits and untracked working-tree edits via checkout):
+This shallow-clones every listed repository. The script locates the repo root automatically, so you can run it from anywhere. Re-run with `--update` to pull the latest commits:
 
 ```bash
-git submodule update --force --recursive
+bash .knowledge/scripts/setup-repos.sh --update
 ```
 
-### Re-enabling push for a specific submodule
+Each cloned repository has its push URL disabled (`DISABLED`) so no accidental push reaches upstream.
 
-If you genuinely need to push from a submodule, restore the push URL **and** remove the hook:
+## Adding a reference repository
+
+Use the `/knowledge-add-repository` skill in Claude Code. It clones the repository, writes the descriptor file and INDEX entry, and appends the clone command to `setup-repos.sh`. No `.gitignore` changes are needed; `.knowledge/repositories/` is ignored wholesale, so any new clone is ignored automatically.
+
+## Reference repositories are read-only
+
+All repositories under `.knowledge/repositories/` are fetched for reference only. The push URL is set to `DISABLED` on every clone to prevent accidental upstream pushes.
+
+To update a repo to the latest on its branch, re-run:
 
 ```bash
-cd .knowledge/repositories/<path-to-submodule>
-git remote set-url --push origin "$(git remote get-url origin)"
-rm "$(git rev-parse --git-path hooks/pre-push)"
+bash .knowledge/scripts/setup-repos.sh --update
 ```
 
-Re-lock afterwards with `bash .knowledge/scripts/lock-submodules.sh` from the superproject root.
+To discard local changes in a single repo:
+
+```bash
+git -C .knowledge/repositories/<type>/<name> fetch origin
+git -C .knowledge/repositories/<type>/<name> reset --hard origin/<branch>
+git -C .knowledge/repositories/<type>/<name> clean -fd
+```

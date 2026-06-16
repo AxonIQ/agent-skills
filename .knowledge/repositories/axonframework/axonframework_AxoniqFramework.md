@@ -1,7 +1,7 @@
 ---
 repo_type: axonframework
 repo_name: AxoniqFramework
-submodule_path: .knowledge/repositories/axonframework/AxoniqFramework
+repo_path: .knowledge/repositories/axonframework/AxoniqFramework
 url: https://github.com/AxonIQ/axoniq-framework.git
 branch: main
 keywords:

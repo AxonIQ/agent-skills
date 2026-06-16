@@ -1,7 +1,7 @@
 ---
 repo_type: axon-examples
 repo_name: gamerental (axon4)
-submodule_path: .knowledge/repositories/axon-examples/axon4/gamerental
+repo_path: .knowledge/repositories/axon-examples/axon4/gamerental
 url: https://github.com/smcvb/gamerental.git
 branch: main
 commit: afdb1c7

@@ -1,7 +1,7 @@
 ---
 repo_type: axonframework
 repo_name: AxonFramework4
-submodule_path: .knowledge/repositories/axonframework/AxonFramework4
+repo_path: .knowledge/repositories/axonframework/AxonFramework4
 url: https://github.com/AxonIQ/AxonFramework.git
 branch: axon-4.13.x
 keywords:

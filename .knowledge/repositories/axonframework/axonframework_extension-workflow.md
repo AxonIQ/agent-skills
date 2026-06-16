@@ -1,9 +1,9 @@
 ---
 repo_type: axonframework
 repo_name: extension-workflow
-submodule_path: .knowledge/repositories/axonframework/extension-workflow
+repo_path: .knowledge/repositories/axonframework/extension-workflow
 url: https://github.com/AxonIQ/extension-workflow.git
-branch: axoniq-workflow-0.1.x
+branch: main
 keywords:
   - workflow
   - durable execution

@@ -1,6 +1,6 @@
 # Development
 
-How this repository is structured and how to add plugins. For installation/usage, see [README.md](./README.md). For skill-authoring rules, see [CLAUDE.md](./CLAUDE.md).
+How this repository is structured and how to add plugins. For contributor setup (cloning, knowledge repos, local testing), see [CONTRIBUTING.md](./CONTRIBUTING.md). For installation/usage, see [README.md](./README.md). For skill-authoring rules, see [CLAUDE.md](./CLAUDE.md).
 
 ## Repository layout
 

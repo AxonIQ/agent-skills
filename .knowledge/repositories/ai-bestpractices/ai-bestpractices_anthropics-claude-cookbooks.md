@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: anthropics-claude-cookbooks
-submodule_path: .knowledge/repositories/ai-bestpractices/anthropics-claude-cookbooks
+repo_path: .knowledge/repositories/ai-bestpractices/anthropics-claude-cookbooks
 url: https://github.com/anthropics/claude-cookbooks.git
 branch: main
 keywords:
