@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.4.1] - 2026-06-18
+
+### Fixed
+
+- `events/handling-projections.md` and `events/processors.md`: corrected the sequencing-policy default. The policy table no longer labels `SequentialPerAggregatePolicy` as the default; both files now state the real default is `HierarchicalSequencingPolicy` (`SequentialPerAggregatePolicy` → `SequentialPolicy` fallback) and warn that in a DCB context events carry tags rather than an aggregate identifier, so `SequentialPerAggregatePolicy` returns `Optional.empty()` for every event and the processor effectively runs single-threaded until an explicit policy is set.
+
 ## [0.4.0] - 2026-06-04
 
 ### Changed

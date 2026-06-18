@@ -222,7 +222,7 @@ public interface SequencingPolicy<M extends Message> {
 }
 ```
 
-The PSEP default is a `HierarchicalSequencingPolicy` that tries `SequentialPerAggregatePolicy` first and falls back to `SequentialPolicy`.
+The PSEP default is a `HierarchicalSequencingPolicy` that tries `SequentialPerAggregatePolicy` first and falls back to `SequentialPolicy`. In a DCB context, events carry tags rather than an aggregate identifier, so `SequentialPerAggregatePolicy` returns `Optional.empty()` for every event and the fallback `SequentialPolicy` always applies — the processor effectively runs single-threaded in one segment until you set an explicit policy.
 
 ### Splitting and merging segments
 
