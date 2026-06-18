@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: vercel-labs-agent-skills
-submodule_path: .knowledge/repositories/ai-bestpractices/vercel-labs-agent-skills
+repo_path: .knowledge/repositories/ai-bestpractices/vercel-labs-agent-skills
 url: https://github.com/vercel-labs/agent-skills.git
 branch: main
 keywords:

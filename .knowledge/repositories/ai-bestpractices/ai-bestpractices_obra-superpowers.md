@@ -1,7 +1,7 @@
 ---
 repo_type: ai-bestpractices
 repo_name: obra-superpowers
-submodule_path: .knowledge/repositories/ai-bestpractices/obra-superpowers
+repo_path: .knowledge/repositories/ai-bestpractices/obra-superpowers
 url: https://github.com/obra/superpowers.git
 branch: main
 keywords:

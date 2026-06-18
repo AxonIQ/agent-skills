@@ -1,7 +1,7 @@
 ---
 repo_type: axon-examples
 repo_name: bike-rental-extended (axon4)
-submodule_path: .knowledge/repositories/axon-examples/axon4/bike-rental-extended
+repo_path: .knowledge/repositories/axon-examples/axon4/bike-rental-extended
 url: https://github.com/MateuszNaKodach/bike-rental-extended.git
 branch: af4
 commit: eaa9ebe

@@ -1,7 +1,7 @@
 ---
 repo_type: axon-examples
 repo_name: heroes (axon5)
-submodule_path: .knowledge/repositories/axon-examples/axon5/heroes
+repo_path: .knowledge/repositories/axon-examples/axon5/heroes
 url: https://github.com/MateuszNaKodach/HeroesOfDomainDrivenDesign.EventSourcing.Java.Axon.Spring.git
 branch: af5-migrated
 commit: d86f99c

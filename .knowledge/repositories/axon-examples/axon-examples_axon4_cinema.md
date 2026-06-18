@@ -1,7 +1,7 @@
 ---
 repo_type: axon-examples
 repo_name: cinema (axon4)
-submodule_path: .knowledge/repositories/axon-examples/axon4/cinema
+repo_path: .knowledge/repositories/axon-examples/axon4/cinema
 url: https://github.com/MateuszNaKodach/Cinema.EventSourcing.VerticalSlice.Kotlin.Axon4.Spring.git
 branch: main
 commit: af9a841
