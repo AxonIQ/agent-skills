@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - 2026-06-18
 
+### Added
+
+- `queries/query-handling.md`: caveat on bridging a subscription query to Server-Sent Events on the Spring MVC servlet stack. The subscription query closes only when the reactive subscription is cancelled, and on the servlet stack cancellation is write-triggered (no client-disconnect callback), so a silently disconnected idle client leaks the subscription query. Documents merging a periodic keep-alive comment as the mitigation, and notes WebFlux/Netty does not need it.
+
 ### Fixed
 
 - `events/handling-projections.md` and `events/processors.md`: corrected the sequencing-policy default. The policy table no longer labels `SequentialPerAggregatePolicy` as the default; both files now state the real default is `HierarchicalSequencingPolicy` (`SequentialPerAggregatePolicy` → `SequentialPolicy` fallback) and warn that in a DCB context events carry tags rather than an aggregate identifier, so `SequentialPerAggregatePolicy` returns `Optional.empty()` for every event and the processor effectively runs single-threaded until an explicit policy is set.
