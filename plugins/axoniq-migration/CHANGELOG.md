@@ -5,6 +5,12 @@ All notable changes to the **axoniq-migration** plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `axon4to5-migrate-code`: preserve command routing when migrating `@TargetAggregateIdentifier`. AF4's `@TargetAggregateIdentifier` was both the target-id and the command's routing key (same-entity commands handled sequentially); migrating it to `@TargetEntityId` alone drops that guarantee. The aggregate recipe now reconciles `@Command(routingKey = "…")` against the command's actual state (absent / bare / already correct), staying correct across OpenRewrite recipe versions and covering Kotlin `data class` properties. Docs and use-case examples updated accordingly. Refs AxonIQ/AxonFramework#4701.
+
 ## [0.2.0] - 2026-06-04
 
 ### Changed

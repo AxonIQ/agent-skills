@@ -112,7 +112,7 @@ Plus on every command class:
 import org.axonframework.modelling.annotation.TargetEntityId;
 import org.axonframework.messaging.commandhandling.annotation.Command;
 
-@Command
+@Command(routingKey = "calendarId")
 public record FinishDay(@TargetEntityId String calendarId, int month, int week, int day) { }
 ```
 
@@ -127,7 +127,7 @@ public record FinishDay(@TargetEntityId String calendarId, int month, int week, 
 - `@EntityCreator` annotation on the no-arg constructor (`org.axonframework.eventsourcing.annotation.reflection.EntityCreator` — `.reflection.` infix mandatory).
 - `AggregateLifecycle.apply(event)` → `eventAppender.append(event)` for each handler; `EventAppender eventAppender` parameter added on every `@CommandHandler` (`org.axonframework.messaging.eventhandling.gateway.EventAppender` — `.messaging.` infix).
 - Every event gets `@EventTag(key = "Calendar")` on the id field; class-level `@Event`. One tag per event (no DCB).
-- Every command gets `@Command`; `@TargetAggregateIdentifier` → `@TargetEntityId`.
+- Every command gets `@Command`; `@TargetAggregateIdentifier` → `@TargetEntityId`. The `@Command` carries `routingKey = "calendarId"` (the `@TargetEntityId` property) — AF4's `@TargetAggregateIdentifier` was also the routing key, so this keeps same-entity commands handled sequentially. Without it, unit tests still pass but concurrent commands can run in parallel.
 
 ## Caveats
 
