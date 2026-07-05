@@ -1,7 +1,7 @@
 ---
 name: axoniq-app-dev
 description: >
-  Building applications with Axon Framework 5 (AF5) or Axoniq Framework: commands, events, queries, event-sourced entities, DCB, event store, projections, configuration, testing. Use for any AF5 work.
+  Build apps with Axon Framework 5 (AF5) or Axoniq Framework. Use when implementing or debugging Axon components: command/event/query handlers, event-sourced entities, projections, event store, tests.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Edit, Write
