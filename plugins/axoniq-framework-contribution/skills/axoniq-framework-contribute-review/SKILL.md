@@ -3,12 +3,17 @@ name: axoniq-framework-contribute-review
 description: For Axon Framework contributors. Performs comprehensive code reviews against AF5 contributor standards: analyzes changed files, checks Antora documentation, verifies test coverage, and ensures compliance with AF5 patterns. Provides actionable fix suggestions that can be applied immediately.
 disable-model-invocation: false
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash, Task, Edit, Write
+allowed-tools: Read, Glob, Grep, Bash, Agent, Edit, Write
 ---
 
 # Code Review Skill for Axon Framework
 
-This skill performs systematic code reviews following the comprehensive checklist compiled from Axon Framework review patterns. It not only identifies issues but **provides concrete fix suggestions** that can be applied immediately to the codebase.
+This skill performs systematic code reviews against Axon Framework 5 contributor standards. It not only identifies issues but **provides concrete fix suggestions** that can be applied immediately.
+
+**Supporting files** — load when needed:
+- `quick-reference.md` — top-10 issues, fast checks, grep patterns, severity decision tree
+- `references/fix-patterns.md` — how to craft fix suggestions per issue type (JavaDoc, annotations, exceptions, visibility, handler wrappers, ...) and batch-apply them
+- `templates/review-report-template.md` — the report structure to fill in
 
 ## When to Use This Skill
 
@@ -20,32 +25,13 @@ This skill performs systematic code reviews following the comprehensive checklis
 
 ## Philosophy: Solutions, Not Just Problems
 
-This skill is designed to be **helpful and actionable**:
-- ✅ Identifies issues AND suggests specific fixes
-- ✅ Provides before/after code examples
+- ✅ Identifies issues AND suggests specific fixes with before/after code
 - ✅ Can apply fixes immediately when requested
 - ✅ Explains WHY changes are needed
 - ✅ Acknowledges what's done well
 - ❌ Not just a list of complaints
 
-## How This Skill Works
-
-The skill performs a systematic review in the following order:
-
-1. **Detect Changed Files** - Identifies what has been modified
-2. **Identify Review Hotspots** - Flags areas needing extra human attention
-3. **Critical Requirements Check** - Verifies must-have items
-4. **API Design Review** - Checks fluent APIs, naming, null safety
-5. **Code Quality Review** - Examines error handling, performance, type safety
-6. **Architecture Review** - Validates patterns and modularity
-7. **Documentation Review** - Verifies Antora docs and JavaDoc
-8. **Test Coverage Review** - Checks tests and quality gates
-9. **Generate Review Report with Fix Suggestions** - Actionable improvements
-10. **Offer to Apply Fixes** - Can apply suggested changes immediately
-
 ## Interactive Fix Workflow
-
-When issues are found, this skill provides an interactive workflow:
 
 1. **Issue Identified** → Describe the problem clearly
 2. **Fix Suggested** → Provide specific code changes (before/after)
@@ -55,33 +41,7 @@ When issues are found, this skill provides an interactive workflow:
    - Decline: "Skip this one"
    - Apply all: "Apply all suggested fixes"
 
-### Example Interaction
-
-```
-Skill: Found 3 issues. Here are suggested fixes:
-
-FIX #1 (BLOCKING): Add missing @since tag
-File: EventStore.java:456
-Current:
-    /**
-     * Reads events from the store.
-     */
-    public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
-
-Suggested:
-    /**
-     * Reads events from the store.
-     *
-     * @since 5.1.0
-     */
-    public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
-
-User: Apply fix #1
-Skill: ✅ Applied fix #1 to EventStore.java
-
-User: Apply all remaining fixes
-Skill: ✅ Applied fixes #2 and #3
-```
+When applying a fix: re-read the file first (it may have changed), apply with the Edit tool, confirm what changed, and keep count of applied vs remaining fixes. See `references/fix-patterns.md` for fix templates, batch commands, and when NOT to auto-fix.
 
 ## Review Process
 
@@ -107,15 +67,9 @@ Both frameworks share the same coding conventions. The review checklist applies 
 
 ### Step 1: Identify Changed Files
 
-First, determine the scope of changes:
-
 ```bash
-# Check git status
 git status --short
-
-# Get diff stats
 git diff --stat
-
 # For PR reviews, compare against target branch
 git diff main...HEAD --name-only
 ```
@@ -133,37 +87,17 @@ git diff | grep -B2 -A2 "^[+-].*public.*\(" | grep "^[+-]"
 
 # Find new public classes/interfaces
 git diff | grep "^+public class\|^+public interface"
-
-# Check for files touching multiple concerns
-git diff --name-only | while read f; do
-  echo "$f: $(git diff $f | grep -c '^@@')"
-done | awk '$2 > 5'
 ```
 
-**Categorize hotspots by type:**
-1. **Core Logic Changes** - Files central to the PR's purpose
-2. **Structural Changes** - Classes with refactored methods, new fields, inheritance changes
-3. **API Changes** - New public methods, changed signatures, deprecated APIs
-4. **Complex Logic** - Dense conditionals, nested loops, error handling changes
-5. **Cross-cutting Concerns** - Security, threading, transactions, resource management
+**Hotspot indicators:** classes with significant structural changes (>50 lines, method refactoring, field additions); core classes essential to the PR's purpose; new public APIs or signature changes; complex logic changes (nested conditions, loops, error handling); cross-cutting concerns (security, threading, transactions, resources); files with multiple unrelated changes (scope creep); large files (>500 lines) with modifications.
 
-**For each hotspot, note:**
-- File path and change magnitude
-- Why it's a hotspot (core logic, complexity, API change)
-- Specific areas to focus on
-- Review questions for human attention
+**For each hotspot, note:** file path and change magnitude, why it's a hotspot, specific areas to focus on, and review questions for human attention. Hotspots aren't necessarily bugs — they flag where code smells are most likely, deserving extra human scrutiny.
 
 ### Step 3: Read Changed Files
 
-Read all modified files to understand the changes:
-- Java source files (.java)
-- Test files (*Test.java)
-- Documentation files in /docs
-- Configuration files
+Read all modified files to understand the changes: Java sources, test files, documentation in `/docs`, configuration files.
 
 ### Step 4: Apply Review Checklist
-
-Use the comprehensive checklist from `../../code-review-checklist.md` to systematically review:
 
 #### Critical Requirements (BLOCKING)
 
@@ -171,26 +105,13 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
    - Search for changes in `/docs/reference-guide/modules/**/*.adoc`
    - If feature changes exist without reference guide updates, flag as BLOCKING
    - Verify new pages are added to appropriate `nav.adoc` in the module
-   - Path: `/docs/reference-guide/modules/[module-name]/pages/`
-
-   **Module Selection Guide:**
-   - Event store/sourcing changes → `events/` module
-   - Command handling changes → `commands/` module
-   - Query handling changes → `queries/` module
-   - Saga changes → `sagas/` module
-   - Messaging infrastructure → `messaging-concepts/` module
-   - Deadline management → `deadlines/` module
-   - Metrics/monitoring → `monitoring/` module
-   - Testing utilities → `testing/` module
-   - Performance → `tuning/` module
-   - Breaking changes → `migration/` module
-   - New version features → `release-notes/` module
+   - Module selection: event store/sourcing → `events/`; commands → `commands/`; queries → `queries/`; sagas → `sagas/`; messaging infrastructure → `messaging-concepts/`; deadlines → `deadlines/`; metrics/monitoring → `monitoring/`; testing utilities → `testing/`; performance → `tuning/`; breaking changes → `migration/`; new version features → `release-notes/`
 
 2. **JavaDoc Completeness**
    - Check for missing `@since` tags on new public/protected methods
    - Verify `@author` tags when refactoring code
    - Confirm `@Nullable` annotations on nullable parameters/returns (under `@NullMarked`, non-null is the default)
-   - Flag any use of Jakarta `@Nonnull`/`@Nullable` — these are **forbidden** by checkstyle
+   - Flag any use of Jakarta `@Nonnull`/`@Nullable` — these are **forbidden** by checkstyle; use JSpecify
    - Look for class-level JavaDoc with examples
    - Verify constructor javadoc documents defaults (especially for configuration classes)
    - Check for ambiguous terminology that users might misinterpret
@@ -217,54 +138,49 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
 
 #### API Design Review
 
-5. **Fluent API Pattern (AF5 Style)**
+6. **Fluent API Pattern (AF5 Style)**
    - Flag any `builder()` patterns on infrastructure components
    - Verify fluent chaining methods return appropriate types
    - Check for descriptive static factory methods
-   - Reference: `../axon-framework-5-patterns/SKILL.md`
+   - Reference: `../axoniq-framework-contribute-code/references/fluent-builders.md`
 
-6. **Null Safety**
+7. **Null Safety**
    - Check for null checks before dereferencing (use `Objects.requireNonNull` at method/constructor entry)
    - Verify `@Nullable` on nullable parameters/return types (JSpecify; non-null is the default under `@NullMarked`)
    - Flag any Jakarta `@Nonnull`/`@Nullable` — use JSpecify instead
    - Look for potential NPE vulnerabilities
 
-7. **Method Visibility**
+8. **Method Visibility**
    - Check if methods could be more restrictive
    - Flag unnecessary public methods
 
 #### Code Quality Review
 
-8. **Error Handling**
+9. **Error Handling**
    - Search for generic exceptions (avoid `IllegalStateException`, prefer `AxonConfigurationException`)
    - Check for swallowed exceptions
    - Verify error messages have context
 
-9. **Performance**
-   - Look for `LinkedList` usage (suggest `LinkedHashMap` for lookups)
-   - Check for unnecessary object creation in loops
-   - Review concurrency patterns
+10. **Performance**
+    - Look for `LinkedList` usage (suggest `LinkedHashMap` for lookups)
+    - Check for unnecessary object creation in loops
+    - Review concurrency patterns
 
-10. **Type Safety**
+11. **Type Safety**
     - Check for unchecked casts
     - Verify generic type usage
     - Look for raw types
 
 #### Documentation Review
 
-11. **Reference Guide Documentation Structure**
+12. **Reference Guide Documentation Structure**
     ```bash
-    # Check for reference guide documentation files
     find docs/reference-guide/modules -name "*.adoc" -type f
-
-    # Look for navigation updates
     grep -r "xref:" docs/reference-guide/modules/
-
-    # Check if nav.adoc was updated
     git diff docs/reference-guide/modules/*/nav.adoc
     ```
 
-12. **JavaDoc Quality**
+13. **JavaDoc Quality**
     - Class-level documentation explains purpose
     - Public methods have complete JavaDoc
     - Examples provided for complex APIs
@@ -272,74 +188,24 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
 
 #### Architecture Review
 
-13. **Design Patterns**
+14. **Design Patterns**
     - Verify `ConfigurationEnhancer` usage for cross-cutting concerns
     - Check for proper use of predicates/filters
     - Look for decorator patterns
 
-14. **Dependencies**
+15. **Dependencies**
     - Check for circular dependencies
     - Verify minimal coupling
-
-15. **Review Hotspots** (Areas requiring extra human attention)
-    Identify classes/areas where code smells are most likely. Flag these for focused review:
-
-    **Hotspot Indicators:**
-    - Classes with significant structural changes (>50 lines modified, method refactoring, field additions)
-    - Core classes essential to the PR's purpose (the "why" of the change)
-    - New public APIs or significant API changes
-    - Complex logic changes (nested conditions, loops, error handling)
-    - Classes handling cross-cutting concerns (security, transactions, threading)
-    - Files with multiple unrelated changes (scope creep indicator)
-    - Large files (>500 lines) with modifications
-
-    **When to Flag as Hotspot:**
-    ```bash
-    # Check for large structural changes
-    git diff --stat | awk '$2 > 50 { print $1 }'
-
-    # Classes with method signature changes
-    git diff | grep -E "^[+-].*public.*\(" | sort | uniq -c
-    ```
-
-    **Report Format:**
-    Each hotspot should include:
-    - File path and reason for flagging
-    - Type of change (structural, core logic, API change)
-    - Specific areas to focus human review on
-    - Why this area is sensitive/risky
 
 16. **Message Handler Wrapper Patterns** (CRITICAL for handler enhancers)
     - ❌ NEVER use `instanceof` to check handler types → Use `canHandleMessageType()`
     - ❌ NEVER unwrap handlers unnecessarily → Preserve the wrapper chain
-    - ✅ Use `canHandleMessageType(MessageClass.class)` to check compatibility
     - ✅ Use `unwrap(SpecificType.class)` only when accessing specific wrapper functionality
     - ✅ Handler wrappers should NOT implement specific handler interfaces (e.g., `EventHandlingMember`)
     - ✅ Use `@HasHandlerAttributes` on annotations and check attributes (not annotations directly)
     - ✅ Accept `MessageHandlingMember` in method signatures, not specific handler types
 
-    **Common Issues to Flag:**
-    ```java
-    // ❌ WRONG - instanceof breaks with generic wrappers
-    if (handler instanceof EventHandlingMember) { ... }
-
-    // ❌ WRONG - unwrapping loses wrapper chain behavior
-    EventHandlingMember unwrapped = handler.unwrap(EventHandlingMember.class).orElseThrow();
-    registerHandler(unwrapped);  // Lost all wrapper behavior!
-
-    // ❌ WRONG - wrapper implements specific handler interface
-    class MyWrapper<T> extends WrappedMessageHandlingMember<T>
-            implements EventHandlingMember<T> { ... }
-
-    // ✅ CORRECT - canHandleMessageType works through wrappers
-    if (!handler.canHandleMessageType(EventMessage.class)) { ... }
-
-    // ✅ CORRECT - preserve wrapper chain
-    registerHandler(handler);  // Pass full chain, unwrap only when needed
-
-    // ✅ CORRECT - wrapper doesn't implement specific interfaces
-    class MyWrapper<T> extends WrappedMessageHandlingMember<T> { ... }
-    ```
+    Full pattern catalogue with before/after examples: `../axoniq-framework-contribute-code/references/handler-wrappers.md`.
 
     **Search patterns to detect issues:**
     ```bash
@@ -353,214 +219,51 @@ Use the comprehensive checklist from `../../code-review-checklist.md` to systema
     grep -A2 "extends WrappedMessageHandlingMember" --include="*.java" | grep "implements.*HandlingMember"
     ```
 
-### Step 5: Generate Review Report with Actionable Fixes
+#### Test Quality Review
 
-Create a structured report with **concrete fix suggestions** for each issue:
+17. **Test Object Creation** — prefer real objects (factory methods for messages), then stubs for tracking behavior, mocks only when necessary for verification. Flag mocked message objects.
+18. **Resource Cleanup in Tests** — ExecutorServices shutdown, temp files deleted, connections closed; cleanup in `finally` or `@AfterEach`. Flag ExecutorService without shutdown.
 
-```markdown
-# Code Review Report
+    Detailed patterns: `../axoniq-framework-contribute-code/references/testing.md`.
 
-## Summary
-- Files Changed: X
-- Issues Found: Y total (Z blocking, W warnings, V suggestions)
-- Review Hotspots: N (areas needing extra human attention)
-- Fixes Available: [Number of automated fixes ready]
+### Step 5: Generate Review Report
 
-## SUGGESTED FIXES
+Fill in the structure from `templates/review-report-template.md`. The report contains, in order:
 
-### FIX #1 (BLOCKING): Add missing @since tag
-**File:** `ComponentClass.java:456`
-**Severity:** BLOCKING ❌
-**Issue:** New public method without @since tag
-**Why:** All public/protected methods must have @since tags per AF5 standards
+1. **Executive Summary** — files changed, issue counts by severity, fixes available, overall status
+2. **SUGGESTED FIXES** — numbered, severity-tagged fixes with before/after code and "To apply" actions (see `references/fix-patterns.md` for the per-type templates)
+3. **DOCUMENTATION NEEDED** — items requiring developer input, with offer to generate doc templates
+4. **REVIEW HOTSPOTS 🔥** — areas for focused human attention, each with focus areas and review questions
+5. **POSITIVE FINDINGS ✅** — what's done well
+6. **SUMMARY BY SEVERITY** — blocking / warnings / suggestions / hotspots
+7. **QUICK ACTIONS** — batch commands ("Apply all fixes", "Apply blocking fixes only", "Generate doc template for DOC #1")
+8. **FILES REVIEWED** — list with assessment
 
-**Current code:**
-```java
-/**
- * Processes items from the specified source.
- */
-public Stream<ResultMessage> process(String identifier) {
-```
+### Step 6: Offer to Apply Fixes
 
-**Suggested fix:**
-```java
-/**
- * Processes items from the specified source.
- *
- * @param identifier the source identifier
- * @return stream of result messages
- * @since 5.1.0
- */
-public Stream<ResultMessage> process(String identifier) {
-```
-
-**To apply:** Say "Apply fix #1" or "Apply all fixes"
-
----
-
-### FIX #2 (WARNING): Use AxonConfigurationException
-**File:** `ComponentConfig.java:123`
-**Severity:** WARNING ⚠️
-**Issue:** Using generic exception for configuration error
-**Why:** Configuration errors should use AxonConfigurationException for consistency
-
-**Current code:**
-```java
-throw new IllegalStateException("Component not configured");
-```
-
-**Suggested fix:**
-```java
-throw new AxonConfigurationException("Component not configured");
-```
-
-**Impact:** Need to import `org.axonframework.common.AxonConfigurationException`
-**To apply:** Say "Apply fix #2"
-
----
-
-### FIX #3 (SUGGESTION): Reduce method visibility
-**File:** `ComponentImpl.java:789`
-**Severity:** SUGGESTION 💡
-**Issue:** Public method only used internally
-**Why:** Minimizing public API surface improves maintainability
-
-**Current code:**
-```java
-public void validateInternalState(List<Message> items) {
-```
-
-**Suggested fix:**
-```java
-protected void validateInternalState(List<Message> items) {
-```
-
-**To apply:** Say "Apply fix #3"
-
-## DOCUMENTATION NEEDED
-
-### DOC #1 (BLOCKING): Add Antora documentation
-**Issue:** New feature added without user-facing documentation
-**Required:** Add documentation in appropriate `docs/reference-guide/modules/[module]/pages/`
-**Should cover:**
-- Overview of the new feature
-- Usage examples
-- Configuration options
-- Migration notes (if applicable)
-
-I can help create a documentation template. Say "Generate doc template for DOC #1"
-
-## REVIEW HOTSPOTS 🔥
-
-Areas where code smells or design issues are most likely. Human reviewers should focus extra attention here:
-
-### HOTSPOT #1: Core Business Logic Change
-**File:** `AnnotatedEventHandlingComponent.java` (124 lines changed)
-**Type:** Structural + Core Logic
-**Why flagged:** Central to this PR's handler wrapper chain preservation fix
-**Focus areas:**
-- Method `initializeHandlersBasedOnModel()` - Changed from unwrapping to preserving wrapper chain
-- Method `registerHandler()` - Signature changed from `EventHandlingMember` to `MessageHandlingMember`
-- Verify wrapper chain is actually preserved through the call stack
-- Check if downstream code expects `EventHandlingMember` specifically
-
-**Review questions:**
-- Are there other callers that might be affected by the signature change?
-- Does the new approach handle edge cases (empty handlers, null wrappers)?
-- Is error handling appropriate for the new flow?
-
-### HOTSPOT #2: New Public API Surface
-**File:** `HandlerAttributes.java` (2 constants added)
-**Type:** API Addition
-**Why flagged:** New public constants affect handler attribute contracts
-**Focus areas:**
-- Are constant names following existing conventions?
-- Should these be documented in migration guide?
-- Are tests covering attribute usage through the wrapper chain?
-
-**Review questions:**
-- Could these attributes conflict with existing ones?
-- Is the naming consistent with other `HandlerAttributes` constants?
-- Are there other places that should use these attributes?
-
-## POSITIVE FINDINGS ✅
-
-- ✅ Excellent test coverage (all new methods tested)
-- ✅ Clear JavaDoc examples provided for complex APIs
-- ✅ Proper null safety with @Nullable/@Nonnull annotations
-- ✅ Good use of AF5 fluent API patterns
-- ✅ Configuration class has comprehensive tests
-
-## SUMMARY BY SEVERITY
-
-**BLOCKING (must fix before commit):** 2
-- FIX #1: Missing @since tag
-- DOC #1: Missing Antora documentation
-
-**WARNINGS (should fix):** 1
-- FIX #2: Use AxonConfigurationException
-
-**SUGGESTIONS (nice to have):** 1
-- FIX #3: Reduce method visibility
-
-**REVIEW HOTSPOTS (human attention needed):** 2
-- HOTSPOT #1: AnnotatedEventHandlingComponent.java - Core logic change
-- HOTSPOT #2: HandlerAttributes.java - API surface expansion
-
-> 🔥 **Hotspots** flag areas where code smells are most likely. These aren't necessarily bugs, but deserve extra scrutiny from human reviewers due to complexity, structural changes, or being core to the PR's purpose.
-
-## QUICK ACTIONS
-
-To fix all issues quickly:
-- "Apply all fixes" - Applies FIX #1, #2, #3
-- "Apply blocking fixes only" - Applies FIX #1
-- "Generate doc template for DOC #1" - Creates documentation outline
-- "Show me FIX #2 in detail" - Explains specific fix
-- "Explain HOTSPOT #1" - Provides more context on a hotspot
-
-## FILES REVIEWED
-[List with assessment]
-```
+After presenting the report, offer the batch actions above and process them per the Interactive Fix Workflow.
 
 ## Severity Levels
 
 ### BLOCKING ❌
-Issues that prevent approval:
-- Missing Antora documentation for feature changes
-- Missing or incomplete JavaDoc on public APIs
-- Apparent lack of test coverage (<80%)
-- Breaking changes without migration docs
-- Security vulnerabilities
-- Resource leaks
+Issues that prevent approval: missing Antora documentation for feature changes; missing or incomplete JavaDoc on public APIs; apparent lack of test coverage (<80%); breaking changes without migration docs; security vulnerabilities; resource leaks.
 
 ### WARNING ⚠️
-Issues that should be addressed but may not block:
-- Missing `@author` tags
-- Method visibility could be reduced
-- Performance concerns (non-critical)
-- Code duplication
-- Missing null safety annotations
+Should be addressed but may not block: missing `@author` tags; method visibility could be reduced; non-critical performance concerns; code duplication; missing null safety annotations.
 
 ### SUGGESTION 💡
-Improvements and best practices:
-- Better naming
-- Additional test cases
-- Code organization
-- Documentation enhancements
+Improvements and best practices: better naming; additional test cases; code organization; documentation enhancements.
+
+See the severity decision tree in `quick-reference.md` when unsure.
 
 ## Quick Review Mode
 
-For a fast review focusing only on critical items:
+For a fast review focusing only on critical items, run the "Fast Checks" from `quick-reference.md`:
 
 ```bash
-# Check for doc changes
-git diff --name-only | grep "^docs/"
-
-# Check for test files
-git diff --name-only | grep "Test.java$"
-
-# Check for breaking changes
-git diff | grep -E "(@Deprecated|public.*\(|protected.*\()"
+git diff --name-only | grep "^docs/"          # doc changes
+git diff --name-only | grep "Test.java$"      # test files
+git diff | grep -E "(@Deprecated|public.*\(|protected.*\()"  # breaking changes
 ```
 
 Then apply only the BLOCKING checklist items.
@@ -570,8 +273,8 @@ Then apply only the BLOCKING checklist items.
 For a thorough review:
 
 1. Read all changed files completely
-2. Apply full checklist from `code-review-checklist.md`
-3. Cross-reference with `axon-framework-5-patterns` skill
+2. Apply the full checklist above
+3. Cross-reference with the `axoniq-framework-contribute-code` skill's design patterns
 4. Check related files that might be affected
 5. Review test files in detail
 6. Examine documentation structure
@@ -604,635 +307,13 @@ For a thorough review:
 4. ✅ Review storage implications
 5. ✅ Check release notes updated
 
-## Crafting Fix Suggestions
-
-### Principles for Good Fix Suggestions
-
-1. **Be Specific** - Show exact before/after code
-2. **Explain Why** - Don't just say what's wrong, explain the reasoning
-3. **Provide Context** - Reference checklist items, past PRs, or standards
-4. **Consider Impact** - Note any imports, dependencies, or side effects
-5. **Make it Actionable** - User should be able to apply immediately
-
-### Fix Template Structure
-
-For each issue, provide:
-
-```markdown
-### FIX #[N] ([SEVERITY]): [Brief Title]
-**File:** `[file.java:line]`
-**Severity:** [BLOCKING/WARNING/SUGGESTION] [emoji]
-**Issue:** [What's wrong]
-**Why:** [Explain the reasoning - reference standards/patterns]
-
-**Current code:**
-```java
-[actual code from file]
-```
-
-**Suggested fix:**
-```java
-[corrected code]
-```
-
-**Impact:** [Any imports needed, side effects, or considerations]
-**To apply:** Say "Apply fix #[N]"
-```
-
-### Types of Fixes to Generate
-
-#### 1. JavaDoc Fixes (Very Common)
-**Easy to automate:** YES
-- Add missing `@since` tags
-- Add missing `@author` tags
-- Add missing `@param` or `@return` docs
-- Fix sentence-style capitalization in parameter docs
-- Add constructor javadoc with defaults
-- Clarify ambiguous terminology
-
-**Example - Method JavaDoc:**
-```java
-// Before
-/**
- * Processes items.
- */
-public Stream<ResultMessage> process(String identifier) {
-
-// After
-/**
- * Processes items from the specified source.
- *
- * @param identifier the source identifier
- * @return stream of result messages
- * @since 5.1.0
- */
-public Stream<ResultMessage> process(String identifier) {
-```
-
-**Example - Constructor JavaDoc:**
-```java
-// Before
-public ComponentConfiguration() {
-
-// After
-/**
- * Constructs a default {@code ComponentConfiguration} with the following settings:
- * <ul>
- *     <li>Thread count: 10</li>
- *     <li>Queue capacity: 1000</li>
- *     <li>Auto-retry: enabled</li>
- * </ul>
- */
-public ComponentConfiguration() {
-```
-
-**Example - Terminology Clarity:**
-```java
-// Before (ambiguous - "prefer" could mean priority)
-/**
- * Indicates whether local handlers are preferred over remote ones.
- */
-
-// After (clear - explains fallback behavior)
-/**
- * Indicates whether local handlers are used directly when available, bypassing
- * remote dispatch. When no local handler is available, the request is dispatched
- * remotely through the connector.
- */
-```
-
-#### 2. Annotation Fixes
-**Easy to automate:** YES
-- Add `@Nullable` for parameters/return values that may be null
-- Verify `package-info.java` has `@NullMarked` (non-null is the default under it)
-- Fix wrong annotation library (jakarta → jspecify — jakarta is **forbidden** by checkstyle)
-
-**Example — missing @Nullable:**
-```java
-// Before (nullable parameter not marked)
-public void process(String id, Object payload) {
-
-// After (JSpecify — only @Nullable needed, non-null is default under @NullMarked)
-public void process(String id, @Nullable Object payload) {
-```
-
-**Impact:** May need to add `import org.jspecify.annotations.Nullable;` and ensure `package-info.java` has `@NullMarked`.
-
-**Example — wrong annotation library:**
-```java
-// ❌ WRONG — jakarta annotations are forbidden
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
-// ✅ CORRECT — use JSpecify
-import org.jspecify.annotations.Nullable;
-// (non-null is default under @NullMarked — no @Nonnull needed)
-```
-
-#### 3. Exception Type Fixes
-**Easy to automate:** YES
-- Replace generic exceptions with `AxonConfigurationException`
-
-**Example:**
-```java
-// Before
-throw new IllegalStateException("EventStore not configured");
-
-// After
-throw new AxonConfigurationException("EventStore not configured");
-```
-
-**Impact:** Need `import org.axonframework.common.AxonConfigurationException;`
-
-#### 4. Visibility Fixes
-**Easy to automate:** YES (but verify intent first)
-- Reduce method visibility when appropriate
-
-**Example:**
-```java
-// Before
-public void internalHelper() {
-
-// After
-protected void internalHelper() {
-```
-
-**Caveat:** Ask if unsure whether method is part of public API
-
-#### 5. Data Structure Fixes
-**Moderate automation:** Requires understanding usage
-- Replace `LinkedList` with `LinkedHashMap` for lookup-heavy code
-
-**Example:**
-```java
-// Before
-private final LinkedList<Item> cache = new LinkedList<>();
-// ... frequent lookups with cache.contains()
-
-// After
-private final LinkedHashMap<String, Item> cache = new LinkedHashMap<>();
-```
-
-**Impact:** May need to adjust add/remove logic
-
-#### 6. Pattern Matching Modernization
-**Easy to automate:** YES
-- Convert old-style instanceof to pattern matching
-
-**Example:**
-```java
-// Before
-if (token instanceof MultiSourceToken) {
-    MultiSourceToken mst = (MultiSourceToken) token;
-    return mst.getPosition();
-}
-
-// After
-if (token instanceof MultiSourceToken mst) {
-    return mst.getPosition();
-}
-```
-
-#### 7. Handler Wrapper Pattern Fixes
-**Easy to automate:** YES (Common in HandlerEnhancerDefinition implementations)
-- Replace `instanceof` checks with `canHandleMessageType()`
-- Remove unnecessary unwrapping that loses wrapper chain
-- Remove specific handler interface implementations from wrappers
-
-**Example 1 - Type Check:**
-```java
-// Before
-@Override
-public <T> MessageHandlingMember<T> wrapHandler(@Nonnull MessageHandlingMember<T> original) {
-    if (original instanceof EventHandlingMember) {
-        return new MyWrapper<>(original);
-    }
-    return original;
-}
-
-// After
-@Override
-public <T> MessageHandlingMember<T> wrapHandler(@Nonnull MessageHandlingMember<T> original) {
-    if (!original.canHandleMessageType(EventMessage.class)) {
-        return original;
-    }
-    return new MyWrapper<>(original);
-}
-```
-
-**Example 2 - Preserve Wrapper Chain:**
-```java
-// Before
-private void initializeHandlers() {
-    model.getUniqueHandlers(targetClass, EventMessage.class)
-         .forEach(handler -> {
-             // Loses wrapper chain!
-             EventHandlingMember<T> eventHandler = handler.unwrap(EventHandlingMember.class)
-                     .orElseThrow(...);
-             registerHandler(eventHandler);
-         });
-}
-
-// After
-private void initializeHandlers() {
-    model.getUniqueHandlers(targetClass, EventMessage.class)
-         .forEach(handler -> {
-             // Preserves wrapper chain
-             if (!handler.canHandleMessageType(EventMessage.class)) {
-                 throw new IllegalStateException(...);
-             }
-             registerHandler(handler);  // Pass full chain
-         });
-}
-
-// Update method signature
-private void registerHandler(MessageHandlingMember<? super T> handler) {  // Not EventHandlingMember
-    // Can unwrap to specific types when needed
-    Optional<SequencingPolicy> policy = handler.unwrap(SequencingPolicyMember.class)
-                                               .map(SequencingPolicyMember::sequencingPolicy);
-    // ...
-}
-```
-
-**Example 3 - Wrapper Class Definition:**
-```java
-// Before
-private static class MyWrapper<T> extends WrappedMessageHandlingMember<T>
-        implements EventHandlingMember<T> {  // Don't implement specific interfaces
-    // ...
-}
-
-// After
-private static class MyWrapper<T> extends WrappedMessageHandlingMember<T> {
-    // No need to implement EventHandlingMember - unwrap() handles it
-    // ...
-}
-```
-
-**Impact:**
-- May need to update method signatures from `EventHandlingMember` to `MessageHandlingMember`
-- May need to add `import org.axonframework.messaging.eventhandling.EventMessage;`
-- Tests using `instanceof` checks should be updated to use `unwrap()` pattern
-
-#### 8. Fluent API Pattern Fixes
-**Complex:** Requires significant refactoring
-- Don't auto-fix, but provide detailed guidance
-
-**Example:**
-```markdown
-FIX #5 (WARNING): Convert to AF5 fluent style
-This requires refactoring the builder pattern. I can help with this.
-See: .claude/skills/axon-framework-5-patterns/SKILL.md
-
-Would you like me to refactor this builder to AF5 style?
-```
-
-### Fix Prioritization
-
-When multiple fixes are available:
-
-1. **Group by severity** - BLOCKING first, then WARNINGS, then SUGGESTIONS
-2. **Number sequentially** - FIX #1, FIX #2, etc.
-3. **Batch related fixes** - All JavaDoc fixes together
-4. **Provide bulk actions** - "Apply all JavaDoc fixes", "Apply all blocking fixes"
-
-### Applying Fixes
-
-When user requests a fix:
-
-1. **Verify current state** - Re-read the file to ensure it hasn't changed
-2. **Apply using Edit tool** - Use exact string replacement
-3. **Confirm success** - Report what was changed
-4. **Track what's applied** - Keep count of applied fixes
-
-**Example Application:**
-```
-User: Apply fix #1
-
-Skill:
-✅ Applied FIX #1: Added @since 5.1.0 tag to EventStore.readEvents()
-   File: EventStore.java:456
-
-Remaining fixes: 3 (1 blocking, 2 warnings)
-Would you like to apply more? Say "Apply fix #2" or "Apply all remaining"
-```
-
-### When NOT to Auto-Fix
-
-Some issues require discussion, not automatic fixes:
-
-- **Architecture changes** - Requires design decisions
-- **Breaking changes** - Need justification and migration docs
-- **Performance optimizations** - May have trade-offs
-- **Missing documentation** - Need content from developer
-- **Missing tests** - Need to understand intended behavior
-
-For these, provide **guidance** instead:
-
-```markdown
-DOC #1 (BLOCKING): Add Antora documentation
-**Required:** Documentation in docs/reference-guide/modules/events/pages/
-
-I can generate a documentation template covering:
-- Feature overview
-- Usage examples
-- Code samples
-
-Say "Generate doc template for DOC #1" and I'll create a starting point.
-```
-
-### Batch Fix Operations
-
-Support these batch commands:
-
-- "Apply all fixes" - All automated fixes
-- "Apply blocking fixes only" - Only severity BLOCKING
-- "Apply all JavaDoc fixes" - All documentation fixes
-- "Apply fixes #1, #3, #5" - Specific set
-- "Skip fix #2" - Exclude specific fix
-
-## Test Quality Patterns
-
-### Test Object Creation Strategy
-
-When reviewing tests, assess the quality of test object creation:
-
-**Prefer this hierarchy:**
-1. **Real objects** - When straightforward to create
-2. **Stub implementations** - When behavior is simple but construction is complex
-3. **Mocks** - Only when necessary for verification
-
-**Example - Real objects (PREFERRED):**
-```java
-// ✅ Use real message objects with factory methods
-private static QueryMessage queryMessage(QualifiedName name) {
-    return new GenericQueryMessage(new MessageType(name), "test-payload");
-}
-
-// In test:
-QueryMessage query = queryMessage(new QualifiedName("TestQuery"));
-```
-
-**Example - Stub implementations (GOOD):**
-```java
-// ✅ Stub for tracking behavior
-private static class StubConnector implements BusConnector {
-    final Set<QualifiedName> subscriptions = new HashSet<>();
-    final AtomicInteger callCount = new AtomicInteger(0);
-
-    @Override
-    public void subscribe(QualifiedName name) {
-        subscriptions.add(name);
-        callCount.incrementAndGet();
-    }
-}
-```
-
-**Example - Mocks (USE SPARINGLY):**
-```java
-// ⚠️ Only when necessary for complex verification
-BusConnector connector = mock(BusConnector.class);
-verify(connector).subscribe(eq(queryName));
-```
-
-### Resource Cleanup in Tests
-
-**Check that tests clean up resources:**
-- ExecutorServices must be shutdown
-- Temporary files/directories must be deleted
-- Database connections must be closed
-- Network connections must be closed
-
-**Pattern verification:**
-```java
-// ✅ Good - cleanup in finally block
-@Test
-void testExecutorCreation() {
-    ExecutorService executor = component.createExecutor();
-    try {
-        // test assertions
-    } finally {
-        executor.shutdown();
-    }
-}
-
-// ✅ Good - cleanup in @AfterEach
-@AfterEach
-void cleanup() {
-    if (executorService != null) {
-        executorService.shutdown();
-    }
-}
-```
-
-## Integration with Other Skills
-
-### Use with axon-framework-5-patterns
-When reviewing builder patterns or infrastructure components:
-```
-Invoke: axon-framework-5-patterns
-Then: code-review
-```
-
-### Use with git commit workflow
-After staging changes but before committing:
-```
-Run: /code-review
-```
-
-## Review Checklist Reference
-
-The complete review checklist is available in:
-`../../code-review-checklist.md`
-
-This includes:
-- 27 major review categories
-- Detailed criteria for each category
-- Examples from actual PRs
-- Common issues and solutions
-- Quick reference for top 10 most common feedback items
-
 ## Automated Checks to Verify
 
 While performing the review, remind about these automated checks:
 
-```bash
-# SonarQube (CI will run this)
-# - Coverage: ≥ 80% on new code
-# - Duplication: ≤ 3%
-# - Reliability: A rating
-# - Security: A rating
-
-# Documentation linting
-# - Vale linter for Antora docs
-# - Run on CI
-
-# Build verification
-# - All modules build successfully
-# - No compiler warnings
-```
-
-## Example Usage
-
-### Reviewing Current Changes
-```
-User: /code-review
-Skill: [Checks git status, reads changed files, applies checklist, generates report]
-```
-
-### Reviewing a Specific Branch
-```
-User: /code-review feature/my-feature
-Skill: [Compares against main branch, performs comprehensive review]
-```
-
-### Quick Pre-Commit Check
-```
-User: /code-review --quick
-Skill: [Runs only BLOCKING checks for fast feedback]
-```
-
-## Output Format
-
-The skill will output an **interactive, actionable review report** with:
-
-1. **Executive Summary** - Quick overview with fix counts
-2. **Suggested Fixes** - Numbered fixes with before/after code
-3. **Documentation Needs** - Items requiring developer input
-4. **Positive Findings** - What's done well
-5. **Quick Actions** - Commands to apply fixes immediately
-
-Example:
-```
-# Code Review Report
-
-## Summary
-- Files Changed: 3
-- Issues Found: 4 (2 blocking, 1 warning, 1 suggestion)
-- Automated Fixes Available: 3
-
----
-
-## SUGGESTED FIXES
-
-### FIX #1 (BLOCKING): Add missing @since tag
-**File:** `EventStore.java:456`
-**Issue:** New public method without @since tag
-**Why:** All public/protected members must have @since tags (AF5 standard)
-
-**Current code:**
-```java
-/**
- * Reads events from the store.
- */
-public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
-```
-
-**Suggested fix:**
-```java
-/**
- * Reads events from the store.
- *
- * @param aggregateId the aggregate identifier
- * @return stream of domain events for the aggregate
- * @since 5.1.0
- */
-public Stream<DomainEventMessage<?>> readEvents(String aggregateId) {
-```
-
-**To apply:** Say "Apply fix #1" or "Apply all fixes"
-
----
-
-### FIX #2 (WARNING): Use AxonConfigurationException
-**File:** `EventStoreConfig.java:123`
-**Issue:** Generic exception for configuration error
-**Why:** Use AxonConfigurationException for consistency
-
-**Current code:**
-```java
-throw new IllegalStateException("EventStore not configured");
-```
-
-**Suggested fix:**
-```java
-throw new AxonConfigurationException("EventStore not configured");
-```
-
-**Impact:** Add import `org.axonframework.common.AxonConfigurationException`
-**To apply:** Say "Apply fix #2"
-
----
-
-### FIX #3 (SUGGESTION): Reduce method visibility
-**File:** `EventStoreImpl.java:789`
-**Issue:** Public method only used internally
-**Why:** Minimize public API surface
-
-**Current code:**
-```java
-public void validateEventSequence(List<DomainEventMessage<?>> events) {
-```
-
-**Suggested fix:**
-```java
-protected void validateEventSequence(List<DomainEventMessage<?>> events) {
-```
-
-**To apply:** Say "Apply fix #3"
-
----
-
-## DOCUMENTATION NEEDED
-
-### DOC #1 (BLOCKING): Add Antora documentation
-**Issue:** New feature without user-facing documentation
-**Required:** Documentation in docs/reference-guide/modules/events/pages/
-**Should cover:**
-- Feature overview
-- Usage examples
-- API reference
-
-**Action:** Say "Generate doc template for DOC #1" for a starting point
-
----
-
-## POSITIVE FINDINGS ✅
-
-- ✅ Excellent test coverage in EventStoreTest.java
-- ✅ Proper null safety with @Nullable/@Nonnull
-- ✅ Good use of AF5 fluent patterns
-
----
-
-## QUICK ACTIONS
-
-Ready to fix these issues?
-- "Apply all fixes" - Applies FIX #1, #2, #3
-- "Apply blocking fixes only" - Applies FIX #1
-- "Apply fix #[N]" - Apply specific fix
-- "Generate doc template for DOC #1" - Create documentation outline
-- "Show me fix #[N] in detail" - Explain specific fix further
-
----
-
-**Current Status:** 2 BLOCKING issues (1 fix available, 1 needs docs)
-**After applying all fixes:** 1 BLOCKING issue remaining (DOC #1)
-```
-
-## Tips for Effective Reviews
-
-1. **Read the checklist first** - Familiarize yourself with common issues
-2. **Focus on blocking items initially** - Don't let perfect be the enemy of good
-3. **Provide specific file:line references** - Make it easy to find issues
-4. **Suggest solutions** - Don't just point out problems
-5. **Acknowledge good work** - Positive findings motivate
-6. **Be constructive** - Frame feedback as improvements, not criticisms
-7. **Consider context** - Understand the intent before suggesting changes
-
-## Review Report Template
-
-See `templates/review-report-template.md` for a reusable report structure.
+- **SonarQube (CI)**: coverage ≥ 80% on new code, duplication ≤ 3%, reliability A, security A
+- **Documentation linting**: Vale linter for Antora docs (runs on CI)
+- **Build verification**: all modules build, no compiler warnings
 
 ## Frequently Checked Items
 
@@ -1249,7 +330,14 @@ Based on analysis of 20+ PRs, these are checked most frequently:
 9. ✅ Breaking changes justified and documented
 10. ✅ Resource cleanup (try-with-resources)
 
+## Tips for Effective Reviews
+
+1. **Focus on blocking items initially** - Don't let perfect be the enemy of good
+2. **Provide specific file:line references** - Make it easy to find issues
+3. **Suggest solutions** - Don't just point out problems
+4. **Acknowledge good work** - Positive findings motivate
+5. **Consider context** - Understand the intent before suggesting changes
+
 ---
 
-*This skill references: `../../code-review-checklist.md` for comprehensive criteria*
-*Related skills: `axon-framework-5-patterns` for API design validation*
+*Related skills: `axoniq-framework-contribute-code` for the design patterns this review checks against; `axoniq-framework-contribute-docs` for writing the missing documentation.*
