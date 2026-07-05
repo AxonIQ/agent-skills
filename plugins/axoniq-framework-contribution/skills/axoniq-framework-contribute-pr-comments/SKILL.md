@@ -7,7 +7,7 @@ description: >
   and wants to address reviewer comments systematically.
 disable-model-invocation: false
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write, Task, TodoWrite
+allowed-tools: Read, Glob, Grep, Bash, Edit, Write, Agent, TaskCreate, TaskUpdate
 ---
 
 # PR Comment Processing Skill
@@ -145,28 +145,7 @@ Note: `-f` passes a string value; `-F` passes a typed value (integer for the PR 
 
 If `pageInfo.hasNextPage` is true on `reviewThreads`, repeat the query passing `pageInfo.endCursor` as `$cursor` until `hasNextPage` is false. Collect all `nodes` across pages before proceeding.
 
-If any thread's `comments.pageInfo.hasNextPage` is true, that thread has more than 100 replies. This is extremely rare in practice, but if encountered, fetch the remaining `databaseId`s using a cursor-paginated query scoped to that thread:
-
-```bash
-gh api graphql -f query='
-query($threadId: ID!, $cursor: String) {
-  node(id: $threadId) {
-    ... on PullRequestReviewThread {
-      comments(first: 100, after: $cursor) {
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        nodes {
-          databaseId
-        }
-      }
-    }
-  }
-}' -f threadId="<THREAD_NODE_ID>" -f cursor="<END_CURSOR>"
-```
-
-Repeat until `hasNextPage` is false, then merge the additional `databaseId`s into the thread's mapping.
+If any thread's `comments.pageInfo.hasNextPage` is true, that thread has more than 100 replies (extremely rare). Fetch the remaining `databaseId`s with a cursor-paginated `node(id: <thread id>) { ... on PullRequestReviewThread { comments(first: 100, after: $cursor) ... } }` query scoped to that thread, repeating until `hasNextPage` is false, and merge the extra `databaseId`s into the thread's mapping.
 
 Use the `databaseId` values to map each inline comment to its thread's `isResolved` and `isOutdated` flags.
 
@@ -348,7 +327,7 @@ Total: 12 threads | 9 actionable | 2 stale | 1 resolved
 
 ## Phase 7: Create Todo List
 
-Create a TodoWrite task for each actionable thread. Format:
+Use TaskCreate to add a task for each actionable thread. Format:
 
 ```
 PR#<number> #<N>: [LABEL] — <brief description> (<file>:<line>)
@@ -489,7 +468,7 @@ If the change was a rename, grep for both the old name (to find remaining refere
 
 ### Step 8: Mark done
 
-Mark the corresponding TodoWrite task as completed. State what was changed in one sentence.
+Mark the corresponding task as completed via TaskUpdate. State what was changed in one sentence.
 
 Then wait. Move to the next item only when the user says `next` or `process #N`.
 
@@ -497,13 +476,9 @@ Then wait. Move to the next item only when the user says `next` or `process #N`.
 
 ## Handling Special Cases
 
-### Stale thread (`stale`)
+### Stale thread (`stale`) / Questionable premise (`questionable`)
 
-Show the diff hunk (what the reviewer saw) alongside the current code. Explicitly state whether the current code addresses the reviewer's concern. Let the user decide: close it, or treat it as active.
-
-### Questionable premise (`questionable`)
-
-Do NOT implement. Explain what the code actually does. Draft a polite reply. Ask the user: "This looks like it may be based on a misread — does this explanation look right to you, or do you want to look deeper?"
+Handled in Phase 9 Step 3: for `stale`, show what the reviewer saw vs. the current code and let the user decide whether the concern still applies; for `questionable`, do NOT implement — explain what the code actually does, draft a polite reply, and ask the user to confirm before anything is posted.
 
 ### Question thread (`[QUESTION]`)
 
