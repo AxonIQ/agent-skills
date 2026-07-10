@@ -23,6 +23,11 @@
       "name": "axoniq-framework-contribution",
       "source": "./plugins/axoniq-framework-contribution",
       "description": "Tools for contributors to the Axon Framework project: code reviews against AF5 standards, core coding patterns, framework infrastructure design guidelines, reference documentation authoring, and PR comment processing. Not intended for application developers."
+    },
+    {
+      "name": "axoniq-platform",
+      "source": "./plugins/axoniq-platform",
+      "description": "Implement AxonIQ Platform projects locally: read the project spec over MCP and generate Axon Framework 5 code for command, query, external-system, and workflow components."
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "name": "axoniq-platform",
+  "description": "Implement AxonIQ Platform projects locally: read the project spec (journeys, components, messages) over MCP and generate Axon Framework 5 code for command, query, external-system, and workflow components.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Axon Framework Team"
+  },
+  "keywords": [
+    "axoniq",
+    "axon",
+    "platform",
+    "mcp",
+    "spec",
+    "event-sourcing",
+    "cqrs",
+    "code-generation"
+  ],
+  "license": "Apache-2.0"
+}

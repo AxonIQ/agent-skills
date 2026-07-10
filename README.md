@@ -13,6 +13,7 @@ Skills follow the [agentskills.io](https://agentskills.io/) format and live with
 | [`axoniq-migration`](./plugins/axoniq-migration) | 0.2.0 | Anyone **migrating** an application from Axon Framework 4 to Axon Framework 5 / Axoniq Framework 5. |
 | [`axoniq-app-development`](./plugins/axoniq-app-development) | 0.4.0 | Developers **building their own applications** with Axon Framework 5 — the framework's users. |
 | [`axoniq-framework-contribution`](./plugins/axoniq-framework-contribution) | 1.4.0 | Contributors **developing the Axon Framework itself** — not for building applications with it. |
+| [`axoniq-platform`](./plugins/axoniq-platform) | 0.1.0 | Developers **implementing an AxonIQ Platform project** locally — read the spec via MCP and generate AF5 code. |
 
 Each plugin carries its own `CHANGELOG.md` and is versioned independently.
 
@@ -20,7 +21,7 @@ Each plugin carries its own `CHANGELOG.md` and is versioned independently.
 
 ## Installation
 
-Replace `<plugin>` below with one of `axoniq-migration`, `axoniq-app-development`, or `axoniq-framework-contribution`.
+Replace `<plugin>` below with one of `axoniq-migration`, `axoniq-app-development`, `axoniq-framework-contribution`, or `axoniq-platform`.
 
 ### Claude Code plugin (recommended)
 
