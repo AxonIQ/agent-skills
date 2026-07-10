@@ -135,7 +135,9 @@ Walk the DAG from `entryStep`. Each `on*` pointer becomes a *sequence* in the li
    - `ctx.anyMatch(predicate: Predicate<WorkflowStepResult>, vararg results: WorkflowStepResult): CombinatorWorkflowStepResult` — completes when **any** inner result matches the predicate.
    - `ctx.allMatch(predicate: Predicate<WorkflowStepResult>, vararg results: WorkflowStepResult): CombinatorWorkflowStepResult` — completes when **all** inner results match.
 
-   The predicate filters which step result counts as "completed" (typically `{ it.completed }`); the combinator's return value (`CombinatorWorkflowStepResult`) exposes which inner step won and its captured event payload.
+   `WorkflowStepResult` (0.1.0) exposes `isCompleted()`, `success()`, `failure()`, `timeout()`, and `getStepName()` (`.stepName` in Kotlin) — there is **no** `completed` property and **no** `completedStepName()`. The combinator (`CombinatorWorkflowStepResult`) exposes `matched()` / `unmatched()`; the winning inner step is `matched().firstOrNull()`.
+
+   > ⚠️ **The predicate MUST be `{ it.success() }`, not `{ it.isCompleted() }`.** On a WAIT that hits its timeout, `isCompleted()` returns **true** — so `{ it.isCompleted() }` matches a timed-out wait and routes to its "arrived" branch (e.g. mark-bike-in-use instead of reject-on-timeout). With `success()`, a timed-out wait is NOT matched, so `matched()` comes back empty and control correctly falls to the else/timeout branch.
 
    **Pattern for `MULTI ANY` (race — first to arrive wins):**
 
@@ -154,11 +156,12 @@ Walk the DAG from `entryStep`. Each `on*` pointer becomes a *sequence* in the li
        Duration.ofSeconds(120),
    )
 
-   // Race them — first to complete wins.
-   val winner = ctx.anyMatch({ it.completed }, payCompleted, payCancelled)
+   // Race them — first to SUCCEED wins. (success(), not isCompleted(): a timed-out wait is
+   // "completed" but not successful — see the warning above.)
+   val winner = ctx.anyMatch({ it.success() }, payCompleted, payCancelled)
 
-   // Branch on which inner step finished.
-   when (winner.completedStepName()) {
+   // Branch on which inner step succeeded; matched() is empty if all timed out → else branch.
+   when (winner.matched().firstOrNull()?.stepName) {
        "awaitPaymentCompleted" -> ctx.awaitExecute("markBikeInUse", Void::class.java, Supplier {
            commandGateway.sendAndWait(MarkBikeInUse(rentalId = ctx.workflowPayload().get("rentalId") as String))
            null
@@ -182,7 +185,7 @@ Walk the DAG from `entryStep`. Each `on*` pointer becomes a *sequence* in the li
    ```kotlin
    val partA = ctx.waitFor("partA", PartAReceived::class.java, associate(...), Duration.ofSeconds(N))
    val partB = ctx.waitFor("partB", PartBReceived::class.java, associate(...), Duration.ofSeconds(N))
-   ctx.allMatch({ it.completed }, partA, partB)
+   ctx.allMatch({ it.success() }, partA, partB)
    // Both arrived — read payloads off the individual results if needed.
    ```
 
@@ -190,7 +193,7 @@ Walk the DAG from `entryStep`. Each `on*` pointer becomes a *sequence* in the li
 
    - The MULTI's `innerSteps` list → one `ctx.waitFor(...)` per name, in the same order.
    - MULTI mode `ANY` → `ctx.anyMatch(...)`; mode `ALL` → `ctx.allMatch(...)`.
-   - MULTI's per-inner `on*` pointers → branches in the `when (winner.completedStepName()) { ... }`.
+   - MULTI's per-inner `on*` pointers → branches in the `when (winner.matched().firstOrNull()?.stepName) { ... }`.
    - MULTI's `timeoutSeconds` → `Duration.ofSeconds(N)` on each inner `waitFor` (the runtime treats every inner as timed out if none completes within the window; the `else` branch in `when` handles that case for `anyMatch`).
 
    Do NOT replace `waitFor` with `awaitEvent` inside a MULTI — `awaitEvent` is blocking and would serialise the waits instead of racing them.
@@ -325,17 +328,24 @@ Workflows are durable — they survive process restarts. If you used `commandGat
 
 This gives at-least-once delivery. Make the dispatched command idempotent on the receiver side (the COMMAND component handles that — its decision model rejects duplicate operations) so the at-least-once doesn't cause double-effects.
 
+## Version pairing
+
+`axon-workflow` **0.1.0** requires **Axon Framework 5.1.x**. Pin `io.axoniq.framework:axoniq-framework-bom` to **5.1.2** (matching `axoniq-platform-client` 5.1.1), and keep `axon-workflow` / `axon-workflow-test` on the matched set. Do **not** let the BOM float to **5.2.0-RC1**: it removed `GenericEventMessage.clock`, which the workflow runtime reads reflectively when creating a workflow → `NoSuchFieldError` at workflow-creation time. That's a **runtime** failure (the app, not just tests) — if a freshly generated project throws `NoSuchFieldError` mentioning `clock`, it's a framework/workflow version mismatch, not your code.
+
+> ⚠️ **Check this first when scaffolding a WORKFLOW.** The downloaded skeleton fills the framework version from the **latest** release on Maven Central, so a fresh project may already be on **5.2.0+** and will hit the error above the moment a workflow is created. Before implementing a workflow, open `pom.xml` (or `build.gradle.kts`) and pin the `axoniq-framework-bom` version to **5.1.2**. This is a one-line change in the generated project — you do not need to touch anything on the Platform.
+
 ## Testing the workflow
 
 Write a workflow test for every component you scaffold. The workflow framework ships a dedicated test base — `AbstractDeclarativeTestBase` — that runs the real workflow against scheduled events; no mocking. (`axon-workflow` is a separate AxonIQ product, so it isn't covered by the `axoniq-app-development` plugin's testing guides — see `testing/basics.md` / `testing/advanced.md` there only for general AF5 fixture testing.) The pattern is:
 
-1. **Pick a context type** — `SimpleWorkflowContext` is the default; only roll your own when the workflow needs custom shared state.
-2. **Extend the base** parameterised on that context, and pass a context factory through the super constructor.
-3. **Declare the workflow under test** by overriding `getDeclaredDefinitions()` — use `.autodetected(...)` if your workflow class uses `@Workflow` annotations, `.declarative(...)` for programmatic control. Wire the trigger via `.on(EventConditions.fromType(...))` and the id property via `workflowIdProvider(fromPayloadAttribute(c, "<idProperty>"))`.
-4. **Schedule events** via `delayedPublisher.addSchedules(List.of(ofMillis(<t>, <event>), ...))` to drive the trigger AND the awaited events. Pick offsets that respect step ordering.
-5. **Start the engine**: `delayedPublisher.start()`, then `await().untilAsserted { workflowEngine.workflowExecutions() is not empty }`, then `workflowEngine.runWorkflows(false)`.
-6. **Assert terminal state** via Awaitility: `await().atMost(30, TimeUnit.SECONDS).untilAsserted { workflowHistoryRepository.findAll().allMatch { it.state().workflowStatus().isTerminal() } }`.
-7. **Assert the outcome**: `state.workflowStatus()` (e.g. `COMPLETED`, `FAILED`, `TIMED_OUT`), and `state.workflowStepNames()` to lock the executed step sequence.
+1. **Add the test dependency** — `io.axoniq.framework.workflow:axon-workflow-test:<version>` (test scope). Pair the version with your `axon-workflow` runtime and framework — see **Version pairing** below.
+2. **Pick a context type** — `SimpleWorkflowContext` is the default; only roll your own when the workflow needs custom shared state.
+3. **Extend `io.axoniq.workflow.runtime.test.AbstractDeclarativeTestBase<T>`** and pass the DSL/context type + a context-factory builder through the super constructor: `AbstractDeclarativeTestBase(Class<T> dslType, ComponentBuilder<WorkflowContextFactory<T>> contextFactoryBuilder)`.
+4. **Declare the workflow under test** by overriding **`getDeclaredDefinition()`** (SINGULAR) → `Function<DetectionPhase<T>, FinalizedPhase<T>>`. For an annotated `@Workflow` class use the **single-arg** `d.autodetected({ MyWorkflow() })` — it reads the trigger (`startOnEvent`) and id property off the annotation. (There is **no** 2-arg `autodetected(builder, contextType)`.)
+5. **Override `configure()`** — `protected UnaryOperator<WorkflowConfigurer>` — with the **two essential registrations** shown in the skeleton: disable `AxonServerConfigurationEnhancer`, and register `AnnotationMessageTypeResolver`. Skip either and the test hangs on startup or never triggers (see the notes).
+6. **Schedule events** via `delayedPublisher.addSchedules(listOf(ofMillis(<t>, <event>), ...))` to drive the trigger AND the awaited events. Pick offsets that respect step ordering.
+7. **Start the engine** with `delayedPublisher.start()`. The workflow engine is an event handler, so publishing the scheduled events drives it — there is **no** `workflowEngine.runWorkflows(...)` call.
+8. **Assert** via Awaitility on `workflowHistoryRepository`: `state().workflowStatus()` (`COMPLETED` / `FAILED` / `TIMED_OUT` / `CANCELLED`) and `state().workflowStepNames()` for the executed step sequence.
 
 Example skeleton (Kotlin — same shape in Java, just swap class syntax):
 
@@ -344,10 +354,26 @@ class PaymentWindowWorkflowTest : AbstractDeclarativeTestBase<SimpleWorkflowCont
     SimpleWorkflowContext::class.java,
     { SimpleWorkflowContextFactory() },
 ) {
-    override fun getDeclaredDefinitions(): UnaryOperator<WorkflowModule.WorkflowDefinitionPhase.DetectionPhase<SimpleWorkflowContext>> =
-        UnaryOperator { d ->
-            d.autodetected({ PaymentWindowWorkflow() }, SimpleWorkflowContext::class.java)
+    // SINGULAR getDeclaredDefinition, returning Function<DetectionPhase, FinalizedPhase>.
+    // autodetected takes ONE arg — it reads startOnEvent + idProperty from the @Workflow annotation.
+    override fun getDeclaredDefinition(): Function<DetectionPhase<SimpleWorkflowContext>, FinalizedPhase<SimpleWorkflowContext>> =
+        Function { d -> d.autodetected({ PaymentWindowWorkflow() }) }
+
+    // TWO essential registrations — omit either and the test does not work:
+    //  1. disableEnhancer(AxonServerConfigurationEnhancer) — with the Axon Server + Axoniq Platform
+    //     starters on the classpath the connector enhancer is ServiceLoader-discovered and the test
+    //     hangs on startup, failing with ProcessRetriesExhaustedException. FQN:
+    //     io.axoniq.framework.axonserver.connector.configuration.AxonServerConfigurationEnhancer
+    //  2. register AnnotationMessageTypeResolver — the bare WorkflowConfigurer uses a CLASS-based
+    //     MessageTypeResolver, so the incoming event's type never matches the workflow's
+    //     `startOnEvent` ("namespace.name") and the workflow never triggers. AnnotationMessageTypeResolver
+    //     reads @Event(namespace, name), so the types line up.
+    override fun configure(): UnaryOperator<WorkflowConfigurer> = UnaryOperator { configurer ->
+        configurer.componentRegistry { cr ->
+            cr.disableEnhancer(AxonServerConfigurationEnhancer::class.java)
+            cr.registerComponent(MessageTypeResolver::class.java) { AnnotationMessageTypeResolver() }
         }
+    }
 
     @Test
     fun `completes happy path when payment arrives before timeout`() {
@@ -355,13 +381,11 @@ class PaymentWindowWorkflowTest : AbstractDeclarativeTestBase<SimpleWorkflowCont
             ofMillis(500,  OrderPlaced(orderId = "order-1", customerId = "cust-1", total = 99.99)),
             ofMillis(2_000, PaymentReceived(orderId = "order-1", txnId = "txn-1")),
         ))
-        delayedPublisher.start()
-
-        await().untilAsserted { assertThat(workflowEngine.workflowExecutions()).isNotEmpty }
-        workflowEngine.runWorkflows(false)
+        delayedPublisher.start()   // publishing the scheduled events drives the engine — no manual "run" call.
 
         await().atMost(30, TimeUnit.SECONDS).untilAsserted {
             assertThat(workflowHistoryRepository.findAll())
+                .isNotEmpty
                 .allMatch { it.state().workflowStatus().isTerminal }
         }
 
@@ -380,7 +404,6 @@ class PaymentWindowWorkflowTest : AbstractDeclarativeTestBase<SimpleWorkflowCont
             // No PaymentReceived — let the WaitStep timeout fire.
         ))
         delayedPublisher.start()
-        workflowEngine.runWorkflows(false)
 
         await().atMost(<timeoutSeconds + buffer>, TimeUnit.SECONDS).untilAsserted {
             val history = workflowHistoryRepository.findAll().single()
@@ -390,6 +413,13 @@ class PaymentWindowWorkflowTest : AbstractDeclarativeTestBase<SimpleWorkflowCont
     }
 }
 ```
+
+Key test types (import verbatim — easy to guess wrong):
+
+- `io.axoniq.workflow.runtime.test.AbstractDeclarativeTestBase`
+- `io.axoniq.framework.axonserver.connector.configuration.AxonServerConfigurationEnhancer`
+- `MessageTypeResolver` / `AnnotationMessageTypeResolver` (AF5 messaging) and `WorkflowConfigurer` — needed only for the `configure()` override.
+- `java.util.function.Function` (getDeclaredDefinition return type) and `java.util.function.UnaryOperator` (configure return type).
 
 What to cover (one test per scenario):
 
@@ -401,6 +431,9 @@ What to cover (one test per scenario):
 Notes:
 
 - The test runs the **real** workflow engine against an in-memory event store — no mocks, no `AxonTestFixture` (the fixture targets command-side aggregates, not workflows).
+- **The `configure()` override needs BOTH registrations** (see the skeleton):
+  - `cr.disableEnhancer(AxonServerConfigurationEnhancer::class.java)` — with the Axon Server + Axoniq Platform starters on the classpath the connector enhancer is ServiceLoader-discovered; without disabling it the test hangs on startup and fails with `ProcessRetriesExhaustedException`. (Only this enhancer — `AxoniqPlatformEventsourcingConfigurerEnhancer` no longer needs disabling.)
+  - `cr.registerComponent(MessageTypeResolver::class.java) { AnnotationMessageTypeResolver() }` — the bare `WorkflowConfigurer` uses a **class-based** `MessageTypeResolver`, so the incoming event's type never matches the workflow's `startOnEvent` (`"namespace.name"`) and the workflow silently never triggers. `AnnotationMessageTypeResolver` reads `@Event(namespace, name)` so the types align. Easy to miss because there's no error — the test just times out with an empty history.
 - Pick `ofMillis(...)` offsets short for happy paths (sub-second is fine) but for timeout tests make the `WaitStep.timeoutSeconds` the load-bearing wait — the test waits for the real timer to fire.
 - Events must carry the correlation property the workflow's `workflowIdProvider` extracts (e.g. `orderId`). If they don't, the step never matches.
 

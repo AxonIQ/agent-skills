@@ -91,14 +91,13 @@ The `axoniq-app-development` plugin has the full reference, but two clusters of 
 | `SimpleWorkflowContext` / `.equalsTo(...)` | `io.axoniq.workflow.dsl.simple.SimpleWorkflowContext` |
 | `Associations.associate(...)` | `io.axoniq.workflow.dsl.api.AssociationsUtils.associate` |
 
-**AxonIQ Platform test enhancers** (this codebase only — not in OSS AF5):
+**Axon Server test enhancer** (disable it so the fixture runs fully in-memory):
 
 | Concern | Import |
 |---|---|
 | `AxonServerConfigurationEnhancer` | `io.axoniq.framework.axonserver.connector.configuration.AxonServerConfigurationEnhancer` |
-| `AxoniqPlatformEventsourcingConfigurerEnhancer` | `io.axoniq.platform.framework.eventsourcing.AxoniqPlatformEventsourcingConfigurerEnhancer` |
 
-> ⚠️ These are NOT under `org.axonframework.axonserver.connector` or `io.axoniq.console.framework`. Don't guess — the FQNs above are verbatim.
+> ⚠️ This is NOT under `org.axonframework.axonserver.connector` or `io.axoniq.console.framework`. Don't guess — the FQN above is verbatim.
 
 **Event-handler annotations — `@EventHandler` vs `@EventSourcingHandler`** (these are different annotations in different packages, and confusing them is the #1 way new implementations silently break):
 
@@ -302,7 +301,7 @@ Three causes — check all three when this symptom appears:
 
 ## AxonTestFixture base setup
 
-The **`axoniq-app-development`** plugin's `testing/basics.md` guide is the authoritative reference for the fixture API (Given/When/Then, matchers, async `await`, `EventTestUtils`). The setup below is project-specific because it disables AxonIQ Platform's auto-connect enhancers — every component test in this codebase begins with the same scaffolding.
+The **`axoniq-app-development`** plugin's `testing/basics.md` guide is the authoritative reference for the fixture API (Given/When/Then, matchers, async `await`, `EventTestUtils`). The setup below is project-specific because it disables the Axon Server connector enhancer so the fixture runs fully in-memory — every component test in this codebase begins with the same scaffolding.
 
 Imports — these specific FQNs are easy to guess wrong, so use them verbatim:
 
@@ -312,7 +311,6 @@ import org.axonframework.eventsourcing.configuration.EventSourcingConfigurer
 import org.axonframework.eventsourcing.configuration.EventSourcedEntityModule
 import org.axonframework.messaging.commandhandling.configuration.CommandHandlingModule
 import io.axoniq.framework.axonserver.connector.configuration.AxonServerConfigurationEnhancer
-import io.axoniq.platform.framework.eventsourcing.AxoniqPlatformEventsourcingConfigurerEnhancer
 ```
 
 Class shape:
@@ -336,7 +334,6 @@ class <ComponentName>AxonFixtureTest {
             .registerCommandHandlingModule(commandHandlingModule)
             .componentRegistry { cr ->
                 cr.disableEnhancer(AxonServerConfigurationEnhancer::class.java)
-                cr.disableEnhancer(AxoniqPlatformEventsourcingConfigurerEnhancer::class.java)
             }
 
         fixture = AxonTestFixture.with(configurer)
