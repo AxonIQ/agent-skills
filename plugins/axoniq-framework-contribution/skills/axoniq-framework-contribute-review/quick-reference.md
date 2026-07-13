@@ -1,6 +1,6 @@
 # Code Review Quick Reference
 
-Fast lookup guide for common review scenarios. For comprehensive details, see `../code-review-checklist.md`.
+Fast lookup guide for common review scenarios. For the full review process and checklist, see `SKILL.md`.
 
 ## Top 10 Most Common Issues
 
@@ -9,7 +9,7 @@ Based on analyzing 20+ PRs, fix these first:
 1. ❌ **Missing `@since` tags** - Add to ALL new public/protected members
 2. ❌ **Missing Antora docs** - Feature changes MUST update `/docs`
 3. ❌ **Missing `@author` tags** - Credit original authors when refactoring
-4. ⚠️ **Missing null annotations** - Add `@Nullable` / `@Nonnull` (jakarta, not jspecify!)
+4. ⚠️ **Missing null annotations** - Add JSpecify `@Nullable` where needed (jakarta is forbidden; non-null is the default under `@NullMarked`)
 5. ⚠️ **Generic exceptions** - Use `AxonConfigurationException`, not `IllegalStateException`
 6. ⚠️ **Low test coverage** - Must reach 80% minimum
 7. 💡 **Public methods** - Could they be `protected` or `private`?
@@ -121,17 +121,17 @@ throw new AxonConfigurationException("Component X requires Y to be configured")
 
 ### Null Annotations
 ```java
-// ❌ AVOID - Wrong library
-import org.jspecify.annotations.NonNull;
-
-// ✅ PREFER - Jakarta
+// ❌ AVOID - jakarta annotations are forbidden (checkstyle)
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-public void method(@Nonnull String required, @Nullable String optional)
+// ✅ PREFER - JSpecify; non-null is the default under @NullMarked
+import org.jspecify.annotations.Nullable;
+
+public void method(String required, @Nullable String optional)
 ```
 
-**Check:** Search for `jspecify` imports → BLOCKING
+**Check:** Search for `jakarta.annotation` imports → BLOCKING
 
 ### Data Structures
 ```java
@@ -277,15 +277,15 @@ void testExecutor() {
 # Missing @since on public methods
 git diff | grep -A5 "^\+.*public.*(" | grep -v "@since"
 
-# Wrong annotation library
-git grep "org.jspecify"
+# Wrong annotation library (jakarta is forbidden)
+git grep "jakarta.annotation"
 
 # Generic exceptions in new code
 git diff | grep "new IllegalStateException"
 git diff | grep "new IllegalArgumentException"
 
-# Missing null annotations
-git diff | grep -B2 "^\+.*public.*(" | grep -v "@Nullable\|@Nonnull"
+# Nullable params possibly missing @Nullable (manual judgement needed)
+git diff | grep -B2 "^\+.*public.*(" | grep -v "@Nullable"
 
 # Old-style instanceof
 git diff | grep "instanceof.*{" -A1 | grep "^\+.*=.*("
@@ -422,6 +422,7 @@ If any NO → Likely has blocking issues
 **Remember:** The goal is helpful, actionable feedback that improves code quality while respecting the developer's effort.
 
 **Related Files:**
-- Full checklist: `../../code-review-checklist.md`
+- Full review process: `SKILL.md`
 - Review template: `templates/review-report-template.md`
-- AF5 patterns: `../axon-framework-5-patterns/SKILL.md`
+- Fix suggestion patterns: `references/fix-patterns.md`
+- AF5 design patterns: `../axoniq-framework-contribute-code/SKILL.md`

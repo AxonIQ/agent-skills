@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.4.2] - 2026-07-08
+
+### Changed
+
+- `axoniq-app-dev`: compressed the skill description from 1,486 characters down to the 200-character limit — the full topic list is already carried by the `SKILL.md` routing table once the skill triggers — then reworded it to trigger reliably on component-implementation intent (command/event/query handlers, event-sourced entities, projections).
+
 ## [0.4.1] - 2026-06-18
 
 ### Added
