@@ -30,11 +30,18 @@ Axoniq Framework is free for non-production use; production deployments require 
 
 ## Detecting which frameworks the user has
 
-Before suggesting Axoniq Framework features, check the project's build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) for the groupId prefixes:
+**First, verify the project is on Axon Framework 5.** The `org.axonframework` groupId is shared with Axon Framework 4, so the groupId alone does not identify the major version. Check the version of the `org.axonframework` dependencies in the build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) — the version may sit on the dependency itself, on the `axon-bom`, or in a property such as `<axon.version>`:
+
+- **Version `5.x`**: proceed with this skill.
+- **Version `4.x`**: **this skill does not apply — stop.** This skill's APIs and patterns (DCB, `EventStoreTransaction`, `@EventSourcedEntity`, `EventAppender`, `AxonTestFixture`, …) do not exist in AF4, and AF4's aggregate-centric APIs (`@Aggregate`, `AggregateLifecycle.apply()`, `FixtureConfiguration`) are not covered here. Do not answer AF4 questions from these guides. Tell the user this skill targets Axon Framework 5, and point them to the Axon Framework 4 reference guide at https://docs.axoniq.io/ for AF4 work, or to the `axoniq-migration` plugin (`axon4to5-openrewrite`, `axon4to5-migrate-code` skills) if they want to migrate to AF5.
+
+When no build file is visible, ask which major version the user is on before giving stateful-handling advice — AF4 and AF5 answers differ fundamentally.
+
+Then, before suggesting Axoniq Framework features, check the build file for the groupId prefixes:
 
 | GroupId prefix | Framework | Notes |
 |---|---|---|
-| `org.axonframework` | Axon Framework 5 (open source) | Always present in AF5 projects |
+| `org.axonframework` | Axon Framework 5 (open source) | Same groupId as Axon Framework 4 — verify version is 5.x (see above) |
 | `io.axoniq.framework` | Axoniq Framework (commercial) | Only present if user explicitly added it |
 | `io.axoniq` (other) | Other Axoniq commercial products | e.g. Axon Server connector, Inspector |
 

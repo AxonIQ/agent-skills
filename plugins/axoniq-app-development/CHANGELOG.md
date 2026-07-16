@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.4.3] - 2026-07-16
+
+### Added
+
+- `axoniq-app-dev`: `SKILL.md` now verifies the project is actually on Axon Framework 5 before giving advice. The `org.axonframework` groupId is shared with Axon Framework 4, so the framework-detection section previously treated any AF4 project as AF5. The skill now checks the dependency/BOM version: on 4.x it stops, states the skill targets AF5 only, and redirects to the AF4 reference guide or the `axoniq-migration` plugin; with no build file visible it asks for the major version before giving stateful-handling advice.
+
 ## [0.4.2] - 2026-07-08
 
 ### Changed
