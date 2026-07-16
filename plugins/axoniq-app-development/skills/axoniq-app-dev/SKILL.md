@@ -1,7 +1,7 @@
 ---
 name: axoniq-app-dev
 description: >
-  Building applications with Axon Framework 5 (AF5) and Axoniq Framework. Covers all aspects of AF5 application development: command handlers (stateless and DCB/stateful), event-sourced entities (@EventSourcedEntity, @EntityCreator, @InjectEntity, entity hierarchies and polymorphism), dispatching commands (CommandGateway/CommandBus, routing keys); event handling and projections, event processors (subscribing and pooled streaming, tracking tokens, segments, replay/reset), publishing events (EventAppender, EventGateway), event versioning and upcasting; query handling and subscription queries; event store primitives (EventStoreTransaction, SourcingCondition, AppendCondition, ConsistencyMarker, EventCriteria, Tag, @EventTag), event store internals (EventStore, EventStorageEngine), conversion and serialization (Converter, Jackson, Avro); messaging foundations (message anatomy, ProcessingContext/unit of work, correlation, Metadata), supported handler parameters, message annotations, exception handling (@ExceptionHandler) and handler timeouts, interceptors, handler customization (ParameterResolver, HandlerEnhancerDefinition, meta-annotations), identifier generation; application configuration (plain Java and Spring Boot), testing with AxonTestFixture (matchers, field filters, integration tests), dead letter queues, distributed messaging, and multi-source event streaming. Use when implementing or debugging any part of an AF5 or Axoniq Framework application.
+  Build apps with Axon Framework 5 (AF5) or Axoniq Framework. Use when implementing or debugging Axon components: command/event/query handlers, event-sourced entities, projections, event store, tests.
 disable-model-invocation: false
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Edit, Write
@@ -11,9 +11,9 @@ allowed-tools: Read, Glob, Grep, Edit, Write
 
 This skill covers everything needed to build an application with Axon Framework 5 (AF5) and its optional commercial extension, Axoniq Framework. When working on a specific topic, use the Read tool to load the relevant guide file from the subdirectories listed in the routing table below.
 
-> **Target version:** this skill targets the **Axon Framework 5.1.x** line (latest stable `5.1.1`). API names and package locations follow the 5.1 layout. Version-specific feature availability is called out inline in the guides (for example: replay/reset from 5.1; event upcasting and handler timeouts are scheduled for 5.2). When advising a user, confirm their version in the build file if a feature's availability is borderline.
+> **Target version:** this skill targets the **Axon Framework 5.2.x** line (latest stable `5.2.0`). API names and package locations follow the 5.2 layout. Version-specific feature availability is called out inline in the guides (for example: replay/reset from 5.1; message transformation/upcasting, annotated handler interceptors, and handler timeouts from 5.2). When advising a user, confirm their version in the build file if a feature's availability is borderline.
 
-> **Investigating an API not covered here:** the published Javadoc at **https://apidocs.axoniq.io/** is the reference for any class, method, or package this skill's guides don't document. The docs are versioned by minor line: for a version `x.y.z`, the URL contains the `x.y` segment — e.g. `https://apidocs.axoniq.io/5.1/` for the 5.1.x line. Match the segment to the user's version (check the build file). It covers both the open-source `org.axonframework` packages and the commercial `io.axoniq.framework` packages — browse by package, e.g. `https://apidocs.axoniq.io/5.1/org/axonframework/.../package-summary.html`.
+> **Investigating an API not covered here:** the published Javadoc at **https://apidocs.axoniq.io/** is the reference for any class, method, or package this skill's guides don't document. The docs are versioned by minor line: for a version `x.y.z`, the URL contains the `x.y` segment — e.g. `https://apidocs.axoniq.io/5.2/` for the 5.2.x line. Match the segment to the user's version (check the build file). It covers both the open-source `org.axonframework` packages and the commercial `io.axoniq.framework` packages — browse by package, e.g. `https://apidocs.axoniq.io/5.2/org/axonframework/.../package-summary.html`.
 
 ---
 
@@ -22,19 +22,28 @@ This skill covers everything needed to build an application with Axon Framework 
 **Axon Framework 5** (`org.axonframework`, Apache 2.0) is fully open source and provides the complete core feature set: command handling, DCB decision models, event sourcing, event handling, query handling, interceptors, dead letter queue (in-memory, JDBC, JPA), Spring Boot integration, and testing utilities. It is the default choice.
 
 **Axoniq Framework** (`io.axoniq.framework`, commercial license) is an optional extension layer that adds production infrastructure features on top of AF5:
-- **PostgreSQL event store** — a production-grade `EventStorageEngine` backed by PostgreSQL with optimised DCB tag indexing
+- **PostgreSQL event store** — a production-grade `EventStorageEngine` backed by PostgreSQL with optimised DCB tag indexing and, since 5.2.0, co-located snapshot storage
 - **Distributed messaging** — `DistributedCommandBus` and `DistributedQueryBus` for spreading load across multiple application instances
 - **Multi-source event streaming** — `MultiStreamableEventSource` for consuming events from multiple independent event stores simultaneously
+- **Message transformation** (5.2.0+) — rewrite, rename, or drop stored events on read; the AF5 successor to upcasters
+- **Persistent streams** (5.2.0+) — Axon Server-managed event streams as processor sources (via `axon-server-connector`)
 
 Axoniq Framework is free for non-production use; production deployments require a paid subscription. Users who prefer to stay on open-source only can cover all core use cases with AF5 alone — Axoniq Framework features should only be suggested when the user asks for them or their use case clearly requires them.
 
 ## Detecting which frameworks the user has
 
-Before suggesting Axoniq Framework features, check the project's build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) for the groupId prefixes:
+**First, verify the project is on Axon Framework 5.** The `org.axonframework` groupId is shared with Axon Framework 4, so the groupId alone does not identify the major version. Check the version of the `org.axonframework` dependencies in the build file (`pom.xml`, `build.gradle`, or `build.gradle.kts`) — the version may sit on the dependency itself, on the `axon-bom`, or in a property such as `<axon.version>`:
+
+- **Version `5.x`**: proceed with this skill.
+- **Version `4.x`**: **this skill does not apply — stop.** This skill's APIs and patterns (DCB, `EventStoreTransaction`, `@EventSourcedEntity`, `EventAppender`, `AxonTestFixture`, …) do not exist in AF4, and AF4's aggregate-centric APIs (`@Aggregate`, `AggregateLifecycle.apply()`, `FixtureConfiguration`) are not covered here. Do not answer AF4 questions from these guides. Tell the user this skill targets Axon Framework 5, and point them to the Axon Framework 4 reference guide at https://docs.axoniq.io/ for AF4 work, or to the `axoniq-migration` plugin (`axon4to5-openrewrite`, `axon4to5-migrate-code` skills) if they want to migrate to AF5.
+
+When no build file is visible, ask which major version the user is on before giving stateful-handling advice — AF4 and AF5 answers differ fundamentally.
+
+Then, before suggesting Axoniq Framework features, check the build file for the groupId prefixes:
 
 | GroupId prefix | Framework | Notes |
 |---|---|---|
-| `org.axonframework` | Axon Framework 5 (open source) | Always present in AF5 projects |
+| `org.axonframework` | Axon Framework 5 (open source) | Same groupId as Axon Framework 4 — verify version is 5.x (see above) |
 | `io.axoniq.framework` | Axoniq Framework (commercial) | Only present if user explicitly added it |
 | `io.axoniq` (other) | Other Axoniq commercial products | e.g. Axon Server connector, Inspector |
 
@@ -86,7 +95,7 @@ When working on a topic, read the corresponding guide file. Guides are grouped i
 | events | Event handling and projections | `events/handling-projections.md` | AF5 (open source) |
 | events | Event processors (subscribing / pooled streaming) | `events/processors.md` | AF5 (open source) |
 | events | Publishing events | `events/publishing.md` | AF5 (open source) |
-| events | Event versioning & upcasting | `events/versioning-upcasting.md` | AF5 (open source) |
+| events | Event versioning & upcasting / message transformation | `events/versioning-upcasting.md` | AF5 + Axoniq Framework (transformation) |
 | queries | Query handling | `queries/query-handling.md` | AF5 (open source) |
 | event-store | Event store API reference (sourcing / append conditions) | `event-store/primitives.md` | AF5 (open source) |
 | event-store | Event store internals (EventStore / EventStorageEngine) | `event-store/internals.md` | AF5 (open source) |
@@ -122,7 +131,7 @@ Read: skills/axoniq-app-dev/commands/decision-models-dcb.md
 - Use **`events/handling-projections.md`** when building projections, reactions, replay control, sequencing, or a dead letter queue.
 - Use **`events/processors.md`** for the deep processor reference — subscribing vs pooled streaming, tracking tokens, segments, multi-node, reset.
 - Use **`events/publishing.md`** when publishing events via `EventAppender` (inside handlers) or `EventGateway` (outside).
-- Use **`events/versioning-upcasting.md`** when evolving event schemas (revisions; note upcasting is forward-looking — see the guide's caveat).
+- Use **`events/versioning-upcasting.md`** when evolving event schemas — payload conversion (open source) and message transformation/upcasting (Axoniq Framework, 5.2.0+).
 
 **Queries**
 - Use **`queries/query-handling.md`** when serving read requests or pushing live updates via subscription queries.

@@ -12,6 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > `axonframework-core-coding` skills). Entry bodies are preserved; the duplicated/mis-ordered
 > upstream version headers were consolidated.
 
+## [1.4.2] - 2026-07-16
+
+### Changed
+
+- `axoniq-framework-contribute-code`: aligned the "What Belongs in Each Framework" split with the 5.2.0 release — the OpenTelemetry tracing extension is no longer part of open-source Axon Framework, and the commercial Axoniq Framework list now includes message transformation (`EventTransformation`, `EventTransformerChain`) and persistent streams in the Axon Server connector.
+
+## [1.4.1] - 2026-07-08
+
+### Changed
+
+- `axoniq-framework-contribute-code`: split the 2144-line `SKILL.md` into a core file (framework selection, design philosophy, coding conventions, checklist, anti-patterns) plus a routing table, with the eight detailed pattern topics moved verbatim into `references/`.
+- `axoniq-framework-contribute-review`: deduplicated the report format, which previously lived three times (twice inline plus `templates/review-report-template.md`) and now lives only in the template; fix-crafting detail moved to `references/fix-patterns.md`; handler-wrapper and test-quality sections now point at the `contribute-code` references instead of repeating them.
+- `axoniq-framework-contribute-pr-comments`: compressed the rare >100-reply pagination sub-query to prose and removed special-case handling already covered elsewhere in the workflow.
+
+### Fixed
+
+- `axoniq-framework-contribute-review`: `quick-reference.md` instructed the OPPOSITE of the project's null-annotation convention in three places — it recommended `jakarta` annotations and flagged `jspecify` as BLOCKING, when `jakarta` is actually forbidden by checkstyle. Also removed dead links to `code-review-checklist.md` and a nonexistent `axon-framework-5-patterns` skill.
+- `axoniq-framework-contribute-code`: fixed stale `allowed-tools` (`Task` → `Agent`), duplicate section numbering, misplaced fluent-API examples, and references to nonexistent skills.
+- `axoniq-framework-contribute-docs`, `axoniq-framework-contribute-review`, `axoniq-framework-contribute-pr-comments`: replaced stale `Task`/`TodoWrite` tool grants and references with the current `Agent`/`TaskCreate`/`TaskUpdate` tools — the `Task` subagent tool no longer exists in Claude Code.
+
 ## [1.4.0] - 2026-06-04
 
 ### Changed

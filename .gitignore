@@ -88,3 +88,5 @@ evals/**/workspace/
 # The cloned source trees live under .knowledge/repositories/ and are ignored wholesale.
 # The tracked catalog files (INDEX.md, <type>_<name>.md) are committed with `git add -f`.
 .knowledge/repositories/
+# IntelliJ-generated Gradle init scripts (accidentally produced inside skill asset dirs)
+**/.gradle/

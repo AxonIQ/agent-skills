@@ -407,8 +407,8 @@ Result: [X] blocking issues, [Y] warnings, [Z] suggestions fixed
 
 ## REFERENCES
 
-- **Comprehensive Checklist:** `.claude/code-review-checklist.md`
-- **AF5 Patterns:** `.claude/skills/axon-framework-5-patterns/SKILL.md`
+- **Review Checklist:** the `axoniq-framework-contribute-review` skill (SKILL.md)
+- **AF5 Patterns:** the `axoniq-framework-contribute-code` skill
 - **Related PRs:** [Link to similar PRs for context]
 
 ---

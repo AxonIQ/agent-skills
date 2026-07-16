@@ -74,6 +74,17 @@ EnrolmentState state = tx.source(SourcingCondition.conditionFor(criteria))
         .join();
 ```
 
+### `collect` — mutable reduction (5.2.0+)
+
+`collect(containerSupplier, accumulator)` folds a bounded stream into a mutable container, like `Stream.collect`. The accumulator receives the **message** (not the `Entry`); mutate the container in place.
+
+```java
+CompletableFuture<List<EventMessage>> events =
+        someStream.collect(ArrayList::new, List::add);
+```
+
+Like `reduce`, it throws `UnsupportedOperationException` on unbounded streams and runs strictly sequentially.
+
 ### `first` and `Single.asCompletableFuture`
 
 `first()` returns a `Single<M>` carrying only the first entry (then closing the source). On a `Single`, `asCompletableFuture()` drives full consumption and completes with the first observed `Entry<M>` (or `null` if none).
@@ -110,6 +121,8 @@ All of these return a new `MessageStream` (lazy; the source completes the return
 | `map(Function<Entry<M>, Entry<RM>>)` | Transform each entry |
 | `mapMessage(Function<M, RM>)` | Transform the contained message of each entry |
 | `filter(Predicate<Entry<M>>)` | Drop entries that fail the predicate |
+| `flatMap(Function<Entry<M>, MessageStream<N>>)` | 5.2.0+ — map each entry to an inner stream, concatenated in order (next inner stream starts only after the current completes; an inner error propagates) |
+| `mapMulti(BiConsumer<Entry<M>, Consumer<Entry<N>>>)` | 5.2.0+ — synchronous 0-to-N expansion per entry; cheaper than `flatMap` when no inner stream is needed |
 | `concatWith(MessageStream<? extends M>)` | Continue with another stream after this one completes normally |
 | `onNext(Consumer<Entry<M>>)` | Side-effect per entry |
 | `onComplete(Runnable)` | Side-effect on normal completion |

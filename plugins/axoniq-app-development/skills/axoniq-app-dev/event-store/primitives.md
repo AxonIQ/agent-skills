@@ -29,9 +29,14 @@ void appendEvent(EventMessage eventMessage)
 
 // The ConsistencyMarker representing the position after the last sourced event
 ConsistencyMarker appendPosition()
+
+// 5.2.0+: replace/adjust the AppendCondition derived from sourcing, applied at commit
+void overrideAppendCondition(UnaryOperator<AppendCondition> conditionOverride)
 ```
 
 `appendPosition()` advances every time you fully consume a sourced stream. It reflects "I have read up to here" and is used by the transaction to detect concurrent writes at commit.
+
+`overrideAppendCondition(...)` (5.2.0+) receives the condition the transaction calculated from your `source(...)` calls (or `AppendCondition.none()` if nothing was sourced) and returns the condition to use instead; multiple calls compose. Two intended uses: enforcing a consistency boundary **without sourcing first** (start from `AppendCondition.none()` and set criteria with `AppendCondition.withCriteria(...)` — checked against the whole store), and **narrowing** a broadly-sourced condition to just the criteria that represent real conflicts via `condition.replaceCriteria(...)` (the sourced marker is preserved). Returning `AppendCondition.none()` bypasses conflict detection entirely.
 
 > `source(...)` hands back a `MessageStream<? extends EventMessage>`. Consume it by folding with `reduce` over its `Entry` items (`entry.message()` gives the `EventMessage`) — see `foundations/message-streams.md` for the full stream API. It is **not** a `Flux`.
 

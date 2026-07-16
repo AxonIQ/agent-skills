@@ -2,7 +2,7 @@
 
 Events are stored indefinitely, so over the lifetime of an application their schema *will* change. This guide covers how to evolve event schemas safely. AF5's primary mechanism is **payload conversion at handling time** — see [events/handling-projections.md](handling-projections.md) for how handlers are written and [event-store/conversion-serialization.md](../event-store/conversion-serialization.md) for the conversion layer. For how events are persisted, see [event-store/primitives.md](../event-store/primitives.md).
 
-> **Read this first.** Through Axon Framework 5.1 the classic *upcaster* mechanism is **not yet available**. It is scheduled to return in 5.2.0 ([AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597)) with APIs aligned to the new conversion architecture. On 5.0 and 5.1, do your versioning with **payload conversion at handling time**, which already covers the large majority of real-world schema changes. The upcasting section below is conceptual and forward-looking — do not write upcaster code against 5.0 or 5.1.
+> **Read this first.** Prefer **payload conversion at handling time** — it covers the large majority of real-world schema changes with no extra infrastructure. When the stored representation itself must change for all consumers (renames, structural rewrites, drops), use **message transformation** — the AF5 successor to AF4 upcasters, available from **5.2.0** in the commercial Axoniq Framework module `axoniq-message-transformation`. On AF 5.0/5.1, or on open-source AF5 only, payload conversion is the only mechanism — there is no upcaster API in open-source AF5.
 
 ---
 
@@ -131,34 +131,78 @@ A few rules keep events evolvable regardless of mechanism:
 
 ---
 
-## Upcasting (concept — not available through 5.1)
+## Message transformation (Axoniq Framework 5.2.0+)
 
-> **Status.** The upcaster API is **not present in Axon Framework 5.0**; it returns in 5.2.0. The description below is conceptual so you can plan migrations, but there is no supported upcaster class to extend or register in 5.0. Until then, model these scenarios with payload conversion, or stage them for the 5.2.0 upgrade.
+Unlike payload conversion (per handler, at handling time), a **message transformation** changes how an event is read *from the event store*, before any handler or interceptor sees it — one transformation applied to all consumers. It is non-destructive: stored events are never rewritten; they are transformed on read (both sourcing and streaming). This is the AF5 successor to AF4's upcasters.
 
-Unlike payload conversion (which runs per handler at handling time), **upcasting** transforms how an event is read *from storage*, before any handler sees it — a single transformation applied to all consumers. It is non-destructive: stored events are never rewritten; they are transformed on read.
+> **Availability.** Message transformation ships in the **commercial Axoniq Framework** as `io.axoniq.framework:axoniq-message-transformation`, from 5.2.0. It is not part of open-source AF5 (the open-source repo only carries a demo application, `examples/university-message-transformation`). On open-source-only projects, use payload conversion.
 
-The model is a **chain**. An upcaster takes an event at version *x* and produces zero or more events at version *x+1*; the output of one upcaster feeds the input of the next. Writing one small upcaster per version step keeps each transformation isolated and easy to reason about. The chain reads the `@Event` `version` to decide whether a given upcaster applies.
+### Defining transformations
 
-Upcasting is the right tool only when conversion cannot do the job — i.e. the stored representation itself must change:
+Entry point: `EventTransformation` (`io.axoniq.framework.messaging.transformation.events`). Identity is the logical `MessageType` (qualified name + version) — the same identity you control with `@Event`. Three operations exist:
 
-| Scenario | Why conversion is insufficient |
-|---|---|
-| **Split one event into several** | Conversion is one-to-one per handler; it cannot fan one stored event out into multiple events |
-| **Merge several events into one** | Requires reading across multiple stored events |
-| **Change event identity** | Changing the stored `MessageType` (qualified name or version) of historical events |
-| **Cross-event / contextual transforms** | Moving a field from an earlier event onto a later one needs carried context |
-| **One transform for all handlers** | A single stored-level change instead of adjusting every handler |
+```java
+import io.axoniq.framework.messaging.transformation.events.EventTransformation;
+import org.axonframework.messaging.core.MessageType;
 
-When the API returns, expect abstractions along these lines (planned, names subject to change):
+// 1. Rewrite a payload under the same name (version bump).
+//    The target must keep the same qualified name; only the version may change.
+EventTransformation courseV1toV2 = EventTransformation
+        .from(new MessageType(COURSE_CREATED, "1.0.0"))
+        .to(new MessageType(COURSE_CREATED, "2.0.0"))
+        .transform(JsonNode.class, v1 -> splitCapacityIntoMinMax(v1));
 
-| Planned type | Shape |
-|---|---|
-| Single one-to-one upcaster | `canUpcast` + `doUpcast`, one event in/out |
-| One-to-many upcaster | `doUpcast` returns a stream — split a "fat" event into finer ones |
-| Context-aware (single / multi) | Adds a built context carried across the stream to move fields between events |
-| Type-change upcaster | Dedicated to rewriting an event's qualified name/version |
+// 2. Rename an event (change qualified name and/or version; payload untouched).
+EventTransformation rename = EventTransformation.rename(
+        new MessageType(COURSE_OFFERED, "1.0.0"),
+        new MessageType(COURSE_PUBLISHED, "1.0.0"));
 
-Registration is expected to be ordering-sensitive (each step bridges exactly one version), via the configuration API or, under Spring Boot, Spring's `@Order`. **Do not write this code against 5.0 or 5.1** — track [AxonFramework#3597](https://github.com/AxonFramework/AxonFramework/issues/3597).
+// 3. Drop an event from the read stream (it stays in storage).
+EventTransformation drop = EventTransformation.drop(new MessageType(SYSTEM_HEARTBEAT, "1.0.0"));
+```
+
+`transform(...)` accepts a `Class<T>` or `TypeReference<T>` input type and a `Function<T, U>` or `BiFunction<T, ProcessingContext, U>` mapper. The input type may be a purpose-written record of the old stored shape (type-safe — the framework verifies the mapper's output identity against the declared `to`), a Jackson `JsonNode`, or a `Map<String, Object>`. The payload arrives deserialized; there is no AF4-style `IntermediateEventRepresentation`.
+
+To match a *range* of versions, use a predicate. `declaringFromTypes(...)` declares which stored names the rule reads — used for criteria widening:
+
+```java
+EventTransformation.from(type -> type.version().startsWith("0."))
+        .declaringFromTypes(WELCOME_MESSAGE_SENT)
+        .to(new MessageType(WELCOME_MESSAGE_SENT, "1.0.0"))
+        .transform(JsonNode.class, this::liftBetaShape);
+```
+
+### Registering the chain
+
+Build one `EventTransformerChain` and register it as a component; a ServiceLoader-discovered configuration enhancer detects it and decorates the `EventStore` read path. There is no dedicated configurer method and no Spring property.
+
+```java
+EventTransformerChain chain = EventTransformerChain.builder()
+        .register(courseV1toV2)
+        .register(rename)
+        .register(drop)
+        .build();
+
+// Plain Java
+configurer.componentRegistry(registry ->
+        registry.registerComponent(EventTransformerChain.class, config -> chain));
+```
+
+Under Spring Boot, expose the chain as a `@Bean` — beans are registered as components, and the same enhancer picks it up.
+
+### Semantics
+
+- **Read-side only.** Sourcing and streaming see transformed events; appends, live publish/subscribe dispatch, and tracking tokens are untouched. Transformation runs before any interceptor or handler.
+- **Chains compose to a fixed point.** Transformations re-apply to an event until none matches, so v1→v2→v3 hops compose regardless of registration order (bounded by `maxIterationsPerEvent`, default 100).
+- **Precedence.** An exact `from(MessageType)` always beats a predicate match; among predicates, the first registered wins.
+- **Criteria widening is automatic.** When sourcing asks for a target type, the chain widens the `EventCriteria` so events still stored under the declared source names are fetched too. A predicate rule without `declaringFromTypes(...)` drops the type filter entirely (broader reads, but never misses events).
+- **Dropped events still advance the stream position** — streaming processors do not revisit them.
+- **Validation.** Two transformations with the same exact source, a payload mapping whose `to` changes the qualified name, or mapper output that does not match the declared `to` identity fail with `ChainConfigurationException` (at `build()` or at read time).
+- **Unversioned legacy events** (stored without a version) resolve to version `0.0.1` — write your `from(...)` accordingly.
+
+### Not supported
+
+Splitting one stored event into several, changing metadata, and context-carrying transforms (merging events, moving a field from one event to another) are not supported by the transformation API. Handle those by designing new events going forward, or per handler with payload conversion.
 
 ---
 

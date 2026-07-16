@@ -41,9 +41,9 @@ return BLOCKER
 > **Notes:** B1 — `@MessageHandlerInterceptor` annotation on method `intercept(...)` at `OrderCommandHandler.java:17`. Using this annotation to declare inline interceptor methods is not supported in AF5 < 5.2.0. The `MessageHandlerInterceptor<M>` *interface* is fully migratable; this *annotation* form requires AF5 5.2.0+.
 >
 > **Options:**
-> - [ ] **skip** — keep `OrderCommandHandler` as-is; queue moves on. The inline interceptor will be silently ignored at runtime until 5.2.0.
+> - [ ] **skip** — keep `OrderCommandHandler` as-is; queue moves on. On AF5 < 5.2.0 the inline interceptor is silently ignored at runtime.
 > - [ ] **revert** — undo any edits; restore pre-recipe state.
-> - [ ] **solve-manually** — extract the interceptor method into a standalone class implementing `MessageHandlerInterceptor<CommandMessage>` (fully migratable today), or wait for AF5 5.2.0+.
+> - [ ] **solve-manually** — extract the interceptor method into a standalone class implementing `MessageHandlerInterceptor<CommandMessage>` (fully migratable today), or on AF5 5.2.0+ rewrite it to an annotated `@CommandHandlerInterceptor` method (`MessageHandlerInterceptorChain` parameter, `MessageStream` return).
 ```
 
 ## What distinguishes annotation from interface

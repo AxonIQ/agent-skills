@@ -7,7 +7,7 @@ description: >
   or any variation of creating or editing AsciiDoc pages in the Axon Framework docs.
 disable-model-invocation: false
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Edit, Write, Task, Bash
+allowed-tools: Read, Glob, Grep, Edit, Write, Agent, Bash
 ---
 
 # Documentation Add/Update Skill
