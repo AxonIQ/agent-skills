@@ -187,7 +187,7 @@ axon:
 
 *Apply-condition:* AF4 config wired a `RevisionResolver` (`FixedValueRevisionResolver`, `MavenArtifactRevisionResolver`, or `.revisionResolver(...)` on a builder).
 
-The `RevisionResolver` SPI is gone with no successor. Drop the wiring entirely — there is no `revisionResolver(...)` on the converter side. If event versioning genuinely depended on revisions (upcasting keyed on `@Revision`), surface that as a Learning for follow-up; do NOT invent a replacement.
+The `RevisionResolver` SPI is gone with no successor. Drop the wiring entirely — there is no `revisionResolver(...)` on the converter side. If event versioning genuinely depended on revisions (upcasting keyed on `@Revision`), surface that as a Learning for follow-up; do NOT invent a replacement. (For the Learning: from 5.2.0 the upcaster successor is message transformation — `@Event(version = ...)` + the commercial `io.axoniq.framework:axoniq-message-transformation` module — but wiring it is outside this recipe.)
 
 ## Use cases
 

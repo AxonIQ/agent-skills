@@ -183,7 +183,9 @@ void onIllegalState() { /* ... */ }
 void onSomeCommand(EnrollStudent command, IllegalStateException ex) { /* ... */ }
 ```
 
-When several `@ExceptionHandler` methods match, the **most specific** one is chosen.
+Do not rely on a guaranteed invocation order between *multiple matching* `@ExceptionHandler` methods — most-specific-first prioritization is not finalized in 5.2.0. Keep matching unambiguous by narrowing with `resultType` and parameter types.
+
+> `@ExceptionHandler` works on entities since 5.0; support on plain command, event, and query handling components (as shown above) is available **from 5.2.0**.
 
 ### Suppress vs. propagate
 
@@ -213,11 +215,31 @@ If no `@ExceptionHandler` matches (for example, `resultType` does not match the 
 | `CommandMessage` / `QueryMessage` / `EventMessage` | The message being handled when it failed |
 | Command/query payload type | Matches only that message, gives the payload |
 
+### Declarative exception handlers (5.2.0+)
+
+To attach an exception handler without annotations — for example one reusable logger across modules — implement `MessageHandlingExceptionHandler` (`org.axonframework.messaging.core`) or one of its specializations (`CommandHandlingExceptionHandler`, `EventHandlingExceptionHandler`, `QueryHandlingExceptionHandler`):
+
+```java
+MessageStream<? extends Message> handle(M message, ProcessingContext context, Throwable error);
+```
+
+Return `MessageStream.empty()` to suppress, `MessageStream.failed(throwable)` to propagate (the same or a translated exception); a `CommandHandlingExceptionHandler` may also return `MessageStream.just(resultMessage)` to substitute a result. Register with `withExceptionHandler(...)` on `CommandHandlingModule`, `QueryHandlingModule`, or the event `EventHandlingComponentsConfigurer`:
+
+```java
+CommandHandlingModule.named("enrollment")
+        .commandHandlers()
+        .autodetectedCommandHandlingComponent(c -> new EnrollmentCommandHandler())
+        .withExceptionHandler(c -> (cmd, ctx, error) -> {
+            log.error("Command {} failed", cmd.payloadType().getSimpleName(), error);
+            return MessageStream.failed(error);
+        });
+```
+
+Multiple calls accumulate; later-registered handlers run closer to the handler and see exceptions first.
+
 ---
 
 ## Handler timeouts
-
-> Built-in timeout support for message handlers and the processing context is being finalized for the 5.2.0 release; the configuration surface below may still change. Treat the property and configuration-class names as provisional.
 
 Axon can interrupt handlers that run too long and log warnings as they approach the limit. Two thresholds govern this:
 
@@ -248,11 +270,26 @@ Each attribute defaults to `-1`, meaning "use the configured default". Set `time
 
 ### Configuring defaults
 
-The timeout configuration types live in `org.axonframework.messaging.core.timeout` — chiefly `HandlerTimeoutConfiguration`, which holds separate `TaskTimeoutSettings` for events, commands, queries, and deadlines (all disabled by default when constructed directly). In a non-Spring application no timeouts are applied unless you register them; with Spring Boot, timeouts can be configured (and switched off entirely) via `axon.timeout.*` properties:
+The timeout configuration types live in `org.axonframework.messaging.core.timeout` — chiefly `HandlerTimeoutConfiguration`, which holds separate `TaskTimeoutSettings` for events, commands, queries, and deadlines (all disabled by default when constructed directly). On timeout the handler thread is interrupted and an `AxonTimeoutException` is raised.
+
+**Plain Java:** no timeouts are applied by default — register a `HandlerTimeoutHandlerEnhancerDefinition` (built from a `HandlerTimeoutConfiguration`) yourself; it is not ServiceLoader-registered.
+
+**Spring Boot:** timeouts are **enabled by default** and configured via `axon.timeout.*` properties:
 
 ```properties
 # Disable all timeouts and warnings (also disables annotation-based timeouts)
 axon.timeout.enabled=false
+
+# Per-message-handler timeouts (defaults: timeout-ms=30000, warning-threshold-ms=10000, warning-interval-ms=1000)
+axon.timeout.handler.events.timeout-ms=10000
+axon.timeout.handler.commands.warning-threshold-ms=5000
+# also: axon.timeout.handler.queries.*, axon.timeout.handler.deadlines.*
+
+# Whole-transaction (unit-of-work) timeouts (defaults: 60000 / 10000 / 1000)
+axon.timeout.transaction.command-bus.timeout-ms=30000
+axon.timeout.transaction.event-processors.timeout-ms=120000        # all processors
+axon.timeout.transaction.event-processor.my-projection.timeout-ms=300000  # one named processor
+# also: axon.timeout.transaction.query-bus.*, axon.timeout.transaction.deadline.*
 ```
 
 ---

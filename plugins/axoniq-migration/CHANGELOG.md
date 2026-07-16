@@ -5,6 +5,13 @@ All notable changes to the **axoniq-migration** plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-16
+
+### Changed
+
+- `axon4to5-migrate-code`: updated the interceptors recipe's B1 blocker (`@MessageHandlerInterceptor` as method annotation) for the Axon Framework 5.2.0 release — the annotation form is now supported on 5.2.0+ (as `@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor` with a changed method contract); the blocker text now presents that as a concrete manual resolution instead of "wait for 5.2.0". The recipe still does not automate that rewrite.
+- `axon4to5-migrate-code`: the serializer recipe's `@Revision`/upcasting Learning note now points at the 5.2.0 upcaster successor (message transformation, `io.axoniq.framework:axoniq-message-transformation`).
+
 ## [0.2.0] - 2026-06-04
 
 ### Changed

@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > `axonframework-core-coding` skills). Entry bodies are preserved; the duplicated/mis-ordered
 > upstream version headers were consolidated.
 
+## [1.4.2] - 2026-07-16
+
+### Changed
+
+- `axoniq-framework-contribute-code`: aligned the "What Belongs in Each Framework" split with the 5.2.0 release — the OpenTelemetry tracing extension is no longer part of open-source Axon Framework, and the commercial Axoniq Framework list now includes message transformation (`EventTransformation`, `EventTransformerChain`) and persistent streams in the Axon Server connector.
+
 ## [1.4.1] - 2026-07-08
 
 ### Changed

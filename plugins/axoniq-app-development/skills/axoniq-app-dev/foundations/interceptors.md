@@ -76,31 +76,33 @@ configurer
     .registerQueryHandlerInterceptor(c -> new QueryAuditInterceptor());
 ```
 
+To scope an interceptor to a single handling module instead of the whole bus, use `intercepted(...)` on `CommandHandlingModule` / `QueryHandlingModule` (applies to that module's component) or on the event `EventHandlingComponentsConfigurer` (applies to all event handling components registered in that configurer).
+
 ---
 
-## @MessageHandlerInterceptor — declarative, within a handler class
+## Annotated interceptor methods — within a handler class (5.2.0+)
 
-Declare an interceptor method directly on a command handler, event handler, or query handler class. The method runs around every handler in that class (or around handlers matching the `payloadType` filter).
+From 5.2.0, declare an interceptor method directly on a command/event/query handling class with `@CommandHandlerInterceptor`, `@EventHandlerInterceptor`, or `@QueryHandlerInterceptor` (packages `org.axonframework.messaging.{commandhandling,eventhandling,queryhandling}.interception.annotation`). The method runs around every matching handler **in the same class**. Two method styles:
+
+- **Before-interceptor** — no `MessageHandlerInterceptorChain` parameter, returns `void` (or `CompletableFuture<Void>`). Runs before the handler; the chain proceeds automatically when it returns normally. Throwing prevents the handler from being invoked.
+- **Surround-interceptor** — declares a `MessageHandlerInterceptorChain` parameter and returns a `MessageStream`. It decides whether/when to call `chain.proceed(message, context)`, and can short-circuit by returning without proceeding.
 
 ```java
 class EnrolmentCommandHandler {
 
-    @MessageHandlerInterceptor
-    Object aroundAll(CommandMessage command,
-                     ProcessingContext context,
-                     CommandMessageHandlerInterceptorChain chain) {
-        // Runs before/after every @CommandHandler in this class
-        log.debug("Handling {}", command.payloadType().getSimpleName());
-        return chain.proceed(command, context);
+    @CommandHandlerInterceptor
+    void validate(CommandMessage command) {
+        // Before-interceptor: runs before every @CommandHandler in this class;
+        // throwing here prevents the handler from running.
     }
 
-    @MessageHandlerInterceptor(payloadType = EnrollStudent.class)
-    Object aroundEnrol(CommandMessage command,
-                       ProcessingContext context,
-                       CommandMessageHandlerInterceptorChain chain) {
-        // Runs only around handle(EnrollStudent, ...)
-        validateEnrolmentPolicy(command.payloadAs(EnrollStudent.class));
-        return chain.proceed(command, context);
+    @CommandHandlerInterceptor
+    MessageStream<?> around(CommandMessage command,
+                            ProcessingContext context,
+                            MessageHandlerInterceptorChain chain) {
+        log.debug("Handling {}", command.payloadType().getSimpleName());
+        return chain.proceed(command, context);   // surround: full control
+        // ...or short-circuit: return MessageStream.failed(new AccessDeniedException(...));
     }
 
     @CommandHandler
@@ -110,6 +112,8 @@ class EnrolmentCommandHandler {
     void handle(WithdrawStudent command, EventAppender events) { ... }
 }
 ```
+
+Interceptor methods may declare the message (`CommandMessage`/`EventMessage`/`QueryMessage`), `ProcessingContext`, and (surround style only) the chain. A non-void interceptor method **must** declare the chain parameter — this is validated at registration. Multiple before-interceptors in one class run in alphabetical method-name order.
 
 ---
 
@@ -212,7 +216,7 @@ RetryPolicy policy = (message, failure, previousFailures) -> {
 
 configurer.componentRegistry(cr -> cr.registerComponent(
         RetryScheduler.class,
-        config -> new AsyncRetryScheduler(policy)));
+        config -> new AsyncRetryScheduler(policy, Executors.newSingleThreadScheduledExecutor())));
 ```
 
-The `RetryScheduler` sits behind the `RetryingCommandBus` decorator and is the recommended way to handle DCB conflicts at the infrastructure level rather than in handler code.
+From 5.2.0, registering a `RetryScheduler` component is the *only* step needed: the framework automatically wraps the `CommandBus` in the `RetryingCommandBus` decorator when one is present (and leaves the bus undecorated otherwise). Retried dispatches pass through the interceptor chain again. This is the recommended way to handle DCB conflicts at the infrastructure level rather than in handler code.

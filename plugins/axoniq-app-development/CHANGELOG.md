@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.5.0] - 2026-07-16
+
+### Added
+
+- `axoniq-app-dev`: documented Axon/Axoniq Framework **5.2.0** features, verified against the released sources:
+  - Message transformation / upcasting (`EventTransformation`, `EventTransformerChain`, commercial `axoniq-message-transformation` module) — `events/versioning-upcasting.md` rewritten from the previous forward-looking placeholder.
+  - Annotated interceptor methods (`@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor`) and module-scoped `intercepted(...)` registration in `foundations/interceptors.md` and `foundations/annotations.md`.
+  - Declarative exception handlers (`MessageHandlingExceptionHandler`, `withExceptionHandler(...)`) and the finalized handler-timeout configuration (`axon.timeout.*` handler/transaction properties, `@MessageHandlerTimeout`) in `foundations/exception-handling.md`.
+  - `EventStoreTransaction#overrideAppendCondition(...)` in `event-store/primitives.md`; `MessageStream` `collect` / `flatMap` / `mapMulti` in `foundations/message-streams.md`.
+  - Persistent streams (Axon Server-managed processor sources, `axon.axonserver.persistent-streams.*`, auto mode) in `events/processors.md`; new `axoniq-testcontainer` and `axoniq-data-protection` coordinates and the PostgreSQL co-located `SnapshotStore` in `getting-started/dependencies.md`.
+
+### Changed
+
+- Target version bumped to **5.2.x** (latest stable `5.2.0`) across `SKILL.md` and `getting-started/dependencies.md`.
+- Removed the `axon-tracing-opentelemetry` module listing (extension removed from open-source AF5 in 5.2.0; no replacement shipped) and corrected the `axon-update` module description (update/vulnerability checker, not upcasting utilities).
+
+### Fixed
+
+- `foundations/interceptors.md` documented a `@MessageHandlerInterceptor(payloadType = ...)` method-annotation API that does not exist in the released framework — replaced with the actual 5.2.0 per-message-type annotations and their before/surround method contracts.
+- `foundations/annotations.md`: dropped the nonexistent `payloadType` attribute from `@ExceptionHandler`; `foundations/exception-handling.md` no longer claims a guaranteed most-specific-first ordering between matching `@ExceptionHandler` methods (not finalized in 5.2.0); `AsyncRetryScheduler` example now uses the real two-argument constructor.
+
 ## [0.4.3] - 2026-07-16
 
 ### Added

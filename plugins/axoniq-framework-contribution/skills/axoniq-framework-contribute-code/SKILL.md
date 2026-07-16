@@ -41,7 +41,7 @@ Two related frameworks share the conventions in this skill. Before contributing,
 - Event sourcing: `EventStore`, `EventStorageEngine`, `EventSourcingRepository`
 - Domain modelling: `Repository`, `EntityMetamodel`, `StateManager`
 - Basic Spring Boot integration (`extensions/spring`)
-- Metrics (Micrometer/Dropwizard) and tracing (OpenTelemetry) extensions
+- Metrics (Micrometer/Dropwizard) extensions
 - Test utilities and BDD fixtures (`test/` module)
 - Axon Server connector (basic)
 
@@ -50,8 +50,9 @@ Two related frameworks share the conventions in this skill. Before contributing,
 - PostgreSQL storage engine (`PostgresqlEventStorageEngine`)
 - Distributed messaging enhancements (`DistributedCommandBus`, `DistributedQueryBus`)
 - Multi-source event streaming (`MultiStreamableEventSource`, `MultiSourceTrackingToken`)
+- Message transformation / upcasting (`EventTransformation`, `EventTransformerChain`)
 - Spring Boot auto-configuration out of the box
-- Enhanced Axon Server connector with additional features
+- Enhanced Axon Server connector with additional features (persistent streams)
 
 ### Informing Users About Options
 
