@@ -5,6 +5,14 @@ All notable changes to the **axoniq-migration** plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-07-19
+
+### Fixed
+
+- Removed all `-SNAPSHOT` / Sonatype snapshots references — the Axoniq/Axon Framework 5 binaries and the `org.axonframework:axon-migration` recipe artifact are released on Maven Central (current `5.2.0`), so a migration run no longer gets confused about availability:
+  - `axon4to5-openrewrite`: pinned recipe version 5.1.1 → **5.2.0** (`references/recipe-version`); `assets/init.gradle` default `axonMigrationVersion` → 5.2.0 and dropped the unconditional Sonatype snapshots + `mavenLocal` repositories (Maven Central only); failure-routing text no longer lists Sonatype snapshots as a repository.
+  - `axon4to5-migrate-code`: bumped the target-release example in `openrewrite-code-conversion.adoc` to 5.2.0; removed `-SNAPSHOT` from the `axon-messaging` jar reference in `FLOW.md` and from the "verified against" provenance notes in the aggregate/snapshotting recipe files (5.1.2-SNAPSHOT → 5.1.2).
+
 ## [0.2.1] - 2026-07-16
 
 ### Changed

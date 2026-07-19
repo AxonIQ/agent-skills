@@ -212,7 +212,7 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 *Apply-condition:* `$SOURCE` had `@Aggregate(snapshotTriggerDefinition = ...)`, a `SnapshotTriggerDefinition` / `Snapshotter` field, or a post-OpenRewrite `// TODO #LLM: reconfigure snapshot trigger` marker.
 
-Detect: `grep -RnE 'snapshotTriggerDefinition|SnapshotTriggerDefinition|Snapshotter' <aggregate file> <aggregate package>`. Verified against `axon-5.1.x` (5.1.2-SNAPSHOT).
+Detect: `grep -RnE 'snapshotTriggerDefinition|SnapshotTriggerDefinition|Snapshotter' <aggregate file> <aggregate package>`. Verified against `axon-5.1.x` (5.1.2).
 
 **1. Map the AF4 trigger → `SnapshotPolicy`** (the companion `SnapshotTriggerDefinition` bean tells you which):
 
