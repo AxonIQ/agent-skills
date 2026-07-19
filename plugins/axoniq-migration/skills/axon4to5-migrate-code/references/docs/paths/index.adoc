@@ -289,7 +289,7 @@ As Axon Framework 5.0 is the first step in this new major version, not all featu
 - **Saga & Deadline Overhaul**: Sagas and Deadlines do not have a native "async-native" replacement yet. A full redesign is in progress.
 - **Event Upcasters**: The Axon Framework 4 upcaster SPI is not reintroduced. As of 5.2.0 its successor is message transformation (`@Event(version = ...)` plus the commercial `io.axoniq.framework:axoniq-message-transformation` module).
 - **Event Replaying**: The ability to replay events for streaming event processors is not yet implemented.
-- **Multiple Event Sources**: `MultiStreamableEventSource` support is not yet available. Currently scheduled for 5.1.
+- **Multiple Event Sources**: `MultiStreamableEventSource` is available in the commercial `io.axoniq.framework:axoniq-event-streaming` module (`io.axoniq.framework.messaging.eventstreaming.MultiStreamableEventSource`, implementing `StreamableEventSource`) — on Maven Central since 5.1.0.
 - **Annotated Features (delivered in 5.2.0)** — no longer pending; available as of Axon Framework 5.2.0:
     *   **Timeouts**: Built-in timeout support for message handlers and processing contexts.
     *   **Interceptors**: Declarative and annotated interceptor support (`@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor`) for message handling components.
