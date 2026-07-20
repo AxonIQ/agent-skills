@@ -4,7 +4,7 @@
 
 **Apply-condition:** `$SOURCE` had `snapshotTriggerDefinition` on `@Aggregate` (or a post-OpenRewrite `// TODO #LLM: reconfigure snapshot trigger` marker).
 
-All shapes below are verified against `axon-5.1.x` (5.1.2-SNAPSHOT).
+All shapes below are verified against `axon-5.1.x` (5.1.2).
 
 ## Detection
 

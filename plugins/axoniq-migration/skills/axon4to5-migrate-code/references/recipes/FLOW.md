@@ -162,7 +162,7 @@ Recipes MAY add more options when there is a genuine recipe-specific path; they 
 > **Resolution:** Not fixed (outside this recipe's scope; wrong recipe — this is a processor, route to event-processor). Suspected shape: `.exceptionallyCompose(error -> commandDispatcher.send(...).getResultMessage())`, likely needing a `.thenApply(m -> m)` bridge to widen `CompletableFuture<? extends Message>` to `CompletableFuture<Message>`.
 > ## 2026-06-01 — AF5 `Message` is NOT generic
 > **Trigger:** investigation
-> **Where:** `axon-messaging-5.1.1-SNAPSHOT.jar` (`org.axonframework.messaging.core.Message`)
+> **Where:** `axon-messaging-5.2.0.jar` (`org.axonframework.messaging.core.Message`)
 > **Surprise:** Declared `public interface Message` — non-generic. Verified via `javap`. Any recipe pseudocode using `CompletableFuture<? extends Message<?>>` will not compile.
 > **Resolution:** Correct shape is `CompletableFuture<? extends Message>`. Flag recipe docs that still show the generic form.
 

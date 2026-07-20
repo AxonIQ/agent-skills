@@ -24,23 +24,19 @@ initscript {
 rootProject {
     plugins.apply(org.openrewrite.gradle.RewritePlugin)
 
-    def axonMigrationVersion = System.getProperty("rewrite.axonMigrationVersion", "5.1.1")
+    def axonMigrationVersion = System.getProperty("rewrite.axonMigrationVersion", "5.2.0")
 
     dependencies {
         rewrite("org.axonframework:axon-migration:${axonMigrationVersion}")
     }
 
     afterEvaluate {
+        // Recipe artifacts are released on Maven Central; add it if the project
+        // configured no repositories of its own.
         if (repositories.isEmpty()) {
             repositories {
                 mavenCentral()
             }
-        }
-        // SNAPSHOT recipe artifacts live in Sonatype's snapshots repo; add it
-        // unconditionally so `-SNAPSHOT` coordinates resolve out of the box.
-        repositories {
-            maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
-            mavenLocal()
         }
     }
 }
