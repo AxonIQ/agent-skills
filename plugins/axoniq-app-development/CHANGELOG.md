@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > History before 0.3.9 was authored upstream while this plugin was named `axoniq-claude-plugin`;
 > entry bodies are preserved verbatim and only the version headers were normalized.
 
+## [0.5.1] - 2026-07-19
+
+### Fixed
+
+- `foundations/message-streams.md` claimed the `MessageStream`↔Reactor bridge lives in a separate **axon-reactor** extension. It actually ships in the core `messaging` module as static helpers on `org.axonframework.messaging.core.FluxUtils` (`of` / `asMessageStream` / `streamToPublisher`), gated on an optional `reactor-core` dependency. The axon-reactor extension provides native-reactive *gateways* (`ReactorCommandGateway`/`ReactorQueryGateway`), not the stream bridge — the callout now says so.
+
 ## [0.5.0] - 2026-07-16
 
 ### Added

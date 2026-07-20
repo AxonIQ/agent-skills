@@ -5,7 +5,7 @@
 - **As something you consume** — `EventStoreTransaction.source(...)` returns a `MessageStream<? extends EventMessage>` that you fold into decision state (see `commands/decision-models-dcb.md` and `event-store/primitives.md`).
 - **As something you produce** — low-level command/query handlers and interceptors return a `MessageStream<?>` (see `foundations/interceptors.md`, `foundations/handler-customization.md`, `foundations/exception-handling.md`, and the `MessagingConfigurer` examples in `configuration/plain-java.md`).
 
-> **Not reactive by itself.** `MessageStream` is a pull model (`next()`/`reduce()`), *not* a `Flux`. There is no `asFlux()`/`asMono()` on it. Reactive bridges live in the separate **axon-reactor** extension. Don't reach for Reactor types here.
+> **Not reactive by itself.** `MessageStream` is a pull model (`next()`/`reduce()`), *not* a `Flux`, and has no `asFlux()`/`asMono()` — don't reach for Reactor types in ordinary handler/interceptor code. If you genuinely need a bridge, it's static helpers on `FluxUtils` (`of` / `asMessageStream` / `streamToPublisher`) in the **core** `messaging` module, gated on an optional `reactor-core` dependency — *not* a separate extension. (The **axon-reactor** extension is a separate thing: native-reactive *gateways*, not this stream bridge.)
 
 ---
 
