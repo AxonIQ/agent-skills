@@ -47,7 +47,7 @@ The recipes handle the following categories of changes automatically:
 +
 [NOTE]
 ====
-AF4's `@TargetAggregateIdentifier` was *both* the target-id and the command's routing key, keeping same-entity commands handled sequentially. In AF5 that routing key must be explicit as `@Command(routingKey = "…")`. Whether the OpenRewrite rewrite lifts it for you **depends on the recipe version** — older versions rename `@TargetAggregateIdentifier` → `@TargetEntityId` only and leave a bare (or absent) `@Command`; newer versions also fill in the `routingKey`. Do not assume either way: the code-migration recipe (see the aggregate RECIPE's Commands step) verifies each command and reconciles to the correct end state regardless of what the rewrite produced.
+AF4's `@TargetAggregateIdentifier` was *both* the target-id and the command's routing key, keeping same-entity commands handled sequentially. In AF5 that routing key must be explicit as `@Command(routingKey = "…")`. The pinned recipe (5.2.0, AxonIQ/AxonFramework#4701) lifts it automatically in the common case; the code-migration recipe (see the aggregate RECIPE's Commands step) verifies the result and back-fills any command the rewrite left incomplete.
 ====
 * **Message API**:accessor method renames, `AggregateLifecycle.apply(...)` replaced with `EventAppender#append(...)`
 * **Command handling**:`@CommandHandler` constructors converted to static `handle(...)` methods, `CommandGateway` replaced with `CommandDispatcher`

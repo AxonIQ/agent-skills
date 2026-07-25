@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `axon4to5-migrate-code`: preserve command routing when migrating `@TargetAggregateIdentifier`. AF4's `@TargetAggregateIdentifier` was both the target-id and the command's routing key (same-entity commands handled sequentially); migrating it to `@TargetEntityId` alone drops that guarantee. The aggregate recipe now reconciles `@Command(routingKey = "…")` against the command's actual state (absent / bare / already correct), staying correct across OpenRewrite recipe versions and covering Kotlin `data class` properties. Docs and use-case examples updated accordingly. Refs AxonIQ/AxonFramework#4701.
+- `axon4to5-migrate-code`: preserve command routing when migrating `@TargetAggregateIdentifier`. AF4's `@TargetAggregateIdentifier` was both the target-id and the command's routing key (same-entity commands handled sequentially); migrating it to `@TargetEntityId` alone drops that guarantee. The pinned OpenRewrite recipe (5.2.0) now lifts `routingKey` automatically in the common case (AxonIQ/AxonFramework#4701); the aggregate recipe verifies the result and reconciles `@Command(routingKey = "…")` against the command's actual state (absent / bare / already correct) as a safety net, covering Kotlin `data class` properties too. Docs and use-case examples updated accordingly.
 
 ## [0.2.2] - 2026-07-19
 
