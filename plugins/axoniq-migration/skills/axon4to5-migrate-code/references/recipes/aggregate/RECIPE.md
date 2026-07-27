@@ -174,7 +174,15 @@ Use the `axon4to5-isolatedtest` Skill per DEFAULT.md § Verification. `target-na
 
 1. **Commands** — for each command class in `# Scope`:
    - remove `import org.axonframework.modelling.command.TargetAggregateIdentifier`; add `import org.axonframework.modelling.annotation.TargetEntityId`; replace `@TargetAggregateIdentifier` with `@TargetEntityId`.
-   - annotate the class with `@Command` (`org.axonframework.messaging.commandhandling.annotation.Command`). `@RoutingKey` on a property → `@Command(routingKey = "<propertyName>")` + remove `@RoutingKey`.
+   - ensure the class carries `@Command` (`org.axonframework.messaging.commandhandling.annotation.Command`) **with an explicit `routingKey`** whenever the command targets an entity. Rationale: in AF4 `@TargetAggregateIdentifier` was *both* the target-id and the routing key, so commands for the same entity were routed to the same handler and processed sequentially. `@TargetEntityId` alone does NOT preserve this — without an explicit routing key, commands with identical target IDs may be handled in parallel, breaking state-based validation. This never surfaces in unit tests, only under concurrent load.
+     - **Verify, don't blindly re-add.** The pinned OpenRewrite recipe (5.2.0, AxonIQ/AxonFramework#4701) already lifts `routingKey` for you in the common case. Grep the class first and back-fill only what's missing:
+       - `@Command` **absent** → add it with the correct `routingKey` (below).
+       - bare `@Command` (no `routingKey`) → the recipe left this one incomplete; add the `routingKey` attribute, don't skip the class.
+       - `@Command(routingKey = "…")` **already present and correct** → leave unchanged.
+     - The `routingKey` value, in priority order:
+       - explicit `@RoutingKey` on a property → `routingKey = "<routingKeyProperty>"` + remove `@RoutingKey` (an explicit `@RoutingKey` overrode the target id for routing in AF4).
+       - otherwise, the `@TargetEntityId` property → `routingKey = "<targetEntityIdProperty>"` (use the property name, e.g. field `orderId` → `routingKey = "orderId"`). Applies to Java fields/records and Kotlin `data class` primary-constructor properties alike.
+       - a command with neither annotation stays a bare `@Command`.
 2. **Events** — for each event class in `# Scope`:
    - identify the property the AF4 `@AggregateIdentifier` field is set from inside an `@EventSourcingHandler` — that's the property that must carry `@EventTag(key = "<EntityName>")`. Without DCB, exactly one `@EventTag` per event.
    - annotate the class with `@Event` (`org.axonframework.messaging.eventhandling.annotation.Event`). `@Revision("x")` → `@Event(version = "x")`; remove `@Revision`.
