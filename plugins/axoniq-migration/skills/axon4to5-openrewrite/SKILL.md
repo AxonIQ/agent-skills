@@ -53,7 +53,7 @@ NEVER commit on failure. NEVER customize the message per run.
 
 Match the error output, then apply:
 
-- **`Could not find artifact org.axonframework:axon-migration:...`** — the recipe artifact didn't resolve from any configured repository (Maven Central, Sonatype snapshots, mavenLocal). Surface the error to the user verbatim along with the version from `references/recipe-version` and the repositories the build tried. Do NOT instruct the user to install it themselves — they may not have source access. Ask: [retry] / [abort].
+- **`Could not find artifact org.axonframework:axon-migration:...`** — the recipe artifact didn't resolve from any configured repository (it is released on Maven Central). Surface the error to the user verbatim along with the version from `references/recipe-version` and the repositories the build tried. Do NOT instruct the user to install it themselves — they may not have source access. Ask: [retry] / [abort].
 - **`Unsupported class file major version` / `class file version`** — build wrapper too old for the current JDK. Go to **Wrapper bump** below; that's the preferred recovery. Fallback only if wrapper bump fails or user declines: ask user to set `JAVA_HOME` to a JDK matching the wrapper.
 - **Recipe parse/apply error pointing at a specific source file** — surface the offending file path + last 50 log lines. Ask: [retry] / [abort].
 - **Anything else** — ask the user [retry] / [abort], with failed command + exit code + last 50 log lines.

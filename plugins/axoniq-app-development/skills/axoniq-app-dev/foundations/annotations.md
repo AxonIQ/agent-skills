@@ -527,7 +527,6 @@ Marks a method in the same handler class as an interceptor for exception results
 |---|---|---|---|
 | `resultType` | `Class<? extends Exception>` | `Exception.class` | The exception type (or supertype) this interceptor matches. |
 | `messageType` | `Class<? extends Message>` | `Message.class` | Restricts this interceptor to a specific message type (e.g., `CommandMessage.class`). |
-| `payloadType` | `Class<?>` | `Object.class` | Restricts this interceptor to messages whose payload is assignable to this type. |
 
 ```java
 class CourseCommandHandler {
@@ -539,8 +538,40 @@ class CourseCommandHandler {
     }
 
     @ExceptionHandler(resultType = InvalidCapacityException.class)
-    void on(InvalidCapacityException ex, CommandMessage<?> msg) {
+    void on(InvalidCapacityException ex, CommandMessage msg) {
         throw new CommandExecutionException("Bad command: " + ex.getMessage(), ex);
     }
 }
 ```
+
+Works on entities since 5.0; on plain command/event/query handling components from 5.2.0. See `foundations/exception-handling.md`.
+
+---
+
+### `@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor` (5.2.0+)
+
+```java
+import org.axonframework.messaging.commandhandling.interception.annotation.CommandHandlerInterceptor;
+import org.axonframework.messaging.eventhandling.interception.annotation.EventHandlerInterceptor;
+import org.axonframework.messaging.queryhandling.interception.annotation.QueryHandlerInterceptor;
+```
+
+Marks a method that intercepts every matching handler **in the same class**. No attributes (each is meta-annotated `@MessageHandlerInterceptor(messageType = ...)` for its message type). A method without a `MessageHandlerInterceptorChain` parameter returning `void` runs *before* the handlers (throwing blocks handling); a method declaring the chain parameter and returning `MessageStream` fully *surrounds* the handlers. See `foundations/interceptors.md`.
+
+---
+
+### `@MessageHandlerTimeout`
+
+```java
+import org.axonframework.messaging.core.annotation.MessageHandlerTimeout;
+```
+
+Placed on a `@CommandHandler`, `@QueryHandler`, or `@EventHandler` method to override the configured handler timeouts for that handler.
+
+| Attribute | Type | Default | Meaning |
+|---|---|---|---|
+| `timeoutMs` | `int` | `-1` (use configured default) | Elapsed time after which the handler is interrupted. |
+| `warningThresholdMs` | `int` | `-1` | Time after which a warning is logged. |
+| `warningIntervalMs` | `int` | `-1` | Interval between subsequent warnings. |
+
+See `foundations/exception-handling.md` for the `axon.timeout.*` defaults.

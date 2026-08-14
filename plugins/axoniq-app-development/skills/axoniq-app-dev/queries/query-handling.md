@@ -128,6 +128,25 @@ Publisher<CourseStatsDto> updates = queryGateway.subscriptionQuery(
 
 For a native `Flux` API (rather than wrapping with `Flux.from(...)`), use the **axon-reactor** extension's `ReactorQueryGateway`.
 
+### Bridging to Server-Sent Events on the servlet stack — keep-alive required
+
+The Axon subscription query lives as long as its reactive subscription does: cancelling the `Flux` (client gone, `dispose()`, completion) propagates up `Flux.from(subscriptionQuery)` and closes the query server-side. On **Spring MVC (servlet stack)** that cancellation is only triggered by a **failed write** — there is no client-disconnect callback. When a browser closes its `EventSource`, Spring doesn't notice until it next writes and gets a broken-pipe `IOException`. So an idle stream whose client has silently disconnected keeps its subscription query open indefinitely (and the projection keeps emitting updates nobody consumes). `SseEmitter.onTimeout`/`onCompletion`/`onError` don't help — without a write, nothing fires them.
+
+Mitigate by merging a periodic keep-alive (an SSE comment, ignored by `EventSource`) into the stream. The heartbeat write fails on a dead connection, triggering cancellation within one interval:
+
+```java
+@GetMapping(value = "/{id}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public Flux<ServerSentEvent<CourseStats>> stream(@PathVariable String id) {
+    return Flux.from(queryGateway.subscriptionQuery(new GetCourseStats(id), CourseStats.class))
+            .filter(Objects::nonNull)
+            .map(stats -> ServerSentEvent.builder(stats).build())
+            .mergeWith(Flux.interval(Duration.ofSeconds(15))
+                    .map(t -> ServerSentEvent.<CourseStats>builder().comment("keep-alive").build()));
+}
+```
+
+The interval is the upper bound on how long a closed stream's subscription lingers. This applies equally to the `SseEmitter` form and to returning `Flux<ServerSentEvent<T>>` (which works in MVC via `ReactiveTypeHandler` with Reactor on the classpath, and lets Spring own cancellation — but disconnect detection is still write-triggered). On **WebFlux/Netty** the runtime is notified of connection close, so the keep-alive is not needed there.
+
 ### Publisher side — pushing updates from an event handler
 
 When an event changes data that a subscription query is serving, push the new state to open subscribers:

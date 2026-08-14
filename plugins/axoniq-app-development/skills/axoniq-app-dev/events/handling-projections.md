@@ -190,11 +190,13 @@ Available policies:
 
 | Policy | Behaviour |
 |---|---|
-| `SequentialPerAggregatePolicy` | Sequential per aggregate identifier (default) |
+| `SequentialPerAggregatePolicy` | Sequential per aggregate identifier |
 | `PropertySequencingPolicy` | Sequential per payload field value |
 | `MetadataSequencingPolicy` | Sequential per metadata key value |
 | `FullConcurrencyPolicy` | All concurrent |
 | `SequentialPolicy` | All sequential (single-threaded) |
+
+The default is a `HierarchicalSequencingPolicy` that tries `SequentialPerAggregatePolicy` first and falls back to `SequentialPolicy`. **In a DCB context this matters:** DCB events carry tags, not an aggregate identifier, so `SequentialPerAggregatePolicy` returns `Optional.empty()` for every event and the fallback `SequentialPolicy` always wins — meaning the processor runs all events single-threaded in one segment. `SequentialPerAggregatePolicy` is effectively a no-op here. Always set an explicit policy (e.g. `PropertySequencingPolicy` keyed on your projection's identity field) to get any concurrency.
 
 ---
 

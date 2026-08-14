@@ -25,7 +25,7 @@ Scope never shrinks. Sibling interceptors, aggregates, event processors, and unr
 
 ### B1 — `@MessageHandlerInterceptor` annotation on method
 
-`@MessageHandlerInterceptor` used as a **method annotation** (inline interceptor method inside a handler class). Not functional in AF5 < 5.2.0 — no migration path within this recipe. Detect: `grep -nE '@MessageHandlerInterceptor' <file>`. Distinguish: a class *implementing* `MessageHandlerInterceptor<M>` (interface) is fully migratable — only the *annotation* form triggers B1.
+`@MessageHandlerInterceptor` used as a **method annotation** (inline interceptor method inside a handler class). Not functional in AF5 < 5.2.0; AF5 5.2.0+ supports annotated interceptor methods (`@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor`) but with a different method contract (`MessageHandlerInterceptorChain` parameter, `MessageStream` return) — this recipe does not automate that rewrite. Detect: `grep -nE '@MessageHandlerInterceptor' <file>`. Distinguish: a class *implementing* `MessageHandlerInterceptor<M>` (interface) is fully migratable — only the *annotation* form triggers B1.
 
 ### Unmet project prerequisites
 
@@ -170,7 +170,7 @@ Add imports: `org.axonframework.messaging.core.MessageHandlerInterceptor`, `org.
 - **Lifecycle hook names AND signatures changed.** `onCommit` → `runOnAfterCommit`; `onPrepareCommit` → `runOnPreInvocation`; `onRollback` → `onError`. Lambda parameter: `UnitOfWork<M>` → `ProcessingContext` (or `(ctx, err)` for `onError`).
 - **Path B: method names are identical; only receiver type changes.** `MessagingConfigurer.registerCommandHandlerInterceptor(...)` keeps the same method name as AF4. AF4 generic `registerDispatchInterceptor` → AF5 typed `registerCommandDispatchInterceptor` (or event/query variant as appropriate).
 - **`@Order` preserved.** Preserve any existing `@Order(n)` annotation — AF5 `InterceptorAutoConfiguration` respects it. Add `@Order` only when a deterministic order is actually required.
-- **Annotation B1 vs interface.** `@MessageHandlerInterceptor` as a method annotation is NOT the same as implementing the `MessageHandlerInterceptor<M>` interface. The interface is migratable today; the annotation requires AF5 5.2.0+. Always verify which form is present before proceeding.
+- **Annotation B1 vs interface.** `@MessageHandlerInterceptor` as a method annotation is NOT the same as implementing the `MessageHandlerInterceptor<M>` interface. The interface is migratable today; the annotation form requires AF5 5.2.0+ (as `@CommandHandlerInterceptor` / `@EventHandlerInterceptor` / `@QueryHandlerInterceptor`, with a changed method contract) and is not automated by this recipe. Always verify which form is present before proceeding.
 - **`andMetaData` → `andMetadata` accessor rename.** AF5 message API uses `andMetadata(...)` (lowercase d). Covered by [messages.adoc](../../docs/paths/messages.adoc) — reference it when body uses AF4 `andMetaData` / `withMetaData` calls.
 
 ## Result

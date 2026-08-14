@@ -44,6 +44,11 @@ The recipes handle the following categories of changes automatically:
 * **Build files**:BOM rename, Java source/target version bump, Spring Boot upgrade to 3.5, removal of dependencies with no Axon Framework 5 equivalent
 * **Package and class renames**:handler annotations, `EventBus` → `EventSink`, `ConfigurerModule` → `ConfigurationEnhancer`, extension packages
 * **Annotation rewrites**:`@Aggregate` → `@EventSourced`, `@AggregateRoot` → `@EventSourcedEntity`, `@TargetAggregateIdentifier` → `@TargetEntityId`, `@Revision` → `@Event(version = …)`, `@ProcessingGroup` → `@Namespace`, `@EntityCreator` added to constructors
++
+[NOTE]
+====
+AF4's `@TargetAggregateIdentifier` was *both* the target-id and the command's routing key, keeping same-entity commands handled sequentially. In AF5 that routing key must be explicit as `@Command(routingKey = "…")`. The pinned recipe (5.2.0, AxonIQ/AxonFramework#4701) lifts it automatically in the common case; the code-migration recipe (see the aggregate RECIPE's Commands step) verifies the result and back-fills any command the rewrite left incomplete.
+====
 * **Message API**:accessor method renames, `AggregateLifecycle.apply(...)` replaced with `EventAppender#append(...)`
 * **Command handling**:`@CommandHandler` constructors converted to static `handle(...)` methods, `CommandGateway` replaced with `CommandDispatcher`
 * **Query API**:`ResponseTypes.instanceOf(X.class)` unwrapped to a direct class argument, `query()` renamed to `queryMany()` when used with `multipleInstancesOf`
@@ -79,7 +84,7 @@ mvn -U org.openrewrite.maven:rewrite-maven-plugin:run \
 
 For the free (Apache 2.0) path, replace the active recipe with `org.axonframework.migration.UpgradeAxon4ToAxon5`.
 
-Replace `<version>` with the Axon Framework 5 release you are targeting (for example, `5.1.1`).
+Replace `<version>` with the Axon Framework 5 release you are targeting (for example, `5.2.0`).
 
 === Gradle
 

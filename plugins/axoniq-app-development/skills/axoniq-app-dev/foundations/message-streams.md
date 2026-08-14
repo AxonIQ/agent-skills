@@ -5,7 +5,7 @@
 - **As something you consume** — `EventStoreTransaction.source(...)` returns a `MessageStream<? extends EventMessage>` that you fold into decision state (see `commands/decision-models-dcb.md` and `event-store/primitives.md`).
 - **As something you produce** — low-level command/query handlers and interceptors return a `MessageStream<?>` (see `foundations/interceptors.md`, `foundations/handler-customization.md`, `foundations/exception-handling.md`, and the `MessagingConfigurer` examples in `configuration/plain-java.md`).
 
-> **Not reactive by itself.** `MessageStream` is a pull model (`next()`/`reduce()`), *not* a `Flux`. There is no `asFlux()`/`asMono()` on it. Reactive bridges live in the separate **axon-reactor** extension. Don't reach for Reactor types here.
+> **Not reactive by itself.** `MessageStream` is a pull model (`next()`/`reduce()`), *not* a `Flux`, and has no `asFlux()`/`asMono()` — don't reach for Reactor types in ordinary handler/interceptor code. If you genuinely need a bridge, it's static helpers on `FluxUtils` (`of` / `asMessageStream` / `streamToPublisher`) in the **core** `messaging` module, gated on an optional `reactor-core` dependency — *not* a separate extension. (The **axon-reactor** extension is a separate thing: native-reactive *gateways*, not this stream bridge.)
 
 ---
 
@@ -74,6 +74,17 @@ EnrolmentState state = tx.source(SourcingCondition.conditionFor(criteria))
         .join();
 ```
 
+### `collect` — mutable reduction (5.2.0+)
+
+`collect(containerSupplier, accumulator)` folds a bounded stream into a mutable container, like `Stream.collect`. The accumulator receives the **message** (not the `Entry`); mutate the container in place.
+
+```java
+CompletableFuture<List<EventMessage>> events =
+        someStream.collect(ArrayList::new, List::add);
+```
+
+Like `reduce`, it throws `UnsupportedOperationException` on unbounded streams and runs strictly sequentially.
+
 ### `first` and `Single.asCompletableFuture`
 
 `first()` returns a `Single<M>` carrying only the first entry (then closing the source). On a `Single`, `asCompletableFuture()` drives full consumption and completes with the first observed `Entry<M>` (or `null` if none).
@@ -110,6 +121,8 @@ All of these return a new `MessageStream` (lazy; the source completes the return
 | `map(Function<Entry<M>, Entry<RM>>)` | Transform each entry |
 | `mapMessage(Function<M, RM>)` | Transform the contained message of each entry |
 | `filter(Predicate<Entry<M>>)` | Drop entries that fail the predicate |
+| `flatMap(Function<Entry<M>, MessageStream<N>>)` | 5.2.0+ — map each entry to an inner stream, concatenated in order (next inner stream starts only after the current completes; an inner error propagates) |
+| `mapMulti(BiConsumer<Entry<M>, Consumer<Entry<N>>>)` | 5.2.0+ — synchronous 0-to-N expansion per entry; cheaper than `flatMap` when no inner stream is needed |
 | `concatWith(MessageStream<? extends M>)` | Continue with another stream after this one completes normally |
 | `onNext(Consumer<Entry<M>>)` | Side-effect per entry |
 | `onComplete(Runnable)` | Side-effect on normal completion |

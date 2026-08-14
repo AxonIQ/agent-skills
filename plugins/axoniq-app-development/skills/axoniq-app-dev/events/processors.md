@@ -56,7 +56,7 @@ public class AxonConfig {
 }
 ```
 
-> The `eventSource(...)` is **required** for a subscribing processor — without it the processor has nothing to subscribe to.
+> The `eventSource(...)` is **required** for a subscribing processor — without it the processor has nothing to subscribe to. In Spring Boot (5.2.0+), an `EventProcessorDefinition` bean may supply it (`.customized(cfg -> cfg.eventSource(...))`); when the `source` property is unset, Spring only applies a default source if a unique `SubscribableEventSource` resolves, leaving room for the definition to provide one. With Axon Server, a persistent stream can be the source — see [Persistent streams](#persistent-streams-axoniq-framework--axon-server-520) below.
 
 **Error mode**: when the configured `ErrorHandler` rethrows, the subscribing processor lets the exception bubble back to the component that published the event, so the publisher can react.
 
@@ -222,7 +222,7 @@ public interface SequencingPolicy<M extends Message> {
 }
 ```
 
-The PSEP default is a `HierarchicalSequencingPolicy` that tries `SequentialPerAggregatePolicy` first and falls back to `SequentialPolicy`.
+The PSEP default is a `HierarchicalSequencingPolicy` that tries `SequentialPerAggregatePolicy` first and falls back to `SequentialPolicy`. In a DCB context, events carry tags rather than an aggregate identifier, so `SequentialPerAggregatePolicy` returns `Optional.empty()` for every event and the fallback `SequentialPolicy` always applies — the processor effectively runs single-threaded in one segment until you set an explicit policy.
 
 ### Splitting and merging segments
 
@@ -357,3 +357,30 @@ For the PSEP, `start()` first resolves the token-store identifier (`getTokenStor
 Processors are configured under `MessagingConfigurer#eventProcessing(...)`, choosing `subscribing(...)` or `pooledStreaming(...)`, then registering handling components and (optionally) customizing. In Spring Boot you can instead declare `EventProcessorDefinition` beans (`EventProcessorDefinition.pooledStreaming("name")` / `.subscribing("name")`, with `.pooledStreamingMatching(...)` / `.subscribingMatching(...)` shortcuts for namespace-based selection) or set `axon.eventhandling.processors.<name>.*` properties (`mode`, `source`, `initial-segment-count`, `batch-size`, `thread-count`). See configuration/plain-java.md and configuration/spring-boot.md for the full wiring patterns.
 
 > `EventProcessorDefinition` beans take precedence over property-based assignment; a handler matched by two definitions throws an `AxonConfigurationException` at startup; unmatched handlers fall back to a processor named after their package.
+
+---
+
+## Persistent streams (Axoniq Framework + Axon Server, 5.2.0+)
+
+With Axon Server, the commercial `axon-server-connector` module offers **persistent streams**: event streams managed server-side, where Axon Server tracks the position, segmentation, and sequencing, and pushes event batches to the application. The stream's `name` identifies it on the server — two sources with the same name join the same stream. A `PersistentStreamEventSource` (`io.axoniq.framework.axonserver.connector.event`) implements `SubscribableEventSource`, so a **subscribing** processor gets streaming-processor benefits (server-tracked position, parallel segments) without a client-side token store.
+
+Spring Boot: declare streams under `axon.axonserver.persistent-streams.<name>.*` and point a processor at the stream by name:
+
+```yaml
+axon:
+  axonserver:
+    persistent-streams:
+      course-projection-stream:
+        initial-segment-count: 4
+        sequencing-policy: SequentialPerAggregatePolicy
+        initial-position: TAIL
+        batch-size: 10
+  eventhandling:
+    processors:
+      course-projection:
+        source: course-projection-stream
+```
+
+Per-stream settings: `name` (defaults to the map key), `initial-segment-count` (default 1), `thread-count` (1), `sequencing-policy` (default `SequentialPolicy`; also `SequentialPerAggregatePolicy`, `MetadataSequencingPolicy`, `FullConcurrencyPolicy`, `PropertySequencingPolicy`), `sequencing-policy-parameters`, `filter` (Axon Server query language; fixed once the stream is created), `batch-size` (1), `initial-position` (`TAIL`). Segment count, policy, filter, and initial position only apply when the stream is first created on the server.
+
+Setting `axon.axonserver.auto-persistent-streams-enabled=true` instead auto-creates one persistent stream per processor (named `<processorName>-stream`, using the `axon.axonserver.auto-persistent-streams-settings.*` template) and switches the default processor mode to subscribing.

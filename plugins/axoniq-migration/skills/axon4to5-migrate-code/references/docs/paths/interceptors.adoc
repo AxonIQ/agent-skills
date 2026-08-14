@@ -319,4 +319,4 @@ Return `null` to skip interceptor registration for that component.
 
 == Annotation-based interceptors
 
-Although the `@MessageHandlerInterceptor` annotation is present in Axon Framework 5, using it to declare interceptor methods directly within handler classes is not yet supported. This feature will be fully functional in **Axon Framework 5.2.0**.
+As of **Axon Framework 5.2.0**, interceptor methods can be declared directly within handler classes using the per-message-type annotations `@CommandHandlerInterceptor`, `@EventHandlerInterceptor`, and `@QueryHandlerInterceptor`. The method contract differs from Axon Framework 4: an intercepting method takes a `MessageHandlerInterceptorChain` parameter and returns a `MessageStream`. (The `@MessageHandlerInterceptor` annotation as a *method*-level declaration is not the mechanism for this — use the per-type annotations above, or implement the `MessageHandlerInterceptor<M>` interface.)
