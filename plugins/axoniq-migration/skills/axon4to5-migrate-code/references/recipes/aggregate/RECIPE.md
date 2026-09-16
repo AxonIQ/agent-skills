@@ -60,11 +60,7 @@ The recipe halts because the redesign cannot be made safely while only seeing th
 
 - `redesign-map-to-list` — pause this item; caller rewrites the `Map<K, V>` member as `List<V>` plus internal id management (or a custom resolver), updates every reader/projection that observed the map, then re-invokes the skill.
 
-### B2 — `SagaTestFixture` in the target's test class
-
-Only relevant when a `<target>Test` exists in scope. `grep -RnE 'SagaTestFixture' <test class>`. AF5 has no replacement. The recipe halts because the caller must decide whether to leave the saga test on AF4 deps (skip the test class), drop the test, or redesign it for AF5 patterns.
-
-### B3 — `@DeadlineHandler` / `DeadlineManager` on the aggregate
+### B2 - `@DeadlineHandler` / `DeadlineManager` on the aggregate
 
 Detect with `grep -RnE '@DeadlineHandler|DeadlineManager|deadlineManager\\.schedule|cancelSchedule|cancelAllWithinScope' <aggregate file> <aggregate package>`. AF5 has no direct deadline successor. The caller decides whether to redesign the deadline flow, remove it, or leave it on AF4 deps.
 
@@ -90,7 +86,7 @@ Inherits the catalog baseline (see DEFAULT.md § Toolbox baseline). Recipe-speci
 - [aggregates/multi-entity-migration.adoc](../../docs/paths/aggregates/multi-entity-migration.adoc) — *apply-condition:* scope contains at least one `@AggregateMember` field.
 - [aggregates/polymorphism-migration.adoc](../../docs/paths/aggregates/polymorphism-migration.adoc) — *apply-condition:* `$SOURCE` is abstract `@AggregateRoot` OR has concrete `@Aggregate` subclasses in the same module.
 - [messages.adoc](../../docs/paths/messages.adoc) — *apply-condition:* any command or event class in scope (always for this recipe).
-- [test-fixtures.adoc](../../docs/paths/test-fixtures.adoc) — *apply-condition:* `<target>Test` exists in scope AND blocker B2 did not fire.
+- [test-fixtures.adoc](../../docs/paths/test-fixtures.adoc) - *apply-condition:* `<target>Test` exists in scope.
 - [snapshotting.adoc](../../docs/paths/snapshotting.adoc) — *apply-condition:* `$SOURCE` had `snapshotTriggerDefinition` (or a post-OpenRewrite snapshot TODO marker). `SnapshotTriggerDefinition` → `SnapshotPolicy` / `@Snapshotting`, `SnapshotStore` registration. **Note (verified against `axon-5.1.x`):** the page's `@Snapshotting` annotation and the simplified `declarative(...).snapshotPolicy(...)` chain are real, but `AxonServerSnapshotStore` is commercial-only and the open-source line ships **only** `InMemorySnapshotStore` — see Step S for the version-accurate shapes.
 
 The orchestrator never reads these — the recipe consults them at FLOW.md S3 (Read References) and re-consults at S6 (Plan Migration).
@@ -256,7 +252,12 @@ For policies that need per-event matching (`whenEventMatches`), `@Snapshotting` 
 
 ### T — Test fixture migration
 
-*Apply-condition:* `target_test` exists in `# Scope` AND Blocker B2 did not fire (no `SagaTestFixture` usage in the test class).
+*Apply-condition:* `target_test` exists in `# Scope` AND uses `AggregateTestFixture`.
+
+A test class that uses `SagaTestFixture` instead is **not** this recipe's concern and is **not** a blocker:
+`axon-legacy-test` ports `SagaTestFixture` under its AF4 package, so it compiles and runs unchanged. Leave it alone,
+make sure `org.axonframework:axon-legacy-test` is on the test classpath, and route the saga it tests to the saga
+recipe.
 
 1. Migrate base test first, then any subclasses.
 2. Replace `AggregateTestFixture` with `AxonTestFixture`:
@@ -341,7 +342,7 @@ return BLOCKER
 > - [ ] **solve-manually** — pause; caller performs the redesign by hand, then re-invokes.
 ```
 
-Example — multiple blockers (B2 + B3 detected together):
+Example - multiple blockers (B1 + B2 detected together):
 
 ```
 return BLOCKER
@@ -352,17 +353,17 @@ return BLOCKER
 >
 > **Notes:** 2 blockers detected. Caller must resolve ALL before re-invoking.
 >
-> 1. **B2 (SagaTestFixture)** at `ShipmentTest.java:18` — the target's test class uses `SagaTestFixture`; AF5 has no replacement.
-> 2. **B3 (deadline handler)** at `Shipment.java:42` — `@DeadlineHandler` method `onOverdue` plus `DeadlineManager` injection at `:24`. AF5 has no direct deadline successor.
+> 1. **B1 (Map-typed @AggregateMember)** at `Shipment.java:31` - `@AggregateMember private Map<String, Parcel> parcels`. AF5 `@EntityMember` supports `List<Value>` only.
+> 2. **B2 (deadline handler)** at `Shipment.java:42` - `@DeadlineHandler` method `onOverdue` plus `DeadlineManager` injection at `:24`. AF5 has no direct deadline successor.
 >
 > **Options:**
 >
-> _For B2 (SagaTestFixture):_
+> _For B1 (Map-typed @AggregateMember):_
 > - [ ] **skip** — keep partial state; queue moves on.
 > - [ ] **revert** — restore the pre-recipe shape.
-> - [ ] **solve-manually** — pause; caller decides whether to drop the saga test, leave it on AF4 deps, or redesign it, then re-invokes.
+> - [ ] **solve-manually** - pause; caller performs the Map-to-List redesign by hand, then re-invokes.
 >
-> _For B3 (deadline):_
+> _For B2 (deadline):_
 > - [ ] **skip** — same.
 > - [ ] **revert** — same; restore the `@DeadlineHandler` + `DeadlineManager` shape.
 > - [ ] **solve-manually** — pause; caller redesigns or removes the deadline flow and re-invokes.

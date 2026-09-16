@@ -37,7 +37,7 @@ The result block carries a required free-text `NOTES` field and a required `LEAR
 
 **Learnings are mostly project-specific.** A learning's *value* is the fact about *this codebase / this migration run* — an unforeseen import path, a module layout that forced a deviation from the `# Use cases`, a behavioural difference the docs missed, a retry the docs didn't predict, **how a blocker was actually resolved here**. The single test: *would a future run, on a different project, learn something the skill docs didn't already tell it?*
 
-- **General framework knowledge is NOT a learning** ("AF5 renamed `getPayload()` to `payload()`", "AF5 has no Saga SPI"). That belongs in the recipe docs (`# Gotchas`) or the migration-paths catalog — if you find a gap there, propose an edit; do not smuggle framework facts into a per-run learning.
+- **General framework knowledge is NOT a learning** ("AF5 renamed `getPayload()` to `payload()`", "AF4 sagas run on `axon-legacy` in AF5"). That belongs in the recipe docs (`# Gotchas`) or the migration-paths catalog; if you find a gap there, propose an edit; do not smuggle framework facts into a per-run learning.
 - **Recording a recipe-defined / expected blocker as a learning is fine** — the floor below still asks for a `blocker` entry. But make the entry about the *project-specific* angle (what this codebase actually did, how you resolved it here), not a restatement of the framework fact the recipe already documents.
 
 When in doubt, ask: "is this about *this project*, or about *the framework*?" The former is the learning; the latter is a docs edit.
