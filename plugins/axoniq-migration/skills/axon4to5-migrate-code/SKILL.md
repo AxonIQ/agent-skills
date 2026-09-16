@@ -62,7 +62,7 @@ Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved 
 | Decision point | Auto action |
 |---|---|
 | Ambiguous recipe match (`mode=single`) | Pick first candidate by `applicable` score. |
-| Blocker | Auto-select the Option the recipe marked `(Recommended)`; if none is marked, `skip`. A recommended migration path (e.g. saga `stateful-rewrite`) re-enters the recipe with that option id; `skip`/`revert` resolve in-place. See `BLOCKER_RESOLUTION.md § Auto mode`. |
+| Blocker | Auto-select the Option the recipe marked `(Recommended)`; if none is marked, `skip`. A recommended migration path (e.g. saga `comment-out-deadlines`) re-enters the recipe with that option id; `skip`/`revert` resolve in-place. See `BLOCKER_RESOLUTION.md § Auto mode`. |
 | Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
 | Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
 | OpenRewrite step completes | Immediately continue to mode-specific producer. Do NOT pause or end session. |
@@ -329,7 +329,7 @@ Catalog (one file per topic; `.adoc`):
 | [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                               | Event sequencing policies                           |
 | [`token-store.adoc`](references/docs/paths/token-store.adoc)                                               | Token store schema (`mask` column)                  |
 | [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                               | Dead-Letter Queue                                   |
-| [`sagas.adoc`](references/docs/paths/sagas.adoc)                                                           | Sagas rebuilt from core building blocks             |
+| [`sagas.adoc`](references/docs/paths/sagas.adoc)                                                           | Running AF4 sagas on the `axon-legacy` module       |
 | [`timeouts.adoc`](references/docs/paths/timeouts.adoc)                                                     | Handler / processing timeouts                       |
 | [`distributed-tracing.adoc`](references/docs/paths/distributed-tracing.adoc)                               | Distributed tracing / `SpanFactory`                 |
 | [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                           | Test fixtures migration                             |
