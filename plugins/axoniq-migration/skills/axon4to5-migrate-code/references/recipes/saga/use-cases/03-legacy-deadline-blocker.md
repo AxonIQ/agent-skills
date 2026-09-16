@@ -4,7 +4,9 @@
 scheduler (upstream issue #5006). Everything else about the saga is a clean legacy-module migration - the deadline is
 the one part that cannot come along, and its replacement is a design decision the recipe cannot make.
 
-**Apply-condition:** `grep -nE '@DeadlineHandler|DeadlineManager|EventScheduler|deadlineManager\.' $SOURCE` matches.
+**Apply-condition:** B0 resolved to `axon-legacy` AND
+`grep -nE '@DeadlineHandler|DeadlineManager|EventScheduler|deadlineManager\.' $SOURCE` matches. Under
+`stateful-rewrite` a deadline is not a blocker - see [05-rewrite-deadline-comment-out.md](05-rewrite-deadline-comment-out.md).
 
 ## The saga
 
@@ -52,7 +54,7 @@ recommendation, so a deadline-bearing saga is never auto-disabled.
 
 ## Under `comment-out-deadlines`
 
-Steps 2-8 of the Toolbox apply as usual; additionally, comment out - never delete - each of:
+The `axon-legacy` Toolbox steps apply as usual; additionally, comment out - never delete - each of:
 
 ```java
 // TODO AF5: no deadline support in axon-legacy yet (#5006) - design the replacement

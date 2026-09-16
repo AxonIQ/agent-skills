@@ -22,9 +22,10 @@ return REJECTED
 
 ## What did NOT happen
 
+- No strategy question asked - the recipe rejects before reaching Blocker B0.
 - No `axon-legacy` dependency added to the build file.
-- No `SagaLifecycle` / `CommandDispatcher` parameters introduced.
-- No `@ProcessingGroup` -> `@Namespace` rewrite.
+- No `SagaLifecycle` / `CommandDispatcher` parameters introduced, no `@ProcessingGroup` -> `@Namespace` rewrite.
+- No state entity or repository created.
 - Source file byte-identical to input.
 
 ## Routing guidance in NOTES

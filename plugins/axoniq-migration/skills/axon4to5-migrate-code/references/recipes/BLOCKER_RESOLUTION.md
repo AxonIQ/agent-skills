@@ -31,4 +31,4 @@ Skip `AskUserQuestion`. Pick the option the recipe marked `(Recommended)`; if no
 > ⚙️ auto: Blocker on `<$SOURCE>` → `<chosen id>`
 
 - **skip / revert** → handled here exactly as the interactive path (mark `Blocker`, queue moves on; `revert` git-restores first). Record as `auto-<id>`.
-- **recipe-specific option** (e.g. saga `comment-out-deadlines`) -> re-enter the recipe sub-flow on the same item, passing the chosen option id as a hint, same as interactive resolution. Budget = 1: if the re-entered run blocks again, mark blocked immediately. Record as `auto-<id>`.
+- **recipe-specific option** (e.g. saga `axon-legacy`) -> re-enter the recipe sub-flow on the same item, passing the chosen option id as a hint, same as interactive resolution. Budget = 1: if the re-entered run blocks again, mark blocked immediately. Record as `auto-<id>`.

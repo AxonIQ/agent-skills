@@ -4,7 +4,7 @@
 has no dedicated saga-configuration construct: `Sagas.of(...)` builds an ordinary `EventHandlingComponent` that goes on
 a normal event processor, so the saga inherits everything the processor offers.
 
-**Apply-condition:** `configuration=native`.
+**Apply-condition:** B0 resolved to `axon-legacy` AND `configuration=native`.
 
 ## Before (AF4)
 
@@ -40,7 +40,7 @@ MessagingConfigurer.create()
 ```
 
 `Sagas` is `org.axonframework.modelling.saga.configuration.Sagas`. The saga class itself migrates exactly as in
-[use case 01](01-spring-boot-legacy-module.md) - lifecycle parameter, `CommandDispatcher` parameter, collaborators as
+[use case 01](01-legacy-spring-boot.md) - lifecycle parameter, `CommandDispatcher` parameter, collaborators as
 handler parameters.
 
 ## Processor name is the token-store key

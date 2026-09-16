@@ -4,7 +4,8 @@
 saga-store rows. Four things change: lifecycle calls, command dispatch, the injected collaborator, and
 `@ProcessingGroup`. The first two come from the OpenRewrite legacy pass; the last two are this recipe's manual work.
 
-**Apply-condition:** `configuration=spring` AND `$SOURCE` has no `DeadlineManager` / `@DeadlineHandler`.
+**Apply-condition:** B0 resolved to `axon-legacy` AND `configuration=spring` AND `$SOURCE` has no `DeadlineManager`
+/ `@DeadlineHandler`.
 
 ## Before (AF4)
 
