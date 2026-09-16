@@ -313,8 +313,10 @@ Catalog (one file per topic; `.adoc`):
 
 | Path                                                                                                       | Topic                                               |
 |------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| [`index.adoc`](references/docs/paths/index.adoc)                                                           | Migration paths entry point + what is not yet there |
 | [`aggregates/index.adoc`](references/docs/paths/aggregates/index.adoc)                                     | Aggregate migration entry point                     |
 | [`aggregates/configuration-migration.adoc`](references/docs/paths/aggregates/configuration-migration.adoc) | Aggregate Spring/Configurer wiring                  |
+| [`aggregates/event-tagging.adoc`](references/docs/paths/aggregates/event-tagging.adoc)                     | `@EventTag` / `tagKey` replacing `@AggregateIdentifier` |
 | [`aggregates/multi-entity-migration.adoc`](references/docs/paths/aggregates/multi-entity-migration.adoc)   | Aggregates with child entities (`@AggregateMember`) |
 | [`aggregates/polymorphism-migration.adoc`](references/docs/paths/aggregates/polymorphism-migration.adoc)   | Polymorphic aggregates                              |
 | [`configuration.adoc`](references/docs/paths/configuration.adoc)                                           | Global Axon configuration / Configurer              |
@@ -325,5 +327,19 @@ Catalog (one file per topic; `.adoc`):
 | [`interceptors.adoc`](references/docs/paths/interceptors.adoc)                                             | Command / Event / Query handler interceptors        |
 | [`projectors-event-processors.adoc`](references/docs/paths/projectors-event-processors.adoc)               | Projection / Event Processor wiring                 |
 | [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                               | Event sequencing policies                           |
+| [`token-store.adoc`](references/docs/paths/token-store.adoc)                                               | Token store schema (`mask` column)                  |
 | [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                               | Dead-Letter Queue                                   |
+| [`sagas.adoc`](references/docs/paths/sagas.adoc)                                                           | Sagas rebuilt from core building blocks             |
+| [`timeouts.adoc`](references/docs/paths/timeouts.adoc)                                                     | Handler / processing timeouts                       |
+| [`distributed-tracing.adoc`](references/docs/paths/distributed-tracing.adoc)                               | Distributed tracing / `SpanFactory`                 |
 | [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                           | Test fixtures migration                             |
+
+These files are **generated**. See [Keeping the catalog in sync](#keeping-the-catalog-in-sync).
+
+### Keeping the catalog in sync
+
+`references/docs/` mirrors `docs/reference-guide/modules/migration/pages` from
+[AxonIQ/AxonFramework](https://github.com/AxonIQ/AxonFramework) and is produced by
+`scripts/sync-migration-docs.sh` (Antora `include::` directives are resolved inline, so every page is
+self-contained). Never edit these files by hand: fix the content upstream, then re-run the sync. The
+provenance and per-file checksums live in `references/docs/.upstream.json`.
