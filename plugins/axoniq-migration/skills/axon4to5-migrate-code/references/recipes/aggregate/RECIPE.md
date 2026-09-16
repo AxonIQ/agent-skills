@@ -255,9 +255,9 @@ For policies that need per-event matching (`whenEventMatches`), `@Snapshotting` 
 *Apply-condition:* `target_test` exists in `# Scope` AND uses `AggregateTestFixture`.
 
 A test class that uses `SagaTestFixture` instead is **not** this recipe's concern and is **not** a blocker:
-`axon-legacy-test` ports `SagaTestFixture` under its AF4 package, so it compiles and runs unchanged. Leave it alone,
-make sure `org.axonframework:axon-legacy-test` is on the test classpath, and route the saga it tests to the saga
-recipe.
+`axon-legacy-test` ports `SagaTestFixture` under its AF4 package. Leave it alone, make sure
+`org.axonframework:axon-legacy-test` is on the test classpath, and route the saga it tests to the saga recipe - which
+owns the one change such a test does need (an `@AfterEach` closing the fixture).
 
 1. Migrate base test first, then any subclasses.
 2. Replace `AggregateTestFixture` with `AxonTestFixture`:

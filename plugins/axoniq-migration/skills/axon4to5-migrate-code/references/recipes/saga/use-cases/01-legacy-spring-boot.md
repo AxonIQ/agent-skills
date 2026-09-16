@@ -105,12 +105,17 @@ component-scanned `@Saga` bean, gives it a processor named after `@Namespace` ("
 from the context (`JpaSagaStore` when an `EntityManagerFactory` is present). `axon-legacy-test` is only needed because
 of the test below.
 
-## The existing test still compiles and runs
+## The existing test keeps its fixture, and gains an `@AfterEach`
 
 ```java
 class PaymentSagaTest {
 
     private final SagaTestFixture<PaymentSaga> fixture = new SagaTestFixture<>(PaymentSaga.class);
+
+    @AfterEach                      // <-- the one required change
+    void tearDown() {
+        fixture.close();
+    }
 
     @Test
     void preparesPaymentOnRequest() {
@@ -121,8 +126,12 @@ class PaymentSagaTest {
 }
 ```
 
-`axon-legacy-test` ports `SagaTestFixture` under its AF4 package `org.axonframework.test.saga`. Do NOT rewrite this to
-`AxonTestFixture`.
+`axon-legacy-test` ports `SagaTestFixture` under its AF4 package `org.axonframework.test.saga`, given-when-then API
+included. Do NOT rewrite this to `AxonTestFixture`.
+
+The `@AfterEach` is not optional. In AF5 the fixture runs a started `AxonConfiguration` with a live event processor and
+implements `AutoCloseable`; the AF4 fixture held nothing that needed stopping. Without the close, the test still
+compiles and still passes - the processor simply keeps running after it.
 
 ## What did NOT happen
 

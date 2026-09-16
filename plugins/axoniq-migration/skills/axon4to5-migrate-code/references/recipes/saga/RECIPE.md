@@ -194,6 +194,9 @@ chosen strategy.
    component-scanned (or declared by a `@Scope("prototype")`-annotated `@Bean` method).
    **`configuration=native`:** `$SOURCE` is registered through `Sagas.of($SOURCE.class)` on an event processor, and a
    `SagaStore` component is registered.
+7. **Every `SagaTestFixture` is closed.** For each test class in scope constructing a `SagaTestFixture`, either an
+   `@AfterEach` calls `close()` / `stop()` on it, or it is held in a try-with-resources block. Verify with
+   `grep -nE 'new SagaTestFixture' <test>` and match each hit against a `close()` / `stop()` / try-with-resources.
 
 ### Strategy `stateful-rewrite`
 
@@ -241,6 +244,8 @@ grep for lingering AF4 imports as a proxy before concluding Success.
   `axon-legacy` AND Step 1 finds an AF4 construct the legacy OpenRewrite pass should have rewritten.
 - [messages.adoc](../../docs/paths/messages.adoc) - *apply-condition:* always. Covers `getPayload()` / `getMetaData()`
   -> `payload()` / `metaData()` accessor renames inside handler bodies.
+- [test-fixtures.adoc](../../docs/paths/test-fixtures.adoc) - *apply-condition:* a test class using `SagaTestFixture`
+  or `AxonTestFixture` is in scope.
 - [projectors-event-processors.adoc](../../docs/paths/projectors-event-processors.adoc) - *apply-condition:*
   `configuration=native`, or processor properties for `$SOURCE`'s processor are in scope, or strategy
   `stateful-rewrite` (the rewritten `@Component` needs registering as an event processor).
@@ -378,13 +383,39 @@ MessagingConfigurer.create()
 
 Keep the AF4 processor name as the processor name here too - same token-store reasoning as Step 6.
 
-### Step 8 - Tests
+### Step 8 - Tests: keep `SagaTestFixture`, add `close()`
 
 *Apply-condition:* a test class in scope uses `SagaTestFixture`.
 
 Add `org.axonframework:axon-legacy-test` in test scope. `SagaTestFixture` keeps its AF4 package
-(`org.axonframework.test.saga`) and its given-when-then API, so the test compiles and runs unchanged. Do not rewrite it
-to `AxonTestFixture`.
+(`org.axonframework.test.saga`) and its given-when-then API. **Keep using it** - do NOT rewrite the test to
+`AxonTestFixture`.
+
+**One change is mandatory: the fixture must be closed.** New in AF5, `SagaTestFixture` runs a started
+`AxonConfiguration` holding a live event processor; AF4's fixture held nothing that needed stopping. The class now
+implements `AutoCloseable` (`close()`, aliased by `stop()`). An unclosed fixture leaves that processor running past the
+end of the test.
+
+Add an `@AfterEach` to **every** test class that constructs a `SagaTestFixture`:
+
+```java
+class PaymentSagaTest {
+
+    private final SagaTestFixture<PaymentSaga> fixture = new SagaTestFixture<>(PaymentSaga.class);
+
+    @AfterEach
+    void tearDown() {
+        fixture.close();
+    }
+
+    // @Test methods unchanged
+}
+```
+
+`org.junit.jupiter.api.AfterEach`. When the fixture is a local variable rather than a field, a try-with-resources
+block is equivalent and needs no `@AfterEach` - `close()` runs even when the test fails, which is the point.
+
+Apply this to every fixture in the class, not just the first: a test class holding two fixtures needs both closed.
 
 ---
 
@@ -546,10 +577,13 @@ public <SagaName>(CommandGateway commandGateway, <Name>StateRepository repositor
 - **`SagaEntry` and `AssociationValueEntry` keep their AF4 FQN** (`org.axonframework.modelling.saga.repository.jpa`),
   so an existing `@EntityScan(basePackageClasses = SagaEntry.class)` still compiles and still resolves. Spring Boot
   registers both with the persistence unit automatically when a `JpaSagaStore` is selected.
-- **`SagaTestFixture` survives via `axon-legacy-test`**, but its deadline and event-scheduler methods throw
-  `UnsupportedOperationException` ("...not supported: deadlines and the event scheduler have not been ported into
-  axon-legacy yet"). A saga test that calls `whenTimeElapses(...)` fails at runtime, not at compile time - pair it
-  with B1.
+- **`SagaTestFixture` survives via `axon-legacy-test` but must now be closed.** It runs a started `AxonConfiguration`
+  with a live event processor and implements `AutoCloseable`; AF4's fixture did not. The test still compiles without
+  an `@AfterEach`, so nothing points at the omission - it shows up later as processors left running across the suite.
+  See Step 8.
+- **`SagaTestFixture`'s deadline and event-scheduler methods throw** `UnsupportedOperationException` ("...not supported:
+  deadlines and the event scheduler have not been ported into axon-legacy yet"). A saga test that calls
+  `whenTimeElapses(...)` fails at runtime, not at compile time - pair it with B1.
 - **A `SagaStore` bean is resolved by convention.** User `SagaStore` bean, else `JpaSagaStore` (an
   `EntityManagerFactory` is present), else `JdbcSagaStore` (a `DataSource` is present), else `InMemorySagaStore`.
   `@Saga(sagaStore = "beanName")` overrides it per saga type. An in-memory fallback silently loses in-flight sagas on

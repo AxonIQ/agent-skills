@@ -85,7 +85,8 @@ ported into axon-legacy yet, see #5006. Everything else the Axon Framework 4 sag
 ```
 
 So a `SagaTestFixture` test calling `whenTimeElapses(...)` / `expectScheduledDeadline(...)` compiles green and fails
-red. Report it in NOTES together with the B1 decision; the other assertions in the same fixture are unaffected.
+red. Report it in NOTES together with the B1 decision; the other assertions in the same fixture are unaffected. The
+`@AfterEach fixture.close()` of Step 8 is still required here - a failing test leaves the processor running otherwise.
 
 ## What did NOT happen
 
