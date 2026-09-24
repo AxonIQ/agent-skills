@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Workflow implementation targets **axoniq-workflow 0.2.0** (`io.axoniq.framework:axoniq-workflow-*`, Axon
+  Framework 5.2+, verified on 5.3.2). The old `io.axoniq.framework.workflow:axon-workflow-*` 0.1.0 coordinates and the
+  "pin the BOM to 5.1.2" instruction are gone: 0.1.0 does not start on AF 5.2+ (`NoSuchFieldError:
+  GenericEventMessage.clock`). The skill now uses the 0.2.0 API: `startOnEventClass` / `startOnEventName` instead of
+  `startOnEvent`, explicit `workflowNamespace` / `workflowName`, `@Workflow*Handler` lifecycle handlers instead of
+  `@On*`, `Associations.associate` + `EventAssociationsUtils`, typed `awaitEvent` / `waitForEvent` with a step
+  customizer, `StepTimedOutException`, command dispatch through `CommandDispatcher.forContext(pc)`, and the BDD
+  `WorkflowTestFixture` instead of `AbstractDeclarativeTestBase`.
+- Command handlers inject state as `Optional<State>` (or a nullable Kotlin type): on AF 5.3 a command for an entity
+  without events no longer gets a freshly created state, it gets no entity.
+- QUERY components get unit tests by default (projection handlers + query handlers, no Spring context).
+- New rule in SKILL.md: when applying a spec delta to an already implemented component, report suspected bugs outside
+  the delta instead of fixing them silently. The components table's new **Version** column
+  (`v2 (v1 implemented)`) is what tells the two situations apart.
 - `mark_component_implemented` now takes the **version** you implemented and is rejected if it isn't the
   latest (the spec was edited mid-implementation). On rejection, re-fetch the component, reconcile your
   code with the new spec, and mark again at the new version. Drift detection gains a `PENDING_CHANGES`

@@ -41,7 +41,7 @@ Always start by fetching the current state:
 |---|---|
 | `get_project(projectId)` | High-level snapshot: name, stage, journeys with statuses, components with statuses, messages, notes. **Cheapest entry point.** |
 | `list_journeys(projectId)` | Journeys table: id, name, **type** (`EXECUTION`/`BROWSE`), **domains** (comma-separated, may be multiple), **actor**, **importance** (1-10), status, description. |
-| `list_components(projectId)` | Components table: id, name, type, **domains** (comma-separated, may be multiple), status, **supports** (the top journeys that reference this component, with their importance scores in parentheses, e.g. `rent-bike (10), return-bike (9)`), description. |
+| `list_components(projectId)` | Components table: id, name, type, **domains** (comma-separated, may be multiple), status, **version** (`v1`, `v1 (implemented)` or `v2 (v1 implemented)`: the latest spec version, and which version the code implements), **supports** (the top journeys that reference this component, with their importance scores in parentheses, e.g. `rent-bike (10), return-bike (9)`), description. |
 | `get_journey_details(projectId, journeyId)` | Primary flow + alternative flows for one journey. |
 | `get_component_details(projectId, componentId)` | Full component spec — handlers, messages, exceptions, scenarios. |
 
@@ -145,7 +145,7 @@ When listing components, cross-check MCP status vs `.axoniq` marker in source:
 | MCP status | Local marker | Verdict |
 |---|---|---|
 | `APPROVED` | absent | **ready to implement** |
-| `APPROVED` | present | **drift — MCP doesn't reflect implementation**; offer to call `mark_component_implemented(projectId, componentId, version)` with the latest version |
+| `APPROVED` | present | **drift — MCP doesn't reflect implementation**; offer to call `mark_component_implemented(projectId, componentId, version)` with the latest version. Unless the Version column reads `vN (vM implemented)`: then nothing is lost, the spec moved on after the implementation; treat it as the `PENDING_CHANGES` row below |
 | `sync: PENDING_CHANGES` (from get_component_details) | present | **spec moved on** — implemented at an earlier version than the latest; re-fetch, reconcile your code with the latest spec, and `mark_component_implemented` at the new latest version |
 | `IMPLEMENTING` (us) | absent | **scaffolding interrupted** — resume by re-running the type-specific implement skill |
 | `IMPLEMENTING` (us) | present | **in progress** — fine |
@@ -163,6 +163,18 @@ If the spec is asking you to write code that feels structurally wrong — model 
 How to bounce well: quote the specific directives or fields that conflict, name the architectural rule being violated if you can identify it, and propose a concrete corrected shape. Describe the model inconsistency, not the implementation symptom ("the implementation is hard" is not a useful prompt). After the call returns, re-fetch via MCP before resuming — the Platform may have updated the spec.
 
 When NOT to bounce: taste differences (verbose names, suboptimal id casing, scenario phrasing) are not smells. The bounce trigger is **a structural issue you cannot resolve with local code alone**.
+
+## Changing existing code — stay inside the spec delta
+
+When a component is already implemented and the spec moved on (`v2 (v1 implemented)` in the components table, `sync: PENDING_CHANGES` in its details), or when you pick up someone else's half-finished component, the job is the **difference** between the implemented version and the latest one. Read both from `get_component_details`, apply that difference, run the tests, and leave the rest of the code as you found it.
+
+If, while doing that, you believe existing code is wrong (a handler that sets the wrong status, a missing guard) but the spec delta does not ask for the change:
+
+- don't fix it silently — a green test run hides your judgement calls from the user;
+- name it in your reply as a separate finding, with file and line, and ask before changing it;
+- if the problem is in the spec rather than the code, bounce it through `chat_with_platform` (see "Spec smells").
+
+A self-initiated behaviour change that turns out to be right is still a problem when nobody knows it happened.
 
 ## Reference files (read on demand)
 

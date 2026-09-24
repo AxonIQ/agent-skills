@@ -105,14 +105,18 @@ Examples for component `available-bikes-view` (camelCase: `availableBikesView`):
 - No exceptions in the spec sense — query handlers return data or empty results, not domain exceptions.
 - No write-side AxonTestFixture tests — those are for COMMAND components only.
 
-## Tests (optional)
+## Tests (required)
 
-Standard Spring tests are optional and only generated if the user explicitly asks. If generated:
-- Use `@DataJpaTest` for the repository.
-- Use Mockito/Mockk for `QueryGateway` in controller tests.
-- Place tests under `{{source_test_directory}}/{{source_path}}/<componentId-as-snake>/`.
+Write one unit test class per QUERY component at `{{source_test_directory}}/{{source_path}}/<componentId-as-snake>/<ComponentName>QueryComponentTest{{file_extension}}`. [SKILL.md](SKILL.md) only marks a component implemented once its tests pass, and an untested projection is the one that silently drifts from the spec on the next change.
 
-Don't generate tests by default — the spec's `scenarios` field is empty for QUERY components.
+Test the component class directly, without Spring and without a database: construct `<ComponentName>QueryComponent` with a repository test double (a Mockito mock, or a small map-backed fake when handlers read back what they wrote), call the `@EventHandler` methods with event payloads, then call the `@QueryHandler` methods and assert on the returned result objects.
+
+Cover, per component:
+- every `@EventHandler`: the entity it creates or updates, and that applying the same event twice leaves the same state (idempotency);
+- every `@QueryHandler`: a populated result and the empty / not-found case;
+- the filter the spec describes for list queries (only available bikes, only this customer's rentals, ...).
+
+Don't use `@SpringBootTest` or `@DataJpaTest` here: the skeleton has no test database, and the Axon Server connector on the classpath would try to connect. Controller tests are optional.
 
 ## When to stop and ask
 

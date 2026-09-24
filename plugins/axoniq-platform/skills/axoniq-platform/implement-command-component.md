@@ -140,6 +140,26 @@ Audit step before declaring complete: for every status/lifecycle field, point to
 
 (There is also a derivation-time rule that events must have the properties state needs — that's handled server-side by the Platform AI. If an event is missing a property your event-sourcing handler needs, fix it via `chat_with_platform` rather than working around it locally.)
 
+## State injection — `Optional<State>` (Axon Framework 5.3+)
+
+On Axon Framework 5.3 a command whose entity has no events yet does **not** get a freshly built state: `@InjectEntity` resolves to "not found", and for a plain `state: <ComponentName>State` parameter that fails the command with `EntityNotFoundException`. Every first command of an entity (`RegisterBike`, the first `RequestBikeRental` for a bike) hits this.
+
+Inject the state as `Optional<<ComponentName>State>` (`import java.util.Optional`) and materialise the initial state yourself, the same way the `@EntityCreator` would build it:
+
+```kotlin
+@CommandHandler
+fun handle(
+    command: <Command>,
+    @InjectEntity(idProperty = "<property-or-method>") injected: Optional<<ComponentName>State>,
+    eventAppender: EventAppender,
+) {
+    val state = injected.orElseGet { <ComponentName>State() }   // State(command.<id>) when the creator takes @InjectEntityId
+    ...
+}
+```
+
+Don't rely on Kotlin nullability (`state: <ComponentName>State?`) for this. The resolver decides on a "nullable" annotation on the parameter, and a Kotlin `?` emits none, so on 5.3.2 such a parameter still failed with `EntityNotFoundException`. `Optional` is unambiguous on both sides. The `AxonTestFixture` tests are unaffected: `given().noPriorActivity()` followed by the first command now exercises exactly this path.
+
 ## State-machine guards (idempotency)
 
 **Every command handler should be idempotent against its own current state.** Three concrete sources of duplicate or conflicting commands you cannot prevent at the dispatch layer:
@@ -154,9 +174,10 @@ Audit step before declaring complete: for every status/lifecycle field, point to
 @CommandHandler
 fun handle(
     command: <Command>,
-    @InjectEntity(idProperty = "<property-or-method>") state: <ComponentName>State,
+    @InjectEntity(idProperty = "<property-or-method>") injected: Optional<<ComponentName>State>,
     eventAppender: EventAppender,
 ) {
+    val state = injected.orElseGet { <ComponentName>State() }
     // 1. Idempotency guard — if the current state already represents this command's effect,
     //    OR a competing terminal command has already won, return silently. NO exception.
     //    Picking "return silently" vs "throw" depends on caller expectations:
@@ -192,9 +213,10 @@ fun handle(
      @CommandHandler
      fun handle(
          command: <Command>,
-         @InjectEntity(idProperty = "<property-or-method>") state: <ComponentName>State,
+         @InjectEntity(idProperty = "<property-or-method>") injected: Optional<<ComponentName>State>,
          eventAppender: EventAppender,
      ) {
+         val state = injected.orElseGet { <ComponentName>State() }
          // 1. Idempotency guard against current lifecycle/status state.
          //    Required for every command that transitions a state machine.
          if (state.<lifecycleField> != <ExpectedStatusToTransitionFrom>) return

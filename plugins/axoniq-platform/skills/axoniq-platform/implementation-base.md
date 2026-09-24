@@ -80,16 +80,21 @@ Don't write anything else into the file — `{ "componentId": "..." }` is the en
 
 The `axoniq-app-development` plugin has the full reference, but two clusters of imports recur enough in this codebase to call out:
 
-**axon-workflow 0.1.0** (NOT covered by the `axoniq-app-development` plugin — that's a separate AxonIQ product):
+**axoniq-workflow 0.2.0** (`io.axoniq.framework:axoniq-workflow-*`; NOT covered by the `axoniq-app-development` plugin — that's a separate AxonIQ product):
 
 | Concern | Import |
 |---|---|
-| `@Workflow` / `@OnFailure` / `@OnCancellation` | `io.axoniq.workflow.runtime.api.annotation.*` |
+| `@Workflow`, and the lifecycle handlers `@WorkflowCompletedHandler` / `@WorkflowFailedHandler` / `@WorkflowCancelledHandler` / `@WorkflowTimedOutHandler` | `io.axoniq.workflow.runtime.api.annotation.*` |
 | `WorkflowStatus` | `io.axoniq.workflow.runtime.api.execution.status.WorkflowStatus` |
-| `StepFailedException` | `io.axoniq.workflow.runtime.api.execution.state.StepFailedException` |
-| `payloadProperty(...)` | `io.axoniq.workflow.runtime.association.PayloadPropertyValueRetriever.payloadProperty` |
-| `SimpleWorkflowContext` / `.equalsTo(...)` | `io.axoniq.workflow.dsl.simple.SimpleWorkflowContext` |
-| `Associations.associate(...)` | `io.axoniq.workflow.dsl.api.AssociationsUtils.associate` |
+| `StepFailedException` / `StepTimedOutException` / `StepCancellationException` | `io.axoniq.workflow.runtime.api.execution.state.*` |
+| `WorkflowStepResult` / `CombinatorWorkflowStepResult` | `io.axoniq.workflow.runtime.api.execution.state.*` |
+| `associate(...)` | `io.axoniq.workflow.runtime.association.Associations.associate` |
+| `payloadProperty(...)` / `equalsTo(...)` | `io.axoniq.workflow.dsl.api.EventAssociationsUtils.payloadProperty` / `.equalsTo` |
+| `SimpleWorkflowContext` | `io.axoniq.workflow.dsl.simple.SimpleWorkflowContext` |
+| `PayloadProcessor` (the `(pc, payload) -> payload` action of an `execute` step) | `io.axoniq.workflow.runtime.api.payload.PayloadProcessor` |
+| `CommandDispatcher` (dispatch a command inside a step, bound to that step's `ProcessingContext`) | `org.axonframework.messaging.commandhandling.gateway.CommandDispatcher` |
+
+> `AssociationsUtils`, `@OnSuccess` / `@OnFailure` / `@OnCancellation` / `@OnTimeout`, `startOnEvent`, `ctx.waitFor(...)` and `AbstractDeclarativeTestBase` were 0.1.0 names and do not exist in 0.2.0. If you find them in existing code, port them (see [implement-workflow-component.md](implement-workflow-component.md)).
 
 **Axon Server test enhancer** (disable it so the fixture runs fully in-memory):
 
@@ -369,7 +374,7 @@ fixture.given().event(tagged(<EventName>(...), "<tagKey>", "<value>"))
 </dependency>
 ```
 
-QUERY components do NOT get write-side fixture tests. Spring tests are optional.
+QUERY components do NOT get write-side fixture tests; they get plain unit tests of the projection and query handlers (see [implement-query-component.md](implement-query-component.md#tests-required)).
 
 ## Event handler timestamps — `@Timestamp Instant`
 
