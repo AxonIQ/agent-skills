@@ -13,6 +13,17 @@ Run the Axon 4→5 OpenRewrite recipe in the user's project. Nothing else. Repor
 
 **Done when**: `scripts/migrate.sh <framework>` exits 0 and the project has changes vs its prior state.
 
+**The recipe may add dependencies.** Its `Axon4ToAxon5Legacy` sub-recipe adds `org.axonframework:axon-legacy` to any
+module whose sources use `org.axonframework.modelling.saga..*` or `org.axonframework.spring.stereotype.Saga`. That
+module is the one keeping its AF4 sagas running on AF5. In the same pass it moves static `SagaLifecycle` calls onto an
+injected `SagaLifecycle` handler parameter and replaces `CommandGateway` saga fields with a `CommandDispatcher` handler
+parameter (`send` stays fire-and-forget; `sendAndWait` stays synchronous). A new `axon-legacy` entry in the diff is
+expected output, not a defect: do not strip it. Everything else a legacy saga needs (collaborators moved out of
+fields, `axon-legacy-test` for `SagaTestFixture` tests, processor-name preservation) is the `axon4to5-migrate-code`
+saga recipe's job. `Axon4ToAxon5Legacy` is part of the top-level recipe from `axon-migration` **5.4.0** onward; on an
+older pinned version (`references/recipe-version`) a saga passes through untouched and the saga recipe applies the same
+rewrites by hand.
+
 **Compilation is NOT a success criterion.** The OpenRewrite recipe cannot perform the full Axon 4 → 5 migration on its own — there will be missing parts that require manual follow-up (custom code paths, removed APIs without 1:1 replacements, ambiguous mappings). A non-compiling project after the recipe is the expected baseline for the next step, not a failure of this skill.
 
 # Inputs

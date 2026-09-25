@@ -1,6 +1,14 @@
-# Use case 01 — JPA state shape (Spring, no deadlines)
+# Use case 04 - `stateful-rewrite`: JPA state shape (Spring, no deadlines)
 
-**Why interesting:** demonstrates full structural rewrite of an AF4 `@Saga` to `@Component @DisallowReplay` with JPA-backed state. Shows that three things change together: the saga class itself, a new state entity, and a new repository. No deadline handling in this case.
+**Why interesting:** the full structural rewrite of an AF4 `@Saga` into a `@Component @DisallowReplay` event handler
+with JPA-backed state. Three things change together: the saga class itself, a new state entity, and a new repository.
+No deadline handling in this case.
+
+**Apply-condition:** B0 resolved to `stateful-rewrite` AND `$SOURCE` has no `DeadlineManager` / `@DeadlineHandler`.
+
+> **This strategy abandons the saga store.** The AF4 rows are never read again, so any instance still in flight stops
+> progressing. It is the right choice only when nothing unfinished has to run in this application - otherwise pick
+> `axon-legacy` (see [01-legacy-spring-boot.md](01-legacy-spring-boot.md)).
 
 ## Before (AF4)
 
@@ -81,7 +89,7 @@ public class PaymentSaga {
 }
 ```
 
-### PaymentState.java (new file — same package)
+### PaymentState.java (new file - same package)
 
 ```java
 import jakarta.persistence.Entity;
@@ -117,7 +125,7 @@ public class PaymentState {
 }
 ```
 
-### PaymentStateRepository.java (new file — same package)
+### PaymentStateRepository.java (new file - same package)
 
 ```java
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -132,11 +140,11 @@ public interface PaymentStateRepository extends JpaRepository<PaymentState, Stri
 
 ## What changed
 
-- `@Saga` → `@Component @DisallowReplay`
-- Saga fields (`bikeId`, `renter`) → fields in `PaymentState` entity
-- `@StartSaga @SagaEventHandler(associationProperty = "bikeId")` → `@EventHandler` saves a new `PaymentState` row (the `paymentReference` / correlation key becomes the JPA `@Id`)
-- `SagaLifecycle.associateWith("paymentReference", value)` → implicit: the state entity is looked up by the correlation key (`event.paymentReference()`)
-- `@EndSaga @SagaEventHandler(...)` → `@EventHandler` updates state status (or deletes row)
+- `@Saga` -> `@Component @DisallowReplay`
+- Saga fields (`bikeId`, `renter`) -> fields in `PaymentState` entity
+- `@StartSaga @SagaEventHandler(associationProperty = "bikeId")` -> `@EventHandler` saves a new `PaymentState` row (the `paymentReference` / correlation key becomes the JPA `@Id`)
+- `SagaLifecycle.associateWith("paymentReference", value)` -> implicit: the state entity is looked up by the correlation key (`event.paymentReference()`)
+- `@EndSaga @SagaEventHandler(...)` -> `@EventHandler` updates state status (or deletes row)
 - `CommandGateway` field removed; `CommandDispatcher commandDispatcher` added as method parameter on each `@EventHandler`
 - Two new files created: `PaymentState.java` (`@Entity`) and `PaymentStateRepository.java` (`JpaRepository`)
 
@@ -145,4 +153,4 @@ public interface PaymentStateRepository extends JpaRepository<PaymentState, Stri
 - Processor wiring: the migrated `@Component` must be registered as an event processor. For Spring, add a `@Bean EventProcessorDefinition` in the `@Configuration` class (see `projectors-event-processors.adoc`). Without it, the handlers are auto-assigned to the default processor which may conflict with other components.
 - `@DisallowReplay` prevents double-processing of state-creating handlers during event replay. Required.
 - The JPA entity needs a no-arg constructor for Hibernate (add `public PaymentState() {}`).
-- `CommandDispatcher` is injected per-handler by the framework via `ProcessingContext`. Not available in `@Scheduled` methods — use `CommandGateway` field there.
+- `CommandDispatcher` is injected per-handler by the framework via `ProcessingContext`. Not available in `@Scheduled` methods - use `CommandGateway` field there.

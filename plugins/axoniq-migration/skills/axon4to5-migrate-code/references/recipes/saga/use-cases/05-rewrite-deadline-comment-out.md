@@ -1,8 +1,16 @@
-# Use case 02 — `stateful-rewrite` of a deadline-bearing saga (comment out + follow-up)
+# Use case 05 - `stateful-rewrite` of a deadline-bearing saga (comment out + follow-up)
 
-**Why interesting:** AF5 has no `DeadlineManager`. At B0 a deadline-bearing saga is recommended `skip`; this use case shows what happens when the caller **explicitly chooses `stateful-rewrite` anyway**, accepting the deadline follow-up. The recipe migrates the full saga structure (class, event handlers, state entity, repository) but cannot design the deadline replacement — that is a project-specific decision. Deadline code is commented out with TODO markers; the recipe returns **Success** and flags the deadline replacement as required follow-up in NOTES.
+**Why interesting:** implementing timeouts by hand is the accepted premise of `stateful-rewrite`, so a deadline here is
+**not** a blocker the way it is under `axon-legacy` (see
+[03-legacy-deadline-blocker.md](03-legacy-deadline-blocker.md)). The recipe migrates the full saga structure (class,
+event handlers, state entity, repository) but cannot design the deadline replacement - interval, mechanism,
+cancellation and error handling are project decisions. Deadline code is commented out with TODO markers; the recipe
+returns **Success** and flags the replacement as required follow-up in NOTES.
 
-## Before (AF4) — deadline-bearing saga
+**Apply-condition:** B0 resolved to `stateful-rewrite` AND `$SOURCE` injects `DeadlineManager` OR has
+`@DeadlineHandler` methods.
+
+## Before (AF4) - deadline-bearing saga
 
 ```java
 @Saga
@@ -41,7 +49,7 @@ public class PaymentSagaWithDeadline {
 }
 ```
 
-## After (AF5) — partial migration, deadline code commented out
+## After (AF5) - partial migration, deadline code commented out
 
 ```java
 import org.axonframework.messaging.commandhandling.gateway.CommandDispatcher;
@@ -49,8 +57,8 @@ import org.axonframework.messaging.commandhandling.gateway.CommandGateway;
 import org.axonframework.messaging.eventhandling.annotation.EventHandler;
 import org.axonframework.messaging.eventhandling.replay.annotation.DisallowReplay;
 import org.springframework.stereotype.Component;
-// import org.axonframework.deadline.DeadlineManager;            // TODO AF5: removed — no equivalent
-// import org.axonframework.deadline.annotation.DeadlineHandler; // TODO AF5: removed — no equivalent
+// import org.axonframework.deadline.DeadlineManager;            // TODO AF5: removed - no equivalent
+// import org.axonframework.deadline.annotation.DeadlineHandler; // TODO AF5: removed - no equivalent
 
 @Component
 @DisallowReplay
@@ -59,7 +67,7 @@ public class PaymentSagaWithDeadline {
     private final CommandGateway commandGateway;
     private final PaymentSagaWithDeadlineStateRepository repository;
 
-    // TODO AF5: DeadlineManager removed — design replacement (e.g. @Scheduled poller on state entity)
+    // TODO AF5: DeadlineManager removed - design replacement (e.g. @Scheduled poller on state entity)
     // private transient DeadlineManager deadlineManager;
 
     public PaymentSagaWithDeadline(CommandGateway commandGateway,
@@ -79,7 +87,7 @@ public class PaymentSagaWithDeadline {
         repository.findById(event.paymentReference())
                   .ifPresent(state -> {
                       state.setStatus(PaymentSagaWithDeadlineState.Status.PREPARED);
-                      // TODO AF5: schedule 30s deadline — deadlineManager.schedule(...) removed
+                      // TODO AF5: schedule 30s deadline - deadlineManager.schedule(...) removed
                       // deadlineManager.schedule(Duration.ofSeconds(30), "cancelPayment", event.paymentId());
                   });
     }
@@ -93,7 +101,7 @@ public class PaymentSagaWithDeadline {
                   });
     }
 
-    // TODO AF5: @DeadlineHandler has no AF5 equivalent — implement as @Scheduled poller or manual scheduler
+    // TODO AF5: @DeadlineHandler has no AF5 equivalent - implement as @Scheduled poller or manual scheduler
     // @DeadlineHandler(deadlineName = "cancelPayment")
     // public void cancelPayment(String paymentId) {
     //     commandGateway.send(new RejectPaymentCommand(paymentId));
@@ -103,14 +111,14 @@ public class PaymentSagaWithDeadline {
 
 ## What changed
 
-- `@Saga` → `@Component @DisallowReplay` (saga structure fully migrated)
-- `@SagaEventHandler` → `@EventHandler` with JPA repository lookup
-- `SagaLifecycle.associateWith(...)` → implicit via `repository.save(new ...State(...))`
-- `@EndSaga` → `@EventHandler` + `state.setStatus(CONFIRMED)`
+- `@Saga` -> `@Component @DisallowReplay` (saga structure fully migrated)
+- `@SagaEventHandler` -> `@EventHandler` with JPA repository lookup
+- `SagaLifecycle.associateWith(...)` -> implicit via `repository.save(new ...State(...))`
+- `@EndSaga` -> `@EventHandler` + `state.setStatus(CONFIRMED)`
 - **`DeadlineManager` field commented out** with TODO
 - **`deadlineManager.schedule(...)` call commented out** with TODO
 - **`@DeadlineHandler` method commented out** with TODO block
-- `CommandGateway` field kept (constructor-injected) — needed if caller adds `@Scheduled` poller later
+- `CommandGateway` field kept (constructor-injected) - needed if caller adds `@Scheduled` poller later
 - Two new files created: `PaymentSagaWithDeadlineState.java`, `PaymentSagaWithDeadlineStateRepository.java`
 - Recipe returns **Success** with the deadline replacement flagged as required follow-up in NOTES
 
@@ -125,5 +133,5 @@ public class PaymentSagaWithDeadline {
 ## Caveats
 
 - `CommandGateway` field is kept because the future `@Scheduled` poller cannot receive `CommandDispatcher` as a method parameter (pollers are not event handlers). This is intentional.
-- The state entity already has a `timestamp` field and `findAllByTimestampLessThanAndStatusIn` repository method — ready to be used by the caller's `@Scheduled` poller.
+- The state entity already has a `timestamp` field and `findAllByTimestampLessThanAndStatusIn` repository method - ready to be used by the caller's `@Scheduled` poller.
 - `DeadlineManager.cancelAllWithinScope(...)` in `@EndSaga` handlers is also commented out. The caller's poller will naturally skip terminal-status rows via `statusIn(PENDING, PREPARED)` predicate.
