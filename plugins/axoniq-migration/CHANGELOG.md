@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-06
+
+### Added
+
+- Skill-local link to the dedicated Saga to Workflow Upgrade guide, which owns the editable process diagram and detailed procedure.
+
+- `axon4to5-openrewrite`: optional `--recipe-version` for a selected release, preserving the pinned default; validate the version and pass it consistently to Maven or Gradle. Pin the Maven OpenRewrite plugin to 6.46.1.
+- `saga-to-workflow`: scoped upgrade from working AF5 legacy sagas to Axoniq workflows, with behavioral inventory, timer/retry/compensation mapping, coexistence, drain and retirement guidance, and adaptable Java helpers and fixture tests.
+- Explicit prerequisite handoff to the staged framework upgrade guide and existing AF4-to-AF5 skills; regular-to-DCB context conversion and legacy-saga compatibility remain outside the new skill.
+
+### Changed
+
+- Upgrade plugin descriptions and installation examples include `saga-to-workflow` for all supported runtimes.
+
 ### Fixed
 
+- `axon4to5-migrate-code`: replace the obsolete saga-to-custom-JPA rewrite and removed saga SPI guidance with the actual Axoniq legacy saga upgrade path. Preserve serialized state and existing behavior, verify legacy fixture tests, and report unresolved deadline compatibility as a blocker instead of commenting it out.
 - `axon4to5-migrate-code`: preserve command routing when migrating `@TargetAggregateIdentifier`. AF4's `@TargetAggregateIdentifier` was both the target-id and the command's routing key (same-entity commands handled sequentially); migrating it to `@TargetEntityId` alone drops that guarantee. The pinned OpenRewrite recipe (5.2.0) now lifts `routingKey` automatically in the common case (AxonIQ/AxonFramework#4701); the aggregate recipe verifies the result and reconciles `@Command(routingKey = "…")` against the command's actual state (absent / bare / already correct) as a safety net, covering Kotlin `data class` properties too. Docs and use-case examples updated accordingly.
 
 ## [0.2.2] - 2026-07-19
