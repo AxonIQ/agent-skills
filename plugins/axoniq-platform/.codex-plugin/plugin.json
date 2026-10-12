@@ -1,0 +1,42 @@
+{
+  "name": "axoniq-platform",
+  "version": "0.1.0",
+  "description": "Implement AxonIQ Platform projects locally: read the project spec (journeys, components, messages) over MCP and generate Axon Framework 5 code for command, query, external-system, and workflow components.",
+  "author": {
+    "name": "Axon Framework Team",
+    "email": "info@axoniq.io",
+    "url": "https://www.axoniq.io/"
+  },
+  "homepage": "https://github.com/AxonIQ/agent-skills",
+  "repository": "https://github.com/AxonIQ/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "axoniq",
+    "axon",
+    "platform",
+    "mcp",
+    "spec",
+    "event-sourcing",
+    "cqrs",
+    "code-generation"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Axoniq Platform Dev Tools",
+    "shortDescription": "Implement AxonIQ Platform projects locally from their spec.",
+    "longDescription": "A skill for implementing AxonIQ Platform projects on your machine: read the project spec (journeys, components, messages) over MCP and generate Axon Framework 5 code for command, query, external-system, and workflow components.",
+    "developerName": "Axoniq",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.axoniq.io/",
+    "brandColor": "#0055A5",
+    "defaultPrompt": [
+      "Read my AxonIQ Platform project spec over MCP and implement a command component locally.",
+      "Implement a query component for this AxonIQ Platform project from its spec.",
+      "Generate the Axon Framework 5 code for a workflow component in my AxonIQ Platform project."
+    ]
+  }
+}
