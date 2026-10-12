@@ -1,7 +1,7 @@
 ---
 name: axon4to5-openrewrite
-description: Apply the Axon Framework 4 → 5 OpenRewrite bulk-migration recipe (maven or gradle, free or commercial variant). Use when the user says "run openrewrite", "apply axon migration recipe", "axon4to5-openrewrite", "migrate to axon 5", or "migrate to axoniq 5". Detects build tool, picks the recipe by --framework, runs, offers to commit. Idempotent — safe to re-run.
-argument-hint: --framework {axon|axoniq} [--commit {true|false}]
+description: Run Axon 4 to 5 OpenRewrite upgrade for Maven or Gradle. Select the Axon or Axoniq recipe and an optional recipe version. Use for bulk source conversion before manual upgrade.
+argument-hint: --framework {axon|axoniq} [--recipe-version <version>] [--commit {true|false}]
 user-invocable: true
 effort: medium
 model: sonnet
@@ -11,23 +11,24 @@ model: sonnet
 
 Run the Axon 4→5 OpenRewrite recipe in the user's project. Nothing else. Report success/failure and offer the standard commit.
 
-**Done when**: `scripts/migrate.sh <framework>` exits 0 and the project has changes vs its prior state.
+**Done when**: `scripts/migrate.sh <framework> [recipe-version]` exits 0 and the project has changes vs its prior state.
 
-**Compilation is NOT a success criterion.** The OpenRewrite recipe cannot perform the full Axon 4 → 5 migration on its own — there will be missing parts that require manual follow-up (custom code paths, removed APIs without 1:1 replacements, ambiguous mappings). A non-compiling project after the recipe is the expected baseline for the next step, not a failure of this skill.
+**Compilation is NOT a success criterion.** The OpenRewrite recipe cannot perform the full Axon 4 → 5 upgrade on its own — there will be missing parts that require manual follow-up (custom code paths, removed APIs without 1:1 replacements, ambiguous mappings). A non-compiling project after the recipe is the expected baseline for the next step, not a failure of this skill.
 
 # Inputs
 
 - `framework` ∈ {`axon`, `axoniq`} — extract from `--framework <value>` in user's message. Default = `axoniq` if absent.
 - `commit` ∈ {`true`, `false`, _absent_} — extract from `--commit <value>` in user's message. Controls post-run commit behaviour (see **Commit** below). Absent = ask interactively.
 - CWD = user's target project root (where `pom.xml` or `build.gradle[.kts]` lives).
-- Recipe artifact version is pinned in `references/recipe-version` (single source — edit there to bump).
+- `recipe-version` (optional) — extract from `--recipe-version <version>`. Pass the exact value as the script's second argument. It must start with a digit and contain only letters, digits, `.`, `_`, or `-` (for example, `5.4.0`); reject whitespace, options, and other characters.
+- Without an override, the recipe artifact version is pinned in `references/recipe-version`. An override does not change that file. Record the resolved version for reporting and retries; verify it is the intended release.
 
 # Steps
 
-1. Resolve `framework`. Reject anything other than `axon` / `axoniq` with one line, stop.
+1. Resolve `framework` and optional `recipe-version`. Reject an unsupported framework or invalid version with one line, stop.
 2. Confirm CWD has `pom.xml` OR `build.gradle[.kts]`. If not, stop with one line.
-3. Run: `<skill-dir>/scripts/migrate.sh <framework>`
-   - The script self-locates and picks maven vs gradle.
+3. Run: `<skill-dir>/scripts/migrate.sh <framework> [recipe-version]`, passing the override as one quoted argument when supplied.
+   - The script self-locates and picks maven vs gradle. Maven uses OpenRewrite plugin `6.46.1`; Gradle retains its bundled initialization script.
    - Stream stdout/stderr to the user.
 4. Exit 0 → go to **Commit**. Exit ≠ 0 → go to **Failure routing**.
 5. **Cleanup contract**: do not write any files into the user's project beyond what the recipe itself produces. The bundled `assets/init.gradle` is referenced by absolute path; never copied in.
@@ -38,7 +39,7 @@ Single canonical message (do NOT customize per run):
 
 ```
 COMMIT_MESSAGE_TEMPLATE:
-chore(af5): apply Axon 4 → 5 OpenRewrite migration (--framework <FRAMEWORK>)
+chore(af5): apply Axon 4 → 5 OpenRewrite upgrade (--framework <FRAMEWORK>)
 ```
 
 Substitute `<FRAMEWORK>` with the actual value (`axon` or `axoniq`). Use the result verbatim.
@@ -53,10 +54,10 @@ NEVER commit on failure. NEVER customize the message per run.
 
 Match the error output, then apply:
 
-- **`Could not find artifact org.axonframework:axon-migration:...`** — the recipe artifact didn't resolve from any configured repository (it is released on Maven Central). Surface the error to the user verbatim along with the version from `references/recipe-version` and the repositories the build tried. Do NOT instruct the user to install it themselves — they may not have source access. Ask: [retry] / [abort].
+- **`Could not find artifact org.axonframework:axon-migration:...`** — the recipe artifact didn't resolve from any configured repository (it is released on Maven Central). Surface the error to the user verbatim along with the resolved version (explicit override or `references/recipe-version`) and the repositories the build tried. Do NOT instruct the user to install it themselves — they may not have source access. Ask: [retry] / [abort].
 - **`Unsupported class file major version` / `class file version`** — build wrapper too old for the current JDK. Go to **Wrapper bump** below; that's the preferred recovery. Fallback only if wrapper bump fails or user declines: ask user to set `JAVA_HOME` to a JDK matching the wrapper.
 - **Recipe parse/apply error pointing at a specific source file** — surface the offending file path + last 50 log lines. Ask: [retry] / [abort].
-- **Anything else** — ask the user [retry] / [abort], with failed command + exit code + last 50 log lines.
+- **Anything else** — ask the user [retry] / [abort], with failed command + resolved recipe version + exit code + last 50 log lines.
 
 # Wrapper bump (recovery action)
 
@@ -70,7 +71,7 @@ Procedure:
 2. Look up the **latest stable release** of Gradle or Maven via `WebFetch` (`https://services.gradle.org/versions/current` for Gradle, `https://maven.apache.org/download.cgi` for Maven) or `WebSearch` if WebFetch is unavailable. Cache the result for the rest of this run.
 3. Read the wrapper file's `distributionUrl`. If the current version is already ≥ the latest stable, the JDK error has a different cause — surface output and ask the user.
 4. Edit the `distributionUrl` to point at the latest stable. Trust your knowledge of the Gradle/Maven wrapper format.
-5. Re-run `migrate.sh <framework>`.
+5. Re-run `migrate.sh <framework> [recipe-version]` with the same resolved recipe version as the first attempt.
 6. The wrapper-properties change is part of the diff and is captured by the canonical commit — no separate commit.
 
 User messaging:
@@ -80,12 +81,12 @@ User messaging:
 
 # User messages (standardized)
 
-Use these verbatim. Substitute `<FRAMEWORK>` and `<BUILD>` (`maven` or `gradle`).
+Use these verbatim. Substitute `<FRAMEWORK>`, `<BUILD>` (`maven` or `gradle`), and `<VERSION>` (the resolved recipe artifact version).
 
-- Start: `🔧 Running Axon 4→5 OpenRewrite recipe (<BUILD>, --framework <FRAMEWORK>)…`
+- Start: `🔧 Running Axon 4→5 OpenRewrite recipe (<BUILD>, --framework <FRAMEWORK>, recipe <VERSION>)…`
 - Success: `✅ Migration recipe applied. Review the diff before committing.`
 - Success + auto-commit: `✅ Migration recipe applied and committed.`
-- Failure: `❌ Migration failed (exit <CODE>). See output above. <next-action>`
+- Failure: `❌ Migration failed (recipe <VERSION>, exit <CODE>). See output above. <next-action>`
 - Missing artifact: `❌ Recipe artifact org.axonframework:axon-migration:<VERSION> did not resolve from any configured repository. Verify network access and the repositories your build is configured to use.`
 - JDK mismatch: `❌ Build wrapper too old for JDK <DETECTED>. Attempting wrapper bump…` (then see Wrapper bump section)
 

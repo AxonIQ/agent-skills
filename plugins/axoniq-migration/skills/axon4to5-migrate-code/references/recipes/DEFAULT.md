@@ -37,7 +37,7 @@ The result block carries a required free-text `NOTES` field and a required `LEAR
 
 **Learnings are mostly project-specific.** A learning's *value* is the fact about *this codebase / this migration run* — an unforeseen import path, a module layout that forced a deviation from the `# Use cases`, a behavioural difference the docs missed, a retry the docs didn't predict, **how a blocker was actually resolved here**. The single test: *would a future run, on a different project, learn something the skill docs didn't already tell it?*
 
-- **General framework knowledge is NOT a learning** ("AF5 renamed `getPayload()` to `payload()`", "AF5 has no Saga SPI"). That belongs in the recipe docs (`# Gotchas`) or the migration-paths catalog — if you find a gap there, propose an edit; do not smuggle framework facts into a per-run learning.
+- **General framework knowledge is NOT a learning** ("AF5 renamed `getPayload()` to `payload()`", "legacy sagas use handler parameters"). That belongs in the recipe docs (`# Gotchas`) or the migration-paths catalog — if you find a gap there, propose an edit; do not smuggle framework facts into a per-run learning.
 - **Recording a recipe-defined / expected blocker as a learning is fine** — the floor below still asks for a `blocker` entry. But make the entry about the *project-specific* angle (what this codebase actually did, how you resolved it here), not a restatement of the framework fact the recipe already documents.
 
 When in doubt, ask: "is this about *this project*, or about *the framework*?" The former is the learning; the latter is a docs edit.
@@ -55,7 +55,7 @@ A learning is **not only a record of what failed**. It is just as valuable — o
 | `investigation` | a step needed external investigation (`javap` on a jar, grep to find a package, context7 MCP). |
 | `blocker` | a blocker was detected (regardless of how it was resolved). Keep the entry's value project-specific — what this codebase did and how it was resolved here — rather than restating the framework fact the recipe already documents. |
 | `secondary-module` | a microservices / secondary module had a different shape needing separate handling. |
-| `no-test-coverage` | Success Criterion "tests green" was not-applicable (zero `AggregateTestFixture` tests in scope). |
+| `no-test-coverage` | Success Criterion "tests green" was not-applicable (zero applicable fixture tests in scope). |
 | `other:<tag>` | any other surprise / discovery meeting the governing rule (e.g. `other:gradle-kt-under-java`). |
 
 ### LEARNINGS — one entry per fired trigger; explicit `none` otherwise
@@ -81,7 +81,7 @@ Per-recipe `# Success Criteria` inherits these checks. Recipes may **add** crite
 ### Baseline criteria — always in effect
 
 1. **Compile-clean** — every file in `# Scope` (main + test sources) compiles against Axon 5 dependencies. Missing-symbol errors against files OUTSIDE `# Scope` mean the scope is too narrow — re-research at FLOW.md S2, do NOT silence with excludes.
-2. **Tests green** — if `# Scope` contains test classes that use `AggregateTestFixture`, every `@Test` method passes. Zero `@Test` methods in scope counts as criterion not-applicable (not match) — surface "no test coverage" as a **Learning** in the result block. Tests that do NOT use `AggregateTestFixture` (e.g. integration tests, Mockito-only tests, Spring context tests) are **out of scope** — do not include them in `test-sources`, do not fail on them, do not attempt to fix them.
+2. **Tests green** — if `# Scope` contains test classes that use `AggregateTestFixture`, every `@Test` method passes. For the `saga` recipe, include its existing `SagaTestFixture` tests under the same rule; verify them against the selected release's legacy test artifact and retain their assertions. This includes fixture tests already adapted during upgrade. Zero applicable `@Test` methods counts as criterion not-applicable (not match) — surface "no test coverage" as a **Learning**. Other tests (e.g. integration tests, Mockito-only tests, Spring context tests) remain **out of scope** for this isolated recipe check; do not exclude applicable fixture tests merely because they fail.
 3. **No silent behavioural regressions in the scoped slice** — assertions in migrated tests reflect AF5 semantics (record-style `payload()` / `metaData()` accessors, AF5 exception types). A flipped expectation that matches AF5 reality counts as match; silently weakened assertions do NOT.
 
 ### Verification — `axon4to5-isolatedtest` Skill (default mechanism)
@@ -120,7 +120,7 @@ Behaviour:
 
 - Project-wide `clean verify` / full-module test run — happens once at the orchestrator's FINALIZE step after every `isolated-*` scope is cleaned up. Not a recipe-level Success Criterion.
 - Cross-recipe verification (e.g. "the projector still receives events from the migrated aggregate") — recipe boundaries are deliberately narrow; integration concerns belong to the orchestrator.
-- **Tests not backed by `AggregateTestFixture`** — integration tests, Mockito-only tests, Spring context tests, and any test class that does not directly use `AggregateTestFixture` are out of scope. Do NOT add them to `test-sources`, do NOT treat their failures as a recipe-level criterion, and do NOT attempt to fix them.
+- **Tests outside the applicable fixture scope** — integration tests, Mockito-only tests, and Spring context tests remain out of scope. The `saga` recipe includes its `SagaTestFixture` tests; other recipes retain the aggregate-fixture boundary. Do NOT add unrelated tests to `test-sources`, treat their failures as a recipe-level criterion, or attempt to fix them.
 
 ## Blocker Options baselines
 

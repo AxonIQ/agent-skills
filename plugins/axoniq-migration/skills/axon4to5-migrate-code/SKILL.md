@@ -23,6 +23,8 @@ disable-model-invocation: true
 > `Configurer` API (recipes use `EventSourcingConfigurer` /
 > `MessagingConfigurer` / `CommandHandlingModule` / `EventSourcedEntityModule`).
 
+For existing sagas, the `saga` recipe adapts code and fixture tests to the selected release's Axoniq legacy APIs. It preserves state, associations, and processor identity; unsupported deadlines remain blockers. Workflow redesign and cutover belong to [saga-to-workflow](../saga-to-workflow/SKILL.md), after the application prerequisites are complete.
+
 ## Available recipes (auto-listed)
 
 Run `bash scripts/list-recipes.sh` from the skill root directory. Output format:
@@ -62,7 +64,7 @@ Orchestrator makes all decisions without `AskUserQuestion`. Every auto-resolved 
 | Decision point | Auto action |
 |---|---|
 | Ambiguous recipe match (`mode=single`) | Pick first candidate by `applicable` score. |
-| Blocker | Auto-select the Option the recipe marked `(Recommended)`; if none is marked, `skip`. A recommended migration path (e.g. saga `stateful-rewrite`) re-enters the recipe with that option id; `skip`/`revert` resolve in-place. See `BLOCKER_RESOLUTION.md § Auto mode`. |
+| Blocker | Auto-select the Option the recipe marked `(Recommended)`; if none is marked, `skip`. A recommended recipe-specific option re-enters the recipe with that option id; `skip`/`revert` resolve in-place. See `BLOCKER_RESOLUTION.md § Auto mode`. |
 | Resume + selection-args mismatch | Args identical → auto-resume. Args differ → auto-start-over. |
 | Working tree mismatch on resume | Proceed; record `⚠️ auto: tree mismatch ignored` in `progress.md`. |
 | OpenRewrite step completes | Immediately continue to mode-specific producer. Do NOT pause or end session. |
@@ -329,12 +331,14 @@ Catalog (one file per topic; `.adoc`):
 | [`sequencing-policies.adoc`](references/docs/paths/sequencing-policies.adoc)                               | Event sequencing policies                           |
 | [`token-store.adoc`](references/docs/paths/token-store.adoc)                                               | Token store schema (`mask` column)                  |
 | [`dlq.adoc`](references/docs/paths/dlq.adoc)                                                               | Dead-Letter Queue                                   |
-| [`sagas.adoc`](references/docs/paths/sagas.adoc)                                                           | Sagas rebuilt from core building blocks             |
+| [Saga upgrade](https://docs.axoniq.io/axon-framework-reference/development/migration/paths/sagas/) | Legacy saga adaptation; verify APIs against the selected release |
 | [`timeouts.adoc`](references/docs/paths/timeouts.adoc)                                                     | Handler / processing timeouts                       |
 | [`distributed-tracing.adoc`](references/docs/paths/distributed-tracing.adoc)                               | Distributed tracing / `SpanFactory`                 |
 | [`test-fixtures.adoc`](references/docs/paths/test-fixtures.adoc)                                           | Test fixtures migration                             |
 
-These files are **generated**. See [Keeping the catalog in sync](#keeping-the-catalog-in-sync).
+The local files are **generated**. See [Keeping the catalog in sync](#keeping-the-catalog-in-sync).
+
+For saga work, use the public Saga upgrade page and the hand-authored `saga` recipe above. The generated `paths/sagas.adoc` snapshot predates the move of legacy saga documentation to Axoniq Framework and can contain superseded guidance. Do not edit that snapshot or use it to remove legacy APIs or discard saga fixture tests. Development documentation must still be checked against the selected release.
 
 ### Keeping the catalog in sync
 

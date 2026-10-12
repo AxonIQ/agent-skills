@@ -3,12 +3,17 @@
 # directory. The CWD must be the target project root (where pom.xml or
 # build.gradle[.kts] lives). Self-locates so it can be invoked by absolute path.
 #
-# Usage:  migrate.sh [axon|axoniq]
+# Usage:  migrate.sh [axon|axoniq] [recipe-version]
 # Default framework: axoniq
 #
-# Recipe artifact version is read from ../references/recipe-version.
+# Recipe artifact version defaults to ../references/recipe-version.
 
 set -euo pipefail
+
+if [ "$#" -gt 2 ]; then
+  echo "ERR: usage: migrate.sh [axon|axoniq] [recipe-version]" >&2
+  exit 2
+fi
 
 framework="${1:-axoniq}"
 case "$framework" in
@@ -25,15 +30,23 @@ case "$framework" in
 esac
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-version_file="$(cd "$script_dir/../references" && pwd)/recipe-version"
-if [ ! -f "$version_file" ]; then
-  echo "ERR: recipe-version file missing at $version_file" >&2
-  exit 6
+if [ "$#" -eq 2 ]; then
+  version="$2"
+else
+  version_file="$(cd "$script_dir/../references" && pwd)/recipe-version"
+  if [ ! -f "$version_file" ]; then
+    echo "ERR: recipe-version file missing at $version_file" >&2
+    exit 6
+  fi
+  version="$(tr -d '[:space:]' < "$version_file")"
+  if [ -z "$version" ]; then
+    echo "ERR: recipe-version file is empty: $version_file" >&2
+    exit 6
+  fi
 fi
-version="$(tr -d '[:space:]' < "$version_file")"
-if [ -z "$version" ]; then
-  echo "ERR: recipe-version file is empty: $version_file" >&2
-  exit 6
+if [[ ! "$version" =~ ^[0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "ERR: recipe version must start with a digit and contain only letters, digits, '.', '_', or '-'" >&2
+  exit 2
 fi
 init_gradle="$(cd "$script_dir/../assets" && pwd)/init.gradle"
 
@@ -43,7 +56,8 @@ if [ ! -f "$init_gradle" ]; then
 fi
 
 if [ -f pom.xml ]; then
-  exec mvn -U org.openrewrite.maven:rewrite-maven-plugin:run \
+  echo "Using org.axonframework:axon-migration:${version} (${recipe})" >&2
+  exec mvn -U org.openrewrite.maven:rewrite-maven-plugin:6.46.1:run \
     "-Drewrite.recipeArtifactCoordinates=org.axonframework:axon-migration:${version}" \
     "-Drewrite.activeRecipes=${recipe}"
 fi
@@ -58,6 +72,7 @@ if [ -f build.gradle ] || [ -f build.gradle.kts ]; then
     echo "ERR: no ./gradlew and no 'gradle' on PATH" >&2
     exit 5
   fi
+  echo "Using org.axonframework:axon-migration:${version} (${recipe})" >&2
   exec "$gradle_cmd" rewriteRun \
     --init-script "$init_gradle" \
     "-Drewrite.activeRecipe=${recipe}" \
