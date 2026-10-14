@@ -111,6 +111,18 @@ Mark **skip** `(Recommended)` so `auto=true` never silently disables a live time
 Under `stateful-rewrite` this blocker does **not** fire: accepting hand-built timeouts is part of choosing that
 strategy. Deadline code is commented out by Step 5 of that Toolbox and reported as required follow-up.
 
+**Axoniq Framework 5.4.0 and later:** `io.axoniq.framework:axoniq-legacy` ports `DeadlineManager` and
+`@DeadlineHandler`, so the deadline code stays. Two scheduler checks then apply, because the OpenRewrite pass does not
+make them and both fail only at runtime:
+
+- **Scheduler library version.** `axoniq-legacy` is built against db-scheduler `16.12.0`, JobRunr `8.8.2` and Quartz
+  `2.5.2`. An older version left from AF4 compiles, then the first `schedule(..)` throws `NoSuchMethodError`. Raise the
+  version in the build file; the scheduler tables need no change. For JobRunr on Spring Boot 3, use
+  `jobrunr-spring-boot-3-starter`.
+- **JobRunr properties.** JobRunr 8 reads `jobrunr.*` and ignores the AF4-era `org.jobrunr.*` keys, and its job server
+  is off by default. Rename the keys (for example `org.jobrunr.background-job-server.enabled` to
+  `jobrunr.background-job-server.enabled`), or deadlines are stored but never fire, with nothing logged.
+
 ### B2 - AF4 processor name cannot be determined
 
 *Applies to strategy `axon-legacy` only.*
